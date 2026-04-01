@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikami Sushi — Mesa</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-mesa">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <a href="index.html" class="back-btn">← Voltar</a>
+      <span class="kanji">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+      </div>
+    </div>
+    <div class="mesa-header-info">
+      <div class="mesa-numero-badge" id="mesaNumeroBadge">Mesa —</div>
+      <div class="mesa-status-badge" id="mesaStatusBadge">Livre</div>
+    </div>
+    <div class="mesa-header-meta">
+      <span id="mesaAbertura">—</span>
+    </div>
+  </header>
+
+  <div class="mesa-layout">
+
+    <!-- COLUNA A: CARDÁPIO -->
+    <div class="col-cardapio">
+      <div class="col-header">
+        <h2>Cardápio</h2>
+      </div>
+      <div class="cardapio-busca">
+        <input type="text" id="buscaProduto" placeholder="Buscar produto..." autocomplete="off" />
+        <span class="busca-icon">🔍</span>
+      </div>
+      <div class="categorias-tabs" id="categoriasTabs"></div>
+      <div class="produtos-lista" id="produtosLista"></div>
+    </div>
+
+    <!-- COLUNA B: PEDIDO ATUAL -->
+    <div class="col-pedido">
+      <div class="col-header">
+        <h2>Pedido Atual</h2>
+        <span class="pedido-count" id="pedidoCount">0 itens</span>
+      </div>
+      <div class="pedido-itens" id="pedidoItens">
+        <div class="pedido-vazio">
+          <span class="pedido-vazio-icon">🍱</span>
+          <p>Nenhum item adicionado</p>
+        </div>
+      </div>
+      <div class="pedido-footer">
+        <div class="pedido-total-row">
+          <span>Total do pedido:</span>
+          <strong id="pedidoTotal">R$ 0,00</strong>
+        </div>
+        <button class="btn-confirmar" id="btnConfirmarPedido" disabled>
+          Confirmar Pedido →
+        </button>
+      </div>
+    </div>
+
+    <!-- COLUNA C: CONTA DA MESA -->
+    <div class="col-conta">
+      <div class="col-header">
+        <h2>Conta da Mesa</h2>
+        <span class="conta-total-badge" id="contaTotalBadge">R$ 0,00</span>
+      </div>
+      <div class="conta-historico" id="contaHistorico">
+        <div class="conta-vazia">
+          <span>Nenhum pedido confirmado ainda.</span>
+        </div>
+      </div>
+      <div class="conta-footer">
+        <div class="conta-total-final">
+          <span>Total acumulado:</span>
+          <strong id="contaTotalFinal">R$ 0,00</strong>
+        </div>
+        <div class="conta-acoes">
+          <button class="btn-imprimir btn-secondary" id="btnImprimirCozinha">🖨️ Cozinha</button>
+          <button class="btn-imprimir btn-secondary" id="btnImprimirConta">🧾 Pré-Conta</button>
+          <button class="btn-fechar-mesa btn-danger" id="btnFecharMesa">Fechar Mesa</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL FECHAR MESA -->
+  <div class="modal-overlay" id="modalFecharMesa">
+    <div class="modal-box">
+      <h3>Fechar Mesa</h3>
+      <p>Total a cobrar: <strong id="modalTotalCobrar">R$ 0,00</strong></p>
+      <div class="modal-pagamento">
+        <label>Forma de Pagamento:</label>
+        <div class="pagamento-opcoes">
+          <button class="pagamento-btn" data-metodo="Pix">💸 Pix</button>
+          <button class="pagamento-btn" data-metodo="Dinheiro">💵 Dinheiro</button>
+          <button class="pagamento-btn" data-metodo="Débito">💳 Débito</button>
+          <button class="pagamento-btn" data-metodo="Crédito">💳 Crédito</button>
+        </div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFechar">Cancelar</button>
+        <button class="btn-confirmar-fechar btn-danger" id="btnConfirmarFechar" disabled>
+          Confirmar Fechamento
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea" class="print-area"></div>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
