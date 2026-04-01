@@ -42,6 +42,8 @@ const CARDAPIO = [
   { nome: "Hot Dog Salmão",            categoria: "Individuais", preco: 30.00, ativo: true },
   { nome: "Hot Dog Salmão e Camarão",  categoria: "Individuais", preco: 35.00, ativo: true },
   { nome: "Sunomono",                  categoria: "Individuais", preco: 10.00, ativo: true },
+  { nome: "Poke",                  categoria: "Individuais", preco: 37.00, ativo: true },
+  
 
   // ESPECIAIS
   { nome: "Uramaki Kani com Camarão",                          categoria: "Especiais", preco: 27.00, ativo: true },
