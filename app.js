@@ -71,11 +71,14 @@ const CARDAPIO = [
   { nome: "Coca Zero Lata 220ml",    categoria: "Bebidas", preco: 4.50, ativo: true },
   { nome: "Coca Lata 350ml",         categoria: "Bebidas", preco: 6.00, ativo: true },
   { nome: "Fanta Lata 220ml",        categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Kuat Lata 220ml",         categoria: "Bebidas", preco: 4.50, ativo: true },
+  { nome: "H2O ",         categoria: "Bebidas", preco: 7.0, ativo: true },
+  { nome: "Guaraná Antartica Lata 350ml",         categoria: "Bebidas", preco: 5.50, ativo: true },
   { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
+  { nome: "Suco Copo",         categoria: "Bebidas", preco: 8.0, ativo: true },
+  { nome: "Suco Jarra",         categoria: "Bebidas", preco: 15.0, ativo: true },
 ];
 
 const TOTAL_MESAS = 14;
