@@ -78,7 +78,7 @@ const CARDAPIO = [
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
 ];
 
-const TOTAL_MESAS = 12;
+const TOTAL_MESAS = 14;
 
 // ============================================================
 // 2. UTILITÁRIOS
