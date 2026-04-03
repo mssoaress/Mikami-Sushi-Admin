@@ -42,8 +42,6 @@ const CARDAPIO = [
   { nome: "Hot Dog Salmão",            categoria: "Individuais", preco: 30.00, ativo: true },
   { nome: "Hot Dog Salmão e Camarão",  categoria: "Individuais", preco: 35.00, ativo: true },
   { nome: "Sunomono",                  categoria: "Individuais", preco: 10.00, ativo: true },
-  { nome: "Poke",                  categoria: "Individuais", preco: 37.00, ativo: true },
-  
 
   // ESPECIAIS
   { nome: "Uramaki Kani com Camarão",                          categoria: "Especiais", preco: 27.00, ativo: true },
@@ -52,7 +50,7 @@ const CARDAPIO = [
   { nome: "Nathos de Salmão e Geleia (4 un.)",                 categoria: "Especiais", preco: 15.00, ativo: true },
   { nome: "Joe (3 un.)",                                       categoria: "Especiais", preco: 18.00, ativo: true },
   { nome: "Niguiri (3 un.)",                                   categoria: "Especiais", preco: 15.00, ativo: true },
-  { nome: "Mikami Supremo 500g",                               categoria: "Especiais", preco: 55.00, ativo: true },
+  { nome: "Mikami Supremo 500g",                               categoria: "Especiais", preco: 45.00, ativo: true },
 
   // TEMAKIS
   { nome: "Temaki Copo Salmão", categoria: "Temakis", preco: 28.00, ativo: true },
@@ -73,17 +71,14 @@ const CARDAPIO = [
   { nome: "Coca Zero Lata 220ml",    categoria: "Bebidas", preco: 4.50, ativo: true },
   { nome: "Coca Lata 350ml",         categoria: "Bebidas", preco: 6.00, ativo: true },
   { nome: "Fanta Lata 220ml",        categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "H2O ",         categoria: "Bebidas", preco: 7.0, ativo: true },
-  { nome: "Guaraná Antartica Lata 350ml",         categoria: "Bebidas", preco: 5.50, ativo: true },
+  { nome: "Kuat Lata 220ml",         categoria: "Bebidas", preco: 4.50, ativo: true },
   { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
-  { nome: "Suco Copo",         categoria: "Bebidas", preco: 8.0, ativo: true },
-  { nome: "Suco Jarra",         categoria: "Bebidas", preco: 15.0, ativo: true },
 ];
 
-const TOTAL_MESAS = 14;
+const TOTAL_MESAS = 12;
 
 // ============================================================
 // 2. UTILITÁRIOS
@@ -325,6 +320,13 @@ async function initMesa() {
       document.getElementById("btnConfirmarFechar").disabled = false;
     });
   });
+
+  // Modal editar pedido
+  document.getElementById("btnCancelarEdicao")?.addEventListener("click", fecharModalEditar);
+  document.getElementById("btnSalvarEdicao")?.addEventListener("click", salvarEdicaoPedido);
+
+  // Modal pagamento dividido
+  initModalPagamento();
 }
 
 // ── Cardápio ──────────────────────────────────────────────
@@ -609,6 +611,7 @@ function renderConta() {
             ${pedido.status || "Novo"}
           </span>
           <span class="conta-pedido-hora">${hora}</span>
+          ${pedido.status !== "Entregue" ? `<button class="btn-editar-pedido-conta" data-pedido-id="${pedido.pedidoId}" title="Editar pedido">✏️</button>` : ""}
         </div>
         ${itemsHtml}
         <div class="conta-item-linha" style="margin-top:0.3rem;border-top:1px solid var(--preto-borda);padding-top:0.3rem">
@@ -620,8 +623,13 @@ function renderConta() {
     `;
   }).join("");
 
-  // Rola para o final automaticamente ao adicionar pedido novo
+  // Rola para o final automaticamente
   container.scrollTop = container.scrollHeight;
+
+  // Eventos editar pedido
+  container.querySelectorAll(".btn-editar-pedido-conta").forEach(btn => {
+    btn.addEventListener("click", () => abrirModalEditar(btn.dataset.pedidoId));
+  });
 }
 
 // ── Impressão ─────────────────────────────────────────────
@@ -744,19 +752,49 @@ function fecharModal() {
   document.getElementById("modalFecharMesa").classList.remove("open");
   document.querySelectorAll(".pagamento-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("btnConfirmarFechar").disabled = true;
+  // Reset divisão
+  const tabUnico = document.getElementById("tabPagUnico");
+  const tabDivid = document.getElementById("tabPagDividido");
+  if (tabUnico) { tabUnico.classList.add("active"); tabDivid.classList.remove("active"); }
+  const secUnico = document.getElementById("secPagUnico");
+  const secDivid = document.getElementById("secPagDividido");
+  if (secUnico) { secUnico.style.display = ""; secDivid.style.display = "none"; }
+  document.querySelectorAll(".div-valor-input").forEach(i => i.value = "");
+  document.querySelectorAll(".div-toggle").forEach(b => b.classList.remove("active"));
+  atualizarRestante();
 }
 
 async function fecharMesa() {
-  const metodoBtn = document.querySelector(".pagamento-btn.selected");
-  if (!metodoBtn) return;
-
   const btnFechar = document.getElementById("btnConfirmarFechar");
+  if (btnFechar.disabled) return;
+
+  // Detecta modo: único ou dividido
+  const isDividido = document.getElementById("tabPagDividido")?.classList.contains("active");
+  let formaPagamento = "";
+  let pagamentos = [];
+
+  if (isDividido) {
+    // Coleta valores digitados
+    document.querySelectorAll(".div-toggle.active").forEach(btn => {
+      const metodo = btn.dataset.metodo;
+      const input  = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
+      const val    = parseFloat(input?.value?.replace(",", ".") || "0");
+      if (val > 0) pagamentos.push({ metodo, valor: val });
+    });
+    if (!pagamentos.length) { toast("Selecione ao menos um método de pagamento.", "erro"); return; }
+    formaPagamento = pagamentos.map(p => `${p.metodo} (${fmtMoeda(p.valor)})`).join(" + ");
+  } else {
+    const metodoBtn = document.querySelector(".pagamento-btn.selected");
+    if (!metodoBtn) return;
+    formaPagamento = metodoBtn.dataset.metodo;
+    pagamentos = [{ metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 }];
+  }
+
   btnFechar.disabled   = true;
   btnFechar.textContent = "Fechando...";
 
   try {
-    const metodo = metodoBtn.dataset.metodo;
-    const mesa   = estadoMesa.dadosMesa;
+    const mesa = estadoMesa.dadosMesa;
 
     // Salva venda no histórico
     await addDoc(collection(db, "vendas"), {
@@ -764,7 +802,8 @@ async function fecharMesa() {
       mesaId:         estadoMesa.mesaId,
       itens:          mesa.historicoPedidos?.flatMap(p => p.itens) || [],
       total:          mesa.total || 0,
-      formaPagamento: metodo,
+      formaPagamento: formaPagamento,
+      pagamentos:     pagamentos,
       fechadoEm:      serverTimestamp()
     });
 
@@ -816,8 +855,12 @@ function initCozinha() {
     });
   });
 
+  // FIX: filtra apenas pedidos de hoje
+  const _inicioCozinha = new Date();
+  _inicioCozinha.setHours(0, 0, 0, 0);
   const q = query(
     collection(db, "pedidos"),
+    where("createdAt", ">=", Timestamp.fromDate(_inicioCozinha)),
     orderBy("createdAt", "desc")
   );
 
@@ -884,9 +927,15 @@ function renderCozinha(pedidos) {
 
     let botoesHtml = "";
     if (pedido.status === "Novo") {
-      botoesHtml = `<button class="btn-secondary" data-id="${pedido.id}" data-status="Em preparo">▶ Em preparo</button>`;
+      botoesHtml = `
+        <button class="btn-secondary" data-id="${pedido.id}" data-status="Em preparo">▶ Em preparo</button>
+        <button class="btn-editar-cozinha btn-secondary" data-pedido-id="${pedido.id}">✏️</button>
+      `;
     } else if (pedido.status === "Em preparo") {
-      botoesHtml = `<button class="btn-primary"   data-id="${pedido.id}" data-status="Pronto">✓ Marcar Pronto</button>`;
+      botoesHtml = `
+        <button class="btn-primary" data-id="${pedido.id}" data-status="Pronto">✓ Marcar Pronto</button>
+        <button class="btn-editar-cozinha btn-secondary" data-pedido-id="${pedido.id}">✏️</button>
+      `;
     } else if (pedido.status === "Pronto") {
       botoesHtml = `<button class="btn-secondary" data-id="${pedido.id}" data-status="Entregue">✓ Marcar Entregue</button>`;
     }
@@ -924,6 +973,10 @@ function renderCozinha(pedidos) {
     btn.addEventListener("click", () =>
       excluirPedido(btn.dataset.excluirId, btn.dataset.mesaId, parseFloat(btn.dataset.total))
     );
+  });
+
+  grid.querySelectorAll(".btn-editar-cozinha").forEach(btn => {
+    btn.addEventListener("click", () => abrirModalEditarCozinha(btn.dataset.pedidoId));
   });
 }
 
@@ -1000,7 +1053,9 @@ let vendasAtuais   = [];      // cache para impressão do relatório
 function initRelatorio() {
   iniciarRelogio();
 
-  const hoje     = new Date().toISOString().split("T")[0];
+  // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
+  const _h = new Date();
+  const hoje = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${String(_h.getDate()).padStart(2,'0')}`;
   const inputData = document.getElementById("filtroData");
   inputData.value = hoje;
 
@@ -1255,6 +1310,208 @@ function imprimirRelatorio(dataStr, vendas) {
   `;
 
   window.print();
+}
+
+
+// ── Pagamento dividido — atualiza saldo restante ──────────────
+function atualizarRestante() {
+  const total = estadoMesa.dadosMesa?.total || 0;
+  let distribuido = 0;
+  document.querySelectorAll(".div-toggle.active").forEach(btn => {
+    const metodo = btn.dataset.metodo;
+    const input  = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
+    distribuido += parseFloat(input?.value?.replace(",",".") || "0") || 0;
+  });
+  const restante = total - distribuido;
+  const el = document.getElementById("divRestante");
+  if (el) {
+    el.textContent = restante > 0.009
+      ? `Faltam distribuir: ${fmtMoeda(restante)}`
+      : restante < -0.009
+        ? `Excedeu em: ${fmtMoeda(Math.abs(restante))}`
+        : "✓ Total distribuído";
+    el.style.color = Math.abs(restante) < 0.01 ? "var(--verde)" : "var(--vermelho-soft)";
+  }
+  const btnConfirmar = document.getElementById("btnConfirmarFechar");
+  if (btnConfirmar && document.getElementById("tabPagDividido")?.classList.contains("active")) {
+    btnConfirmar.disabled = Math.abs(restante) > 0.01;
+  }
+}
+
+// ── Inicializar lógica do modal de pagamento dividido ─────────
+function initModalPagamento() {
+  const tabUnico = document.getElementById("tabPagUnico");
+  const tabDivid = document.getElementById("tabPagDividido");
+  const secUnico = document.getElementById("secPagUnico");
+  const secDivid = document.getElementById("secPagDividido");
+  if (!tabUnico) return;
+
+  tabUnico.addEventListener("click", () => {
+    tabUnico.classList.add("active"); tabDivid.classList.remove("active");
+    secUnico.style.display = ""; secDivid.style.display = "none";
+    const btnConfirmar = document.getElementById("btnConfirmarFechar");
+    btnConfirmar.disabled = !document.querySelector(".pagamento-btn.selected");
+  });
+
+  tabDivid.addEventListener("click", () => {
+    tabDivid.classList.add("active"); tabUnico.classList.remove("active");
+    secDivid.style.display = ""; secUnico.style.display = "none";
+    atualizarRestante();
+  });
+
+  // Toggles de método dividido
+  document.querySelectorAll(".div-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("active");
+      const metodo = btn.dataset.metodo;
+      const inputRow = document.getElementById(`divRow_${metodo}`);
+      if (inputRow) inputRow.style.display = btn.classList.contains("active") ? "flex" : "none";
+      atualizarRestante();
+    });
+  });
+
+  // Inputs de valor
+  document.querySelectorAll(".div-valor-input").forEach(input => {
+    input.addEventListener("input", atualizarRestante);
+  });
+}
+
+// ── Modal Editar Pedido (mesa.html) ───────────────────────────
+let pedidoEmEdicao = null;
+
+async function abrirModalEditar(pedidoId) {
+  if (!pedidoId) return;
+  try {
+    const snap = await getDoc(doc(db, "pedidos", pedidoId));
+    if (!snap.exists()) { toast("Pedido não encontrado.", "erro"); return; }
+    pedidoEmEdicao = { id: pedidoId, ...snap.data() };
+    pedidoEmEdicao.itens = pedidoEmEdicao.itens.map(i => ({ ...i })); // cópia
+    renderModalEditar();
+    document.getElementById("modalEditarPedido").classList.add("open");
+  } catch (err) {
+    console.error(err);
+    toast("Erro ao abrir edição.", "erro");
+  }
+}
+
+async function abrirModalEditarCozinha(pedidoId) {
+  await abrirModalEditar(pedidoId);
+}
+
+function renderModalEditar() {
+  if (!pedidoEmEdicao) return;
+  const container = document.getElementById("editarItensLista");
+  const itens = pedidoEmEdicao.itens;
+
+  document.getElementById("editarPedidoTitulo").textContent =
+    `Editar Pedido — Mesa ${pedidoEmEdicao.mesaNumero}`;
+
+  if (!itens.length) {
+    container.innerHTML = `<p style="color:var(--cinza-texto);text-align:center;padding:1rem">Nenhum item</p>`;
+    return;
+  }
+
+  container.innerHTML = itens.map((item, idx) => `
+    <div class="editar-item-row" data-idx="${idx}">
+      <div class="editar-item-nome">${item.nome}</div>
+      <div class="editar-item-controles">
+        <button class="qty-btn editar-dec" data-idx="${idx}">−</button>
+        <span class="qty-value">${item.qty}</span>
+        <button class="qty-btn editar-inc" data-idx="${idx}">+</button>
+        <span class="editar-item-preco">${fmtMoeda(item.preco * item.qty)}</span>
+        <button class="remove-item-btn editar-remove" data-idx="${idx}">✕</button>
+      </div>
+      ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
+    </div>
+  `).join("");
+
+  // Total
+  const total = itens.reduce((a, i) => a + i.preco * i.qty, 0);
+  document.getElementById("editarTotal").textContent = fmtMoeda(total);
+
+  // Eventos
+  container.querySelectorAll(".editar-dec").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      pedidoEmEdicao.itens[idx].qty--;
+      if (pedidoEmEdicao.itens[idx].qty <= 0) pedidoEmEdicao.itens.splice(idx, 1);
+      renderModalEditar();
+    });
+  });
+  container.querySelectorAll(".editar-inc").forEach(btn => {
+    btn.addEventListener("click", () => {
+      pedidoEmEdicao.itens[parseInt(btn.dataset.idx)].qty++;
+      renderModalEditar();
+    });
+  });
+  container.querySelectorAll(".editar-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      pedidoEmEdicao.itens.splice(parseInt(btn.dataset.idx), 1);
+      renderModalEditar();
+    });
+  });
+}
+
+async function salvarEdicaoPedido() {
+  if (!pedidoEmEdicao) return;
+  const btnSalvar = document.getElementById("btnSalvarEdicao");
+  btnSalvar.disabled = true;
+  btnSalvar.textContent = "Salvando...";
+
+  try {
+    const itensNovos = pedidoEmEdicao.itens;
+    const novoTotal  = itensNovos.reduce((a, i) => a + i.preco * i.qty, 0);
+    const totalAntigo = pedidoEmEdicao.total || 0;
+    const diff = novoTotal - totalAntigo;
+
+    if (!itensNovos.length) {
+      // Se removeu todos os itens, exclui o pedido
+      await excluirPedido(pedidoEmEdicao.id, pedidoEmEdicao.mesaId, totalAntigo);
+      fecharModalEditar();
+      return;
+    }
+
+    // Atualiza pedido
+    await updateDoc(doc(db, "pedidos", pedidoEmEdicao.id), {
+      itens:     itensNovos,
+      total:     novoTotal,
+      updatedAt: serverTimestamp()
+    });
+
+    // Atualiza mesa: total e historicoPedidos
+    if (pedidoEmEdicao.mesaId) {
+      const mesaRef  = doc(db, "mesas", pedidoEmEdicao.mesaId);
+      const mesaSnap = await getDoc(mesaRef);
+      if (mesaSnap.exists()) {
+        const mesaData  = mesaSnap.data();
+        const historico = (mesaData.historicoPedidos || []).map(p =>
+          p.pedidoId === pedidoEmEdicao.id
+            ? { ...p, itens: itensNovos, total: novoTotal }
+            : p
+        );
+        await updateDoc(mesaRef, {
+          historicoPedidos: historico,
+          total: Math.max(0, (mesaData.total || 0) + diff)
+        });
+      }
+    }
+
+    toast("Pedido atualizado!", "sucesso");
+    fecharModalEditar();
+  } catch (err) {
+    console.error(err);
+    toast("Erro ao salvar edição.", "erro");
+    btnSalvar.disabled = false;
+    btnSalvar.textContent = "Salvar";
+  }
+}
+
+function fecharModalEditar() {
+  pedidoEmEdicao = null;
+  const modal = document.getElementById("modalEditarPedido");
+  if (modal) modal.classList.remove("open");
+  const btnSalvar = document.getElementById("btnSalvarEdicao");
+  if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar"; }
 }
 
 // ============================================================
