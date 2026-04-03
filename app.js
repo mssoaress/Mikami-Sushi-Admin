@@ -14,7 +14,7 @@
 import {
   db,
   collection, doc,
-  getDoc, getDocs, setDoc, addDoc, updateDoc,
+  getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy,
   serverTimestamp, Timestamp, increment
 } from "./firebase.js";
@@ -137,60 +137,55 @@ function iniciarRelogio() {
   setInterval(atualizar, 1000);
 }
 
-// ── SEED: garante produtos no Firestore (1 leitura só) ───────
+// ── SEED: chave de versão no localStorage ────────────────────
+// Só roda seeds se nunca rodou neste dispositivo ou versão mudou
+const SEED_VERSION = `mikami_seed_v${CARDAPIO.length}_m${TOTAL_MESAS}`;
+
 async function garantirProdutos() {
+  if (localStorage.getItem(SEED_VERSION + "_prod") === "ok") return;
   try {
     const snap = await getDocs(collection(db, "produtos"));
-    if (snap.size >= CARDAPIO.length) return;
-
+    if (snap.size >= CARDAPIO.length) {
+      localStorage.setItem(SEED_VERSION + "_prod", "ok");
+      return;
+    }
     const existentes = new Set(snap.docs.map(d => d.id));
-    const promises = CARDAPIO.map((p, i) => {
+    await Promise.all(CARDAPIO.map((p, i) => {
       const id = `prod_${i.toString().padStart(3, "0")}`;
-      if (existentes.has(id)) return Promise.resolve();
-      return setDoc(doc(db, "produtos", id), p);
-    });
-    await Promise.all(promises);
-    console.log("[Mikami] Cardápio carregado no Firestore.");
-  } catch (err) {
-    console.error("[Mikami] Erro ao garantir produtos:", err);
-  }
+      return existentes.has(id) ? Promise.resolve() : setDoc(doc(db, "produtos", id), p);
+    }));
+    localStorage.setItem(SEED_VERSION + "_prod", "ok");
+    console.log("[Mikami] Cardápio carregado.");
+  } catch (err) { console.error("[Mikami] Seed produtos:", err); }
 }
 
-// ── SEED: garante mesas no Firestore (1 leitura só) ──────────
 async function garantirMesas() {
+  if (localStorage.getItem(SEED_VERSION + "_mesas") === "ok") return;
   try {
     const snap = await getDocs(collection(db, "mesas"));
     const existentes = new Set(snap.docs.map(d => d.id));
-
     const promises = [];
     for (let i = 1; i <= TOTAL_MESAS; i++) {
       const id = `mesa_${i}`;
       if (!existentes.has(id)) {
         promises.push(setDoc(doc(db, "mesas", id), {
-          numero: i,
-          status: "livre",
-          abertaEm: null,
-          total: 0,
-          pedidosCount: 0,
-          historicoPedidos: []
+          numero: i, status: "livre", abertaEm: null,
+          total: 0, pedidosCount: 0, historicoPedidos: []
         }));
       }
     }
     if (promises.length) await Promise.all(promises);
-  } catch (err) {
-    console.error("[Mikami] Erro ao garantir mesas:", err);
-  }
+    localStorage.setItem(SEED_VERSION + "_mesas", "ok");
+  } catch (err) { console.error("[Mikami] Seed mesas:", err); }
 }
 
 // ============================================================
 // 3. PÁGINA: INDEX — MESAS
 // ============================================================
-async function initIndex() {
+function initIndex() {
   iniciarRelogio();
-  await garantirProdutos();
-  await garantirMesas();
 
-  // Escuta mesas em tempo real
+  // UI carrega IMEDIATAMENTE — seeds rodam em paralelo no background
   onSnapshot(collection(db, "mesas"), snap => {
     const mesas = [];
     snap.forEach(d => mesas.push({ id: d.id, ...d.data() }));
@@ -200,39 +195,80 @@ async function initIndex() {
   });
 
   escutarFaturamentoDia();
+
+  // Seeds em background, sem bloquear UI
+  Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
 }
+
+// Cache das mesas renderizadas para diff
+const _mesasCache = new Map();
 
 function renderMesas(mesas) {
   const grid = document.getElementById("mesasGrid");
-  grid.innerHTML = "";
-
   const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
 
-  mesas.forEach(mesa => {
-    const card = document.createElement("div");
-    card.className = `mesa-card ${mesa.status}`;
-    card.innerHTML = `
-      <div class="mesa-card-header">
-        <div class="mesa-numero">${mesa.numero}</div>
-        <div class="mesa-status-pill status-${mesa.status}">
-          ${statusLabel[mesa.status] || mesa.status}
-        </div>
-      </div>
-      <div class="mesa-card-info">
-        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(mesa.total || 0) : "—"}</div>
-        <div class="mesa-meta">
-          ${mesa.abertaEm
-            ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
-            : "<span>Mesa livre</span>"}
-          ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
-        </div>
-      </div>
-    `;
-    card.addEventListener("click", () => {
-      window.location.href = `mesa.html?mesa=${mesa.numero}`;
+  // Primeira renderização: cria todos os cards de uma vez com fragment
+  if (grid.children.length <= 1) {
+    const frag = document.createDocumentFragment();
+    mesas.forEach(mesa => {
+      const card = _criarCardMesa(mesa, statusLabel);
+      _mesasCache.set(mesa.id, _hashMesa(mesa));
+      frag.appendChild(card);
     });
-    grid.appendChild(card);
+    grid.innerHTML = "";
+    grid.appendChild(frag);
+    return;
+  }
+
+  // Updates seguintes: só atualiza cards que mudaram (diff)
+  mesas.forEach(mesa => {
+    const novoHash = _hashMesa(mesa);
+    if (_mesasCache.get(mesa.id) === novoHash) return; // sem mudança
+    _mesasCache.set(mesa.id, novoHash);
+
+    const existente = grid.querySelector(`[data-mesa-id="${mesa.id}"]`);
+    const novo = _criarCardMesa(mesa, statusLabel);
+    if (existente) {
+      grid.replaceChild(novo, existente);
+    } else {
+      // Insere na posição certa por número
+      const cards = [...grid.children];
+      const after = cards.find(c => parseInt(c.dataset.mesaNumero) > mesa.numero);
+      grid.insertBefore(novo, after || null);
+    }
   });
+}
+
+function _hashMesa(mesa) {
+  return `${mesa.status}|${mesa.total}|${mesa.pedidosCount}|${mesa.abertaEm?.seconds || 0}`;
+}
+
+function _criarCardMesa(mesa, statusLabel) {
+  const card = document.createElement("div");
+  card.className = `mesa-card ${mesa.status}`;
+  card.dataset.mesaId = mesa.id;
+  card.dataset.mesaNumero = mesa.numero;
+  card.innerHTML = `
+    <div class="mesa-card-header">
+      <div class="mesa-numero">${mesa.numero}</div>
+      <div class="mesa-status-pill status-${mesa.status}">
+        ${statusLabel[mesa.status] || mesa.status}
+      </div>
+    </div>
+    <div class="mesa-card-info">
+      <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(mesa.total || 0) : "—"}</div>
+      <div class="mesa-meta">
+        ${mesa.abertaEm
+          ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
+          : "<span>Mesa livre</span>"}
+        ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
+      </div>
+    </div>
+  `;
+  card.addEventListener("click", () => {
+    window.location.href = `mesa.html?mesa=${mesa.numero}`;
+  });
+  return card;
 }
 
 function renderStats(mesas) {
@@ -279,11 +315,18 @@ async function initMesa() {
   document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
-  // Carrega produtos
+  // Tenta usar cache do sessionStorage para cardápio (evita leitura repetida)
   try {
-    const snapProd = await getDocs(collection(db, "produtos"));
-    snapProd.forEach(d => estadoMesa.produtos.push({ id: d.id, ...d.data() }));
-    estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
+    const cacheKey = `mikami_produtos_${SEED_VERSION}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      estadoMesa.produtos = JSON.parse(cached);
+    } else {
+      const snapProd = await getDocs(collection(db, "produtos"));
+      snapProd.forEach(d => estadoMesa.produtos.push({ id: d.id, ...d.data() }));
+      estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
+      sessionStorage.setItem(cacheKey, JSON.stringify(estadoMesa.produtos));
+    }
   } catch (err) {
     toast("Erro ao carregar cardápio.", "erro");
     console.error(err);
@@ -1015,7 +1058,6 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 
   try {
     // Remove da coleção pedidos
-    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     await deleteDoc(doc(db, "pedidos", pedidoId));
 
     // Remove do historicoPedidos da mesa e desconta o total
@@ -1206,7 +1248,6 @@ async function excluirVenda(vendaId) {
   if (!confirm("Excluir este registro de venda? Esta ação não pode ser desfeita.")) return;
 
   try {
-    const { deleteDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
     await deleteDoc(doc(db, "vendas", vendaId));
     toast("Registro excluído.", "sucesso");
     // O onSnapshot do relatório atualiza automaticamente
