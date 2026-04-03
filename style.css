@@ -753,6 +753,180 @@ body.page-relatorio {
   border-color: var(--vermelho);
 }
 
+
+/* ════════════════════════════════════════════════════════════
+   PAGAMENTO DIVIDIDO
+   ════════════════════════════════════════════════════════════ */
+.modal-box-lg { max-width: 480px; }
+
+.pag-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.1rem;
+  background: var(--cinza);
+  border-radius: var(--raio);
+  padding: 0.25rem;
+}
+
+.pag-tab {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  border-radius: calc(var(--raio) - 2px);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cinza-texto);
+  background: transparent;
+  border: none;
+  transition: all 0.15s;
+}
+.pag-tab.active {
+  background: var(--preto-card);
+  color: var(--branco);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+.div-metodos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.div-toggle {
+  padding: 0.55rem;
+  background: var(--cinza);
+  border: 2px solid var(--preto-borda);
+  border-radius: var(--raio);
+  color: var(--cinza-texto);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.15s;
+}
+.div-toggle:hover  { border-color: var(--cinza-medio); color: var(--branco); }
+.div-toggle.active { border-color: var(--vermelho); color: var(--branco); background: rgba(192,57,43,0.15); }
+
+.div-inputs { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
+
+.div-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--cinza);
+  border-radius: var(--raio);
+  padding: 0.4rem 0.75rem;
+}
+.div-input-row span {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--cinza-texto);
+  min-width: 60px;
+}
+.div-input-row input {
+  flex: 1;
+  background: var(--preto-card);
+  border: 1px solid var(--preto-borda);
+  border-radius: calc(var(--raio) - 2px);
+  padding: 0.32rem 0.6rem;
+  color: var(--branco);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  transition: border-color 0.15s;
+}
+.div-input-row input:focus { border-color: var(--vermelho); outline: none; }
+
+.div-restante {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: var(--raio);
+  background: var(--cinza);
+  color: var(--cinza-texto);
+  margin-bottom: 0.5rem;
+}
+
+/* ════════════════════════════════════════════════════════════
+   MODAL EDITAR PEDIDO
+   ════════════════════════════════════════════════════════════ */
+.editar-itens-lista {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.editar-item-row {
+  background: var(--cinza);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.6rem 0.75rem;
+}
+
+.editar-item-nome {
+  font-size: 0.82rem;
+  color: var(--branco);
+  margin-bottom: 0.4rem;
+  font-weight: 400;
+}
+
+.editar-item-controles {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.editar-item-preco {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ouro-light);
+  margin-left: auto;
+}
+
+.editar-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--preto-borda);
+  font-size: 0.82rem;
+  color: var(--cinza-texto);
+  margin-bottom: 0.75rem;
+}
+.editar-total-row strong {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  color: var(--ouro-light);
+  font-weight: 800;
+}
+
+/* Botão editar na conta */
+.btn-editar-pedido-conta {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  padding: 0.1rem 0.3rem;
+  cursor: pointer;
+  color: var(--cinza-texto);
+  transition: color 0.15s;
+  margin-left: 0.25rem;
+}
+.btn-editar-pedido-conta:hover { color: var(--branco); }
+
+/* Botão editar na cozinha */
+.btn-editar-cozinha {
+  flex-shrink: 0;
+  padding: 0.38rem 0.6rem !important;
+  font-size: 0.82rem !important;
+}
+
 /* ================================================================
    IMPRESSÃO
    ================================================================ */
