@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikami Sushi — Faturamento</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body class="page-faturamento">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <span class="kanji">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+        <p class="brand-sub">Faturamento</p>
+      </div>
+    </div>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Mesas</a>
+      <a href="cozinha.html" class="nav-link">Cozinha</a>
+      <a href="relatorio.html" class="nav-link">Relatório</a>
+      <a href="faturamento.html" class="nav-link active">Faturamento</a>
+    </nav>
+    <div class="header-clock" id="headerClock"></div>
+  </header>
+
+  <!-- CARDS RESUMO -->
+  <div class="fat-resumo">
+    <div class="fat-card">
+      <span class="fat-icon">📅</span>
+      <span class="fat-label">Hoje</span>
+      <span class="fat-valor" id="fatHoje">R$ 0,00</span>
+    </div>
+    <div class="fat-card">
+      <span class="fat-icon">📆</span>
+      <span class="fat-label">Últimos 7 dias</span>
+      <span class="fat-valor" id="fatSemana">R$ 0,00</span>
+    </div>
+    <div class="fat-card">
+      <span class="fat-icon">🗓️</span>
+      <span class="fat-label">Últimos 30 dias</span>
+      <span class="fat-valor" id="fatMes">R$ 0,00</span>
+    </div>
+    <div class="fat-card">
+      <span class="fat-icon">📊</span>
+      <span class="fat-label">Últimos 12 meses</span>
+      <span class="fat-valor" id="fatAnual">R$ 0,00</span>
+    </div>
+  </div>
+
+  <!-- GRÁFICOS -->
+  <main class="fat-main">
+
+    <div class="fat-grid">
+
+      <!-- Semanal -->
+      <div class="fat-chart-box fat-chart-wide">
+        <div class="fat-chart-titulo">📈 Últimos 7 dias</div>
+        <div class="fat-chart-wrap">
+          <canvas id="chartSemanal"></canvas>
+        </div>
+      </div>
+
+      <!-- Por pagamento -->
+      <div class="fat-chart-box">
+        <div class="fat-chart-titulo">💳 Por Pagamento</div>
+        <div class="fat-chart-wrap">
+          <canvas id="chartPagamento"></canvas>
+        </div>
+      </div>
+
+      <!-- Mensal -->
+      <div class="fat-chart-box fat-chart-full">
+        <div class="fat-chart-titulo">📅 Últimos 30 dias</div>
+        <div class="fat-chart-wrap fat-chart-tall">
+          <canvas id="chartMensal"></canvas>
+        </div>
+      </div>
+
+      <!-- Anual -->
+      <div class="fat-chart-box fat-chart-full">
+        <div class="fat-chart-titulo">📊 Últimos 12 meses</div>
+        <div class="fat-chart-wrap">
+          <canvas id="chartAnual"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

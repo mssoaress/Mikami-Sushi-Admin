@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikami Sushi — Mesas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-mesas">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <span class="kanji">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+        <p class="brand-sub">Sistema de Gestão</p>
+      </div>
+    </div>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link active">Mesas</a>
+      <a href="cozinha.html" class="nav-link">Cozinha</a>
+      <a href="relatorio.html" class="nav-link">Relatório</a>
+      <a href="faturamento.html" class="nav-link">Faturamento</a>
+    </nav>
+    <div class="header-clock" id="headerClock"></div>
+  </header>
+
+  <main class="mesas-main">
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value" id="statLivres">0</span>
+        <span class="stat-label">Livres</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statOcupadas">0</span>
+        <span class="stat-label">Ocupadas</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statAguardando">0</span>
+        <span class="stat-label">Aguardando</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value" id="statTotalDia">R$ 0,00</span>
+        <span class="stat-label">Faturamento Hoje</span>
+      </div>
+    </div>
+
+    <div class="mesas-grid" id="mesasGrid">
+      <div class="loading-mesas">
+        <div class="loading-spinner"></div>
+        <p>Carregando mesas...</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

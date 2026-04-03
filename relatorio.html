@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mikami Sushi — Relatório</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-relatorio">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <span class="kanji">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+        <p class="brand-sub">Histórico do Dia</p>
+      </div>
+    </div>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Mesas</a>
+      <a href="cozinha.html" class="nav-link">Cozinha</a>
+      <a href="relatorio.html" class="nav-link active">Relatório</a>
+      <a href="faturamento.html" class="nav-link">Faturamento</a>
+    </nav>
+    <div class="header-clock" id="headerClock"></div>
+  </header>
+
+  <div class="relatorio-resumo">
+    <div class="resumo-card">
+      <span class="resumo-icon">💰</span>
+      <span class="resumo-valor" id="resumoTotal">R$ 0,00</span>
+      <span class="resumo-label">Total do Dia</span>
+    </div>
+    <div class="resumo-card">
+      <span class="resumo-icon">🍽️</span>
+      <span class="resumo-valor" id="resumoMesas">0</span>
+      <span class="resumo-label">Mesas Fechadas</span>
+    </div>
+    <div class="resumo-card">
+      <span class="resumo-icon">🎯</span>
+      <span class="resumo-valor" id="resumoTicket">R$ 0,00</span>
+      <span class="resumo-label">Ticket Médio</span>
+    </div>
+    <div class="resumo-card resumo-pagamentos">
+      <span class="resumo-icon">💳</span>
+      <div class="pagamentos-breakdown" id="pagamentosBreakdown">
+        <span class="resumo-label">Por Pagamento</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="relatorio-filtros">
+    <label>Data:</label>
+    <input type="date" id="filtroData" />
+    <button class="btn-secondary btn-sm" id="btnHoje">Hoje</button>
+    <button class="btn-imprimir-relatorio btn-sm" id="btnImprimirRelatorio">🖨️ Imprimir Relatório</button>
+  </div>
+
+  <main class="relatorio-main">
+    <div class="vendas-lista" id="vendasLista">
+      <div class="loading-mesas">
+        <div class="loading-spinner"></div>
+        <p>Carregando histórico...</p>
+      </div>
+    </div>
+  </main>
+
+  <div id="printArea" class="print-area"></div>
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
