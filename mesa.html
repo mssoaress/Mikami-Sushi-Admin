@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Mikami Sushi — Mesa</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,8 @@
   <header class="main-header">
     <div class="header-brand">
       <a href="index.html" class="back-btn">← Voltar</a>
-      <span class="kanji">御</span>
+      <img src="img/logo.jpg" alt="Mikami Sushi" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span class="kanji" style="display:none">御</span>
       <div class="brand-text"><h1>Mikami Sushi</h1></div>
     </div>
     <div class="mesa-header-info">
@@ -26,10 +27,17 @@
     </div>
   </header>
 
+  <!-- Abas mobile (ocultas no desktop via CSS) -->
+  <div class="mesa-abas" style="display:none">
+    <button class="mesa-aba-btn active" data-aba="cardapio">📋 Cardápio</button>
+    <button class="mesa-aba-btn" data-aba="pedido">🛒 Pedido <span id="pedidoBadge"></span></button>
+    <button class="mesa-aba-btn" data-aba="conta">💰 Conta</button>
+  </div>
+
   <div class="mesa-layout">
 
     <!-- COLUNA A: CARDÁPIO -->
-    <div class="col-cardapio">
+    <div class="col-cardapio aba-ativa" data-col="cardapio">
       <div class="col-header"><h2>Cardápio</h2></div>
       <div class="cardapio-busca">
         <input type="text" id="buscaProduto" placeholder="Buscar produto..." autocomplete="off" />
@@ -40,7 +48,7 @@
     </div>
 
     <!-- COLUNA B: PEDIDO ATUAL -->
-    <div class="col-pedido">
+    <div class="col-pedido" data-col="pedido">
       <div class="col-header">
         <h2>Pedido Atual</h2>
         <span class="pedido-count" id="pedidoCount">0 itens</span>
@@ -61,7 +69,7 @@
     </div>
 
     <!-- COLUNA C: CONTA DA MESA -->
-    <div class="col-conta">
+    <div class="col-conta" data-col="conta">
       <div class="col-header">
         <h2>Conta da Mesa</h2>
         <span class="conta-total-badge" id="contaTotalBadge">R$ 0,00</span>
@@ -84,19 +92,15 @@
 
   </div>
 
-  <!-- ════ MODAL FECHAR MESA (com divisão de pagamento) ════ -->
+  <!-- MODAL FECHAR MESA -->
   <div class="modal-overlay" id="modalFecharMesa">
     <div class="modal-box modal-box-lg">
       <h3>Fechar Mesa</h3>
       <p>Total a cobrar: <strong id="modalTotalCobrar">R$ 0,00</strong></p>
-
-      <!-- Tabs -->
       <div class="pag-tabs">
         <button class="pag-tab active" id="tabPagUnico">Pagamento Único</button>
         <button class="pag-tab" id="tabPagDividido">Dividir Pagamento</button>
       </div>
-
-      <!-- Seção: único -->
       <div id="secPagUnico">
         <div class="modal-pagamento">
           <label>Forma de Pagamento:</label>
@@ -108,8 +112,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Seção: dividido -->
       <div id="secPagDividido" style="display:none">
         <div class="div-metodos">
           <button class="div-toggle" data-metodo="Pix">💸 Pix</button>
@@ -118,14 +120,13 @@
           <button class="div-toggle" data-metodo="Crédito">💳 Crédito</button>
         </div>
         <div class="div-inputs">
-          <div class="div-input-row" id="divRow_Pix"      style="display:none"><span>Pix</span>     <input class="div-valor-input" data-metodo="Pix"      type="number" min="0" step="0.01" placeholder="R$ 0,00" /></div>
-          <div class="div-input-row" id="divRow_Dinheiro" style="display:none"><span>Dinheiro</span><input class="div-valor-input" data-metodo="Dinheiro" type="number" min="0" step="0.01" placeholder="R$ 0,00" /></div>
-          <div class="div-input-row" id="divRow_Débito"   style="display:none"><span>Débito</span>  <input class="div-valor-input" data-metodo="Débito"   type="number" min="0" step="0.01" placeholder="R$ 0,00" /></div>
-          <div class="div-input-row" id="divRow_Crédito"  style="display:none"><span>Crédito</span> <input class="div-valor-input" data-metodo="Crédito"  type="number" min="0" step="0.01" placeholder="R$ 0,00" /></div>
+          <div class="div-input-row" id="divRow_Pix"      style="display:none"><span>Pix</span>     <input class="div-valor-input" data-metodo="Pix"      type="number" min="0" step="0.01" placeholder="0,00" /></div>
+          <div class="div-input-row" id="divRow_Dinheiro" style="display:none"><span>Dinheiro</span><input class="div-valor-input" data-metodo="Dinheiro" type="number" min="0" step="0.01" placeholder="0,00" /></div>
+          <div class="div-input-row" id="divRow_Débito"   style="display:none"><span>Débito</span>  <input class="div-valor-input" data-metodo="Débito"   type="number" min="0" step="0.01" placeholder="0,00" /></div>
+          <div class="div-input-row" id="divRow_Crédito"  style="display:none"><span>Crédito</span> <input class="div-valor-input" data-metodo="Crédito"  type="number" min="0" step="0.01" placeholder="0,00" /></div>
         </div>
         <div class="div-restante" id="divRestante">Selecione os métodos</div>
       </div>
-
       <div class="modal-acoes">
         <button class="btn-secondary" id="btnCancelarFechar">Cancelar</button>
         <button class="btn-confirmar-fechar btn-danger" id="btnConfirmarFechar" disabled>Confirmar Fechamento</button>
@@ -133,7 +134,7 @@
     </div>
   </div>
 
-  <!-- ════ MODAL EDITAR PEDIDO ════ -->
+  <!-- MODAL EDITAR PEDIDO -->
   <div class="modal-overlay" id="modalEditarPedido">
     <div class="modal-box">
       <h3 id="editarPedidoTitulo">Editar Pedido</h3>
@@ -152,5 +153,20 @@
   <div id="printArea" class="print-area"></div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
+  <script>
+    // Sistema de abas mobile
+    const abaBtns = document.querySelectorAll('.mesa-aba-btn');
+    const cols    = document.querySelectorAll('.mesa-layout [data-col]');
+    abaBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const aba = btn.dataset.aba;
+        abaBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        cols.forEach(c => {
+          c.classList.toggle('aba-ativa', c.dataset.col === aba);
+        });
+      });
+    });
+  </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Mikami Sushi — Cozinha</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,7 +13,8 @@
 
   <header class="main-header">
     <div class="header-brand">
-      <span class="kanji">御</span>
+      <img src="img/logo.jpg" alt="Mikami Sushi" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span class="kanji" style="display:none">御</span>
       <div class="brand-text">
         <h1>Mikami Sushi</h1>
         <p class="brand-sub">Cozinha / Pedidos Ativos</p>
@@ -34,9 +35,7 @@
     <button class="filtro-btn" data-filtro="Em preparo"><span class="badge-preparo">Em preparo</span></button>
     <button class="filtro-btn" data-filtro="Pronto"><span class="badge-pronto">Pronto</span></button>
     <button class="filtro-btn" data-filtro="Entregue"><span class="badge-entregue">Entregue</span></button>
-    <div class="cozinha-contador">
-      <span id="pedidosAtivosCount">0 pedidos ativos</span>
-    </div>
+    <div class="cozinha-contador"><span id="pedidosAtivosCount">0 pedidos ativos</span></div>
   </div>
 
   <main class="cozinha-main">
@@ -63,6 +62,14 @@
       </div>
     </div>
   </div>
+
+  <!-- BOTTOM NAV (mobile) -->
+  <nav class="bottom-nav">
+    <a href="index.html" class="bottom-nav-item"><span class="bn-icon">🍽️</span>Mesas</a>
+    <a href="cozinha.html" class="bottom-nav-item active"><span class="bn-icon">👨‍🍳</span>Cozinha</a>
+    <a href="relatorio.html" class="bottom-nav-item"><span class="bn-icon">📋</span>Relatório</a>
+    <a href="faturamento.html" class="bottom-nav-item"><span class="bn-icon">📊</span>Faturamento</a>
+  </nav>
 
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>

@@ -200,47 +200,39 @@ function initIndex() {
   Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
 }
 
-// Cache das mesas renderizadas para diff
-const _mesasCache = new Map();
-
 function renderMesas(mesas) {
   const grid = document.getElementById("mesasGrid");
+  if (!grid) return;
+
   const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
 
-  // Primeira renderização: cria todos os cards de uma vez com fragment
-  if (grid.children.length <= 1) {
-    const frag = document.createDocumentFragment();
-    mesas.forEach(mesa => {
-      const card = _criarCardMesa(mesa, statusLabel);
-      _mesasCache.set(mesa.id, _hashMesa(mesa));
-      frag.appendChild(card);
+  // Sempre recria — simples, sem diff, sem bugs
+  grid.innerHTML = mesas.map(mesa => `
+    <div class="mesa-card ${mesa.status}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
+      <div class="mesa-card-header">
+        <div class="mesa-numero">${mesa.numero}</div>
+        <div class="mesa-status-pill status-${mesa.status}">
+          ${statusLabel[mesa.status] || mesa.status}
+        </div>
+      </div>
+      <div class="mesa-card-info">
+        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(mesa.total || 0) : "—"}</div>
+        <div class="mesa-meta">
+          ${mesa.abertaEm
+            ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
+            : "<span>Mesa livre</span>"}
+          ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
+        </div>
+      </div>
+    </div>
+  `).join("");
+
+  // Bind eventos de clique
+  grid.querySelectorAll(".mesa-card").forEach(card => {
+    card.addEventListener("click", () => {
+      window.location.href = `mesa.html?mesa=${card.dataset.mesaNum}`;
     });
-    grid.innerHTML = "";
-    grid.appendChild(frag);
-    return;
-  }
-
-  // Updates seguintes: só atualiza cards que mudaram (diff)
-  mesas.forEach(mesa => {
-    const novoHash = _hashMesa(mesa);
-    if (_mesasCache.get(mesa.id) === novoHash) return; // sem mudança
-    _mesasCache.set(mesa.id, novoHash);
-
-    const existente = grid.querySelector(`[data-mesa-id="${mesa.id}"]`);
-    const novo = _criarCardMesa(mesa, statusLabel);
-    if (existente) {
-      grid.replaceChild(novo, existente);
-    } else {
-      // Insere na posição certa por número
-      const cards = [...grid.children];
-      const after = cards.find(c => parseInt(c.dataset.mesaNumero) > mesa.numero);
-      grid.insertBefore(novo, after || null);
-    }
   });
-}
-
-function _hashMesa(mesa) {
-  return `${mesa.status}|${mesa.total}|${mesa.pedidosCount}|${mesa.abertaEm?.seconds || 0}`;
 }
 
 function _criarCardMesa(mesa, statusLabel) {
