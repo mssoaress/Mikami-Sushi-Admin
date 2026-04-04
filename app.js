@@ -76,6 +76,7 @@ const CARDAPIO = [
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
+  { nome: "Guaraná Antártica 1L",    categoria: "Bebidas", preco: 10.00, ativo: true },
 ];
 
 const TOTAL_MESAS = 12;
