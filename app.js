@@ -76,7 +76,6 @@ const CARDAPIO = [
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
-  { nome: "Guaraná Antártica 1L",    categoria: "Bebidas", preco: 10.00, ativo: true },
 ];
 
 const TOTAL_MESAS = 12;
@@ -187,13 +186,20 @@ function initIndex() {
   iniciarRelogio();
 
   // UI carrega IMEDIATAMENTE — seeds rodam em paralelo no background
-  onSnapshot(collection(db, "mesas"), snap => {
-    const mesas = [];
-    snap.forEach(d => mesas.push({ id: d.id, ...d.data() }));
-    mesas.sort((a, b) => a.numero - b.numero);
-    renderMesas(mesas);
-    renderStats(mesas);
+  // OTIMIZAÇÃO: debounce de 80ms — agrupa múltiplos snapshots simultâneos
+  let _debounceTimer = null;
+  const _unsubMesas = onSnapshot(collection(db, "mesas"), snap => {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(() => {
+      const mesas = [];
+      snap.forEach(d => mesas.push({ id: d.id, ...d.data() }));
+      mesas.sort((a, b) => a.numero - b.numero);
+      renderMesas(mesas);
+      renderStats(mesas);
+    }, 80);
   });
+  // Cancela listener ao sair da página
+  window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
 
   escutarFaturamentoDia();
 
@@ -201,14 +207,20 @@ function initIndex() {
   Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
 }
 
-function renderMesas(mesas) {
-  const grid = document.getElementById("mesasGrid");
-  if (!grid) return;
+// Cache para diff de mesas — evita redesenhar cards que não mudaram
+const _mesaHash = new Map();
 
-  const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
+function _hashMesa(m) {
+  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}`;
+}
 
-  // Sempre recria — simples, sem diff, sem bugs
-  grid.innerHTML = mesas.map(mesa => `
+function _htmlCard(mesa, statusLabel) {
+  // Recalcula total pelo historicoPedidos se disponível
+  const totalExibir = (mesa.historicoPedidos?.length)
+    ? mesa.historicoPedidos.reduce((a,p) => a+(p.total||0), 0)
+    : (mesa.total || 0);
+
+  return `
     <div class="mesa-card ${mesa.status}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
       <div class="mesa-card-header">
         <div class="mesa-numero">${mesa.numero}</div>
@@ -217,7 +229,7 @@ function renderMesas(mesas) {
         </div>
       </div>
       <div class="mesa-card-info">
-        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(mesa.total || 0) : "—"}</div>
+        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(totalExibir) : "—"}</div>
         <div class="mesa-meta">
           ${mesa.abertaEm
             ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
@@ -226,13 +238,38 @@ function renderMesas(mesas) {
         </div>
       </div>
     </div>
-  `).join("");
+  `;
+}
 
-  // Bind eventos de clique
-  grid.querySelectorAll(".mesa-card").forEach(card => {
-    card.addEventListener("click", () => {
-      window.location.href = `mesa.html?mesa=${card.dataset.mesaNum}`;
+function renderMesas(mesas) {
+  const grid = document.getElementById("mesasGrid");
+  if (!grid) return;
+  const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
+
+  // Primeira vez: renderiza tudo de uma vez com fragment (rápido)
+  if (!grid.querySelector(".mesa-card")) {
+    grid.innerHTML = mesas.map(m => _htmlCard(m, statusLabel)).join("");
+    mesas.forEach(m => _mesaHash.set(m.id, _hashMesa(m)));
+    grid.querySelectorAll(".mesa-card").forEach(c => {
+      c.addEventListener("click", () => { window.location.href = `mesa.html?mesa=${c.dataset.mesaNum}`; });
     });
+    return;
+  }
+
+  // Atualizações seguintes: diff — só redesenha o card que mudou
+  mesas.forEach(mesa => {
+    const novoHash = _hashMesa(mesa);
+    if (_mesaHash.get(mesa.id) === novoHash) return; // sem mudança, pula
+    _mesaHash.set(mesa.id, novoHash);
+
+    const antigo = grid.querySelector(`[data-mesa-id="${mesa.id}"]`);
+    const tmp = document.createElement("div");
+    tmp.innerHTML = _htmlCard(mesa, statusLabel);
+    const novo = tmp.firstElementChild;
+    novo.addEventListener("click", () => { window.location.href = `mesa.html?mesa=${novo.dataset.mesaNum}`; });
+
+    if (antigo) grid.replaceChild(novo, antigo);
+    else grid.appendChild(novo);
   });
 }
 
@@ -600,10 +637,12 @@ function atualizarHeaderMesa() {
   document.getElementById("mesaAbertura").textContent =
     mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
 
-  const total = mesa.total || 0;
+  // FIX: usa historicoPedidos como fonte da verdade para o total exibido
+  const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
+  const total = totalHistorico || mesa.total || 0;
   document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
   document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total);
+  document.getElementById("modalTotalCobrar")?.textContent && (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
 }
 
 function renderConta() {
@@ -832,12 +871,17 @@ async function fecharMesa() {
   try {
     const mesa = estadoMesa.dadosMesa;
 
+    // FIX: recalcula o total somando historicoPedidos (fonte da verdade)
+    // Evita usar mesa.total que pode estar errado por race condition
+    const historico = mesa.historicoPedidos || [];
+    const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0);
+
     // Salva venda no histórico
     await addDoc(collection(db, "vendas"), {
       mesaNumero:     estadoMesa.numero,
       mesaId:         estadoMesa.mesaId,
-      itens:          mesa.historicoPedidos?.flatMap(p => p.itens) || [],
-      total:          mesa.total || 0,
+      itens:          historico.flatMap(p => p.itens || []),
+      total:          totalReal,
       formaPagamento: formaPagamento,
       pagamentos:     pagamentos,
       fechadoEm:      serverTimestamp()
@@ -903,15 +947,22 @@ function initCozinha() {
     orderBy("createdAt", "desc")
   );
 
-  onSnapshot(q, snap => {
-    pedidosCached = [];
-    snap.forEach(d => pedidosCached.push({ id: d.id, ...d.data() }));
-    renderCozinha(pedidosCached);
-
-    const ativos = pedidosCached.filter(p => p.status !== "Entregue");
-    const el = document.getElementById("pedidosAtivosCount");
-    if (el) el.textContent = `${ativos.length} pedido(s) ativo(s)`;
+  // OTIMIZAÇÃO: throttle 200ms — evita re-render em rajadas de pedidos
+  let _throttleCozinha = null;
+  const _unsubCoz = onSnapshot(q, snap => {
+    const dados = [];
+    snap.forEach(d => dados.push({ id: d.id, ...d.data() }));
+    if (_throttleCozinha) return; // já tem render agendado
+    _throttleCozinha = setTimeout(() => {
+      _throttleCozinha = null;
+      pedidosCached = dados;
+      renderCozinha(pedidosCached);
+      const ativos = pedidosCached.filter(p => p.status !== "Entregue");
+      const el = document.getElementById("pedidosAtivosCount");
+      if (el) el.textContent = `${ativos.length} pedido(s) ativo(s)`;
+    }, 200);
   });
+  window.addEventListener("pagehide", () => { _unsubCoz(); clearTimeout(_throttleCozinha); }, { once: true });
 
   // Atualiza tempos a cada 30s
   setInterval(() => {
@@ -1021,26 +1072,26 @@ function renderCozinha(pedidos) {
 
 async function atualizarStatusPedido(pedidoId, novoStatus) {
   try {
-    // Atualiza na coleção "pedidos"
-    await updateDoc(doc(db, "pedidos", pedidoId), {
-      status:    novoStatus,
-      updatedAt: serverTimestamp()
-    });
+    // OTIMIZAÇÃO: busca pedido e atualiza status em paralelo
+    const [_, pedidoSnap] = await Promise.all([
+      updateDoc(doc(db, "pedidos", pedidoId), {
+        status:    novoStatus,
+        updatedAt: serverTimestamp()
+      }),
+      getDoc(doc(db, "pedidos", pedidoId))
+    ]);
 
-    // FIX: sincroniza status no historicoPedidos da mesa também
-    const pedidoSnap = await getDoc(doc(db, "pedidos", pedidoId));
     if (!pedidoSnap.exists()) return;
     const pedidoData = pedidoSnap.data();
 
+    // Atualiza historicoPedidos da mesa em paralelo com o toast
     const mesaRef  = doc(db, "mesas", pedidoData.mesaId);
     const mesaSnap = await getDoc(mesaRef);
-    if (!mesaSnap.exists()) return;
+    if (!mesaSnap.exists()) { toast(`Pedido: ${novoStatus}`, "sucesso"); return; }
 
-    const mesaData = mesaSnap.data();
-    const historico = (mesaData.historicoPedidos || []).map(p =>
+    const historico = (mesaSnap.data().historicoPedidos || []).map(p =>
       p.pedidoId === pedidoId ? { ...p, status: novoStatus } : p
     );
-
     await updateDoc(mesaRef, { historicoPedidos: historico });
     toast(`Pedido marcado como: ${novoStatus}`, "sucesso");
   } catch (err) {
@@ -1113,6 +1164,7 @@ function initRelatorio() {
   }
 
   escutarVendas(hoje);
+  window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
 }
 
 function escutarVendas(dataStr) {
@@ -1528,9 +1580,12 @@ async function salvarEdicaoPedido() {
             ? { ...p, itens: itensNovos, total: novoTotal }
             : p
         );
+        // FIX: recalcula total somando todos os pedidos do histórico
+        // evita acumular erros de race condition em cima de diff
+        const totalRecalculado = historico.reduce((a, p) => a + (p.total || 0), 0);
         await updateDoc(mesaRef, {
           historicoPedidos: historico,
-          total: Math.max(0, (mesaData.total || 0) + diff)
+          total: Math.max(0, totalRecalculado)
         });
       }
     }
