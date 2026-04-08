@@ -50,7 +50,7 @@ const CARDAPIO = [
 { nome: “Nathos de Salmão e Geleia (4 un.)”,                 categoria: “Especiais”, preco: 15.00, ativo: true },
 { nome: “Joe (3 un.)”,                                       categoria: “Especiais”, preco: 18.00, ativo: true },
 { nome: “Niguiri (3 un.)”,                                   categoria: “Especiais”, preco: 15.00, ativo: true },
-{ nome: “Mikami Supremo 500g”,                               categoria: “Especiais”, preco: 45.00, ativo: true },
+{ nome: “Mikami Supremo 500g”,                               categoria: “Especiais”, preco: 55.00, ativo: true },
 
 // TEMAKIS
 { nome: “Temaki Copo Salmão”, categoria: “Temakis”, preco: 28.00, ativo: true },
