@@ -761,12 +761,13 @@ function imprimirConta() {
     return;
   }
 
+  // ── Agrupa itens (lógica original intacta) ────────────────
   const todosItens = [];
   (mesa.historicoPedidos || []).forEach(pedido => {
     (pedido.itens || []).forEach(item => {
       const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
       if (exist) {
-        exist.qty     += item.qty;
+        exist.qty      += item.qty;
         exist.subtotal += item.preco * item.qty;
       } else {
         todosItens.push({
@@ -780,33 +781,140 @@ function imprimirConta() {
     });
   });
 
-  const itensHtml = todosItens.map(item => `
-    <div class="print-item">
-      <span>${item.qty}x ${item.nome}</span>
-      <span>${fmtMoeda(item.subtotal)}</span>
-    </div>
-    ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
-  `).join("");
+  // Total pela fonte da verdade (historicoPedidos)
+  const totalReal = (mesa.historicoPedidos || [])
+    .reduce((acc, p) => acc + (p.total || 0), 0);
 
-  document.getElementById("printArea").innerHTML = `
-    <div class="print-header">
-      <h2>MIKAMI SUSHI</h2>
-      <p>— PRÉ-CONTA —</p>
-      <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
-      <p>${new Date().toLocaleString("pt-BR")}</p>
-    </div>
-    <div class="print-section-title">ITENS CONSUMIDOS</div>
-    ${itensHtml}
-    <div class="print-total">
-      <span>TOTAL</span>
-      <span>${fmtMoeda(mesa.total || 0)}</span>
-    </div>
-    <div class="print-footer">
-      Obrigado pela visita!<br>Mikami Sushi
-    </div>
-  `;
+  const dataHora = new Date().toLocaleString("pt-BR", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  });
 
-  window.print();
+  // Gera linhas de item com alinhamento de pontos (estilo cupom)
+  function linhaCupom(descricao, valor) {
+    const maxNome = 18;
+    const nome = descricao.length > maxNome
+      ? descricao.substring(0, maxNome)
+      : descricao;
+    const pontos = ".".repeat(Math.max(2, 30 - nome.length - valor.length));
+    return `<div class="ci">${nome}<span>${pontos}${valor}</span></div>`;
+  }
+
+  const itensLinhas = todosItens.map(item =>
+    linhaCupom(`${item.qty}x ${item.nome}`, fmtMoeda(item.subtotal))
+    + (item.obs ? `<div class="co"> &rarr; ${item.obs}</div>` : "")
+  ).join("");
+
+  // ── HTML do cupom (auto-contido, sem depender de style.css) ─
+  const htmlCupom = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Pre-Conta Mesa ${estadoMesa.numero}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:'Courier New',Courier,monospace;
+    font-size:12px;
+    color:#000;
+    background:#fff;
+    width:100%;
+    max-width:280px;
+    margin:0 auto;
+    padding:6px 4px 20px;
+  }
+  .cc{text-align:center}
+  .cb{font-weight:bold}
+  .cg{font-size:14px;letter-spacing:1px}
+  .cs{display:block;overflow:hidden;white-space:nowrap;margin:2px 0;font-size:11px}
+  .ct{font-weight:bold;text-transform:uppercase;font-size:11px;margin:4px 0 2px}
+  /* linha item: nome...valor */
+  .ci{
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    margin:1px 0;
+    white-space:nowrap;
+    overflow:hidden;
+  }
+  .ci span{white-space:nowrap}
+  .co{font-style:italic;font-size:10px;padding-left:6px;margin-bottom:1px}
+  .ctotal{
+    display:flex;
+    justify-content:space-between;
+    font-weight:bold;
+    font-size:13px;
+    border-top:2px solid #000;
+    margin-top:4px;
+    padding-top:4px;
+  }
+  .cf{text-align:center;font-size:10px;margin-top:8px;border-top:1px dashed #000;padding-top:6px}
+  .esp{height:20px}
+  @media print{
+    body{max-width:58mm;padding:1mm 0 10mm}
+    @page{size:58mm auto;margin:2mm 1mm}
+  }
+  /* Botão imprimir — some ao imprimir */
+  .btn-print{
+    display:block;width:100%;margin:12px 0 0;
+    padding:10px;background:#c0392b;color:#fff;
+    border:none;border-radius:6px;font-size:13px;
+    font-weight:bold;cursor:pointer;font-family:sans-serif;
+  }
+  @media print{.btn-print{display:none}}
+</style>
+</head>
+<body>
+  <div class="cc cb cg">MIKAMI SUSHI</div>
+  <div class="cc cs">- - - PRE-CONTA - - -</div>
+  <div class="cc">Mesa: <strong>${estadoMesa.numero}</strong></div>
+  <div class="cc cs">${dataHora}</div>
+  <div class="cs">------------------------------</div>
+  <div class="ct">ITENS CONSUMIDOS</div>
+  <div class="cs">------------------------------</div>
+  ${itensLinhas}
+  <div class="cs">==============================</div>
+  <div class="ctotal"><span>TOTAL</span><span>${fmtMoeda(totalReal)}</span></div>
+  <div class="cs">==============================</div>
+  <div class="cf">Obrigado pela visita!<br>Mikami Sushi</div>
+  <div class="esp"></div>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+</body>
+</html>`;
+
+  // Abre nova aba com o cupom
+  const aba = window.open("", "_blank");
+  if (aba) {
+    aba.document.open();
+    aba.document.write(htmlCupom);
+    aba.document.close();
+  } else {
+    // Fallback se popup blocker bloquear: usa printArea + window.print()
+    const itensHtmlFallback = todosItens.map(item => `
+      <div class="print-item">
+        <span>${item.qty}x ${item.nome}</span>
+        <span>${fmtMoeda(item.subtotal)}</span>
+      </div>
+      ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
+    `).join("");
+    document.getElementById("printArea").innerHTML = `
+      <div class="print-header">
+        <h2>MIKAMI SUSHI</h2>
+        <p>— PRÉ-CONTA —</p>
+        <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
+        <p>${dataHora}</p>
+      </div>
+      <div class="print-section-title">ITENS CONSUMIDOS</div>
+      ${itensHtmlFallback}
+      <div class="print-total">
+        <span>TOTAL</span>
+        <span>${fmtMoeda(totalReal)}</span>
+      </div>
+      <div class="print-footer">Obrigado pela visita!<br>Mikami Sushi</div>
+    `;
+    window.print();
+  }
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
