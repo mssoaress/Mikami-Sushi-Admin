@@ -457,12 +457,6 @@ body.page-faturamento { padding-top: var(--header-h); }
    As classes .print-relatorio-* são mantidas para o relatório.
    ================================================================ */
 
-/* Página térmica 58mm — remove margens de folha A4 */
-@page {
-  size: 58mm auto;
-  margin: 2mm 1mm;
-}
-
 @media print {
   /* Oculta tudo exceto a área de impressão */
   body > *:not(.print-area) { display: none !important; }
@@ -471,7 +465,6 @@ body.page-faturamento { padding-top: var(--header-h); }
     color: black !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 58mm !important;
   }
 
   .print-area {
