@@ -50,7 +50,7 @@ const CARDAPIO = [
 { nome: “Nathos de Salmão e Geleia (4 un.)”,                 categoria: “Especiais”, preco: 15.00, ativo: true },
 { nome: “Joe (3 un.)”,                                       categoria: “Especiais”, preco: 18.00, ativo: true },
 { nome: “Niguiri (3 un.)”,                                   categoria: “Especiais”, preco: 15.00, ativo: true },
-{ nome: “Mikami Supremo 500g”,                               categoria: “Especiais”, preco: 55.00, ativo: true },
+{ nome: “Mikami Supremo 500g”,                               categoria: “Especiais”, preco: 45.00, ativo: true },
 
 // TEMAKIS
 { nome: “Temaki Copo Salmão”, categoria: “Temakis”, preco: 28.00, ativo: true },
@@ -704,13 +704,14 @@ const totalReal = (mesa.historicoPedidos || [])
 const SEP  = “––––––––––––––––”;
 const SEP2 = “================================”;
 
-// Função para alinhar item e valor na mesma linha com pontos
+// Função para alinhar item e valor — classes funcionam na nova aba E no printArea
 function linhaTermica(desc, valor) {
 const maxDesc  = 20;
 const valStr   = valor;
 const descCort = desc.length > maxDesc ? desc.substring(0, maxDesc) : desc;
 const dots     = “.”.repeat(Math.max(1, 32 - descCort.length - valStr.length));
-return `<div class="tc-linha">${descCort}<span>${dots}${valStr}</span></div>`;
+// Usa classe .linha (nova aba) e .tc-linha (printArea fallback)
+return `<div class="linha tc-linha">${descCort}<span>${dots}${valStr}</span></div>`;
 }
 
 const dataHora = new Date().toLocaleString(“pt-BR”, {
@@ -722,12 +723,78 @@ const itensHtml = todosItens.map(item => {
 const desc = `${item.qty}x ${item.nome}`;
 const val  = fmtMoeda(item.subtotal);
 return linhaTermica(desc, val)
-+ (item.obs ? `<div class="tc-obs"> -> ${item.obs}</div>` : “”);
++ (item.obs ? `<div class="obs tc-obs"> -> ${item.obs}</div>` : “”);
 }).join(””);
 
-document.getElementById(“printArea”).innerHTML = `<div class="cupom-termico"> <div class="tc-centro tc-negrito tc-grande">MIKAMI SUSHI</div> <div class="tc-centro tc-sep">- - - PRE-CONTA - - -</div> <div class="tc-centro">Mesa: <strong>${estadoMesa.numero}</strong></div> <div class="tc-centro">${dataHora}</div> <div class="tc-sep">${SEP}</div> <div class="tc-titulo">ITENS CONSUMIDOS</div> <div class="tc-sep">${SEP}</div> ${itensHtml} <div class="tc-sep">${SEP2}</div> <div class="tc-total">${linhaTermica("TOTAL", fmtMoeda(totalReal))}</div> <div class="tc-sep">${SEP2}</div> <div class="tc-centro tc-rodape">Obrigado pela visita!</div> <div class="tc-centro tc-rodape">Mikami Sushi</div> <div class="tc-espaco"></div> </div>`;
+// Abre nova aba com o cupom — funciona em desktop e mobile
+const htmlCupom = `<!DOCTYPE html>
 
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Pre-Conta Mesa ${estadoMesa.numero}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      background: #fff;
+      color: #000;
+      width: 100%;
+      max-width: 300px;
+      margin: 0 auto;
+      padding: 8px 4px;
+    }
+    .centro  { text-align: center; }
+    .negrito { font-weight: bold; }
+    .grande  { font-size: 15px; letter-spacing: 1px; }
+    .titulo  { font-weight: bold; text-transform: uppercase; font-size: 12px; }
+    .rodape  { font-size: 11px; }
+    .sep     { display: block; overflow: hidden; white-space: nowrap; margin: 3px 0; font-size: 11px; }
+    .linha   { display: flex; justify-content: space-between; font-size: 12px; margin: 2px 0; white-space: nowrap; }
+    .linha span { overflow: hidden; text-overflow: clip; }
+    .obs     { font-size: 11px; font-style: italic; padding-left: 8px; margin-bottom: 2px; }
+    .total .linha { font-weight: bold; font-size: 14px; }
+    .espaco  { height: 20px; }
+    @media print {
+      body { max-width: 58mm; margin: 0; padding: 2mm 1mm; }
+      .espaco { height: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="centro negrito grande">MIKAMI SUSHI</div>
+  <div class="centro sep">- - - PRE-CONTA - - -</div>
+  <div class="centro">Mesa: <strong>${estadoMesa.numero}</strong></div>
+  <div class="centro">${dataHora}</div>
+  <div class="sep">${SEP}</div>
+  <div class="titulo">ITENS CONSUMIDOS</div>
+  <div class="sep">${SEP}</div>
+  ${itensHtml}
+  <div class="sep">${SEP2}</div>
+  <div class="total">${linhaTermica("TOTAL", fmtMoeda(totalReal))}</div>
+  <div class="sep">${SEP2}</div>
+  <div class="centro rodape">Obrigado pela visita!</div>
+  <div class="centro rodape">Mikami Sushi</div>
+  <div class="espaco"></div>
+  <script>
+    // Abre diálogo de impressão automaticamente
+    window.onload = function() { window.print(); };
+  <\/script>
+</body>
+</html>`;
+
+// Abre nova aba com o cupom
+const aba = window.open(””, “_blank”);
+if (aba) {
+aba.document.write(htmlCupom);
+aba.document.close();
+} else {
+// Fallback: usa printArea normal (desktop sem popup blocker)
+document.getElementById(“printArea”).innerHTML = `<div class="cupom-termico"> <div class="tc-centro tc-negrito tc-grande">MIKAMI SUSHI</div> <div class="tc-sep">- - - PRE-CONTA - - -</div> <div class="tc-centro">Mesa: <strong>${estadoMesa.numero}</strong></div> <div class="tc-centro">${dataHora}</div> <div class="tc-sep">${SEP}</div> ${itensHtml} <div class="tc-sep">${SEP2}</div> <div class="tc-total">${linhaTermica("TOTAL", fmtMoeda(totalReal))}</div> <div class="tc-sep">${SEP2}</div> <div class="tc-centro">Obrigado pela visita!</div> </div>`;
 window.print();
+}
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
