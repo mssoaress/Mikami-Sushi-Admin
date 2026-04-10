@@ -710,6 +710,7 @@ function renderConta() {
 // ── Impressão ─────────────────────────────────────────────
 
 // FIX: imprime todos os pedidos não-entregues, não só o último
+
 function imprimirCozinha() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa || !mesa.historicoPedidos?.length) {
@@ -717,41 +718,61 @@ function imprimirCozinha() {
     return;
   }
 
-  // Pega todos os pedidos com status Novo ou Em preparo
   const pedidosParaImprimir = mesa.historicoPedidos.filter(
     p => p.status === "Novo" || p.status === "Em preparo"
   );
-
-  // Se não houver pedidos nesse estado, usa o último
   const alvo = pedidosParaImprimir.length > 0
     ? pedidosParaImprimir
     : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
 
-  const pedidosHtml = alvo.map((pedido, idx) => {
-    const itensHtml = (pedido.itens || []).map(item => `
-      <div class="print-item">
-        <span>${item.qty}x ${item.nome}</span>
-      </div>
-      ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
-    `).join("");
-    return `
-      <div class="print-section-title">PEDIDO ${idx + 1}</div>
-      ${itensHtml}
-    `;
+  _imprimirCozinhaAba(mesa, alvo);
+}
+
+function _imprimirCozinhaAba(mesa, alvo) {
+  const dataHora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  const pedidosLinhas = alvo.map((pedido, idx) => {
+    const itens = (pedido.itens || []).map(item =>
+      `<div class="ci">${item.qty}x ${item.nome}</div>`
+      + (item.obs ? `<div class="co"> -> ${item.obs}</div>` : "")
+    ).join("");
+    return `<div class="sep">================================</div>
+            <div class="ct">PEDIDO ${idx + 1}</div>
+            <div class="sep">--------------------------------</div>
+            ${itens}`;
   }).join("");
 
-  document.getElementById("printArea").innerHTML = `
-    <div class="print-header">
-      <h2>MIKAMI SUSHI</h2>
-      <p>— PEDIDO COZINHA —</p>
-      <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
-      <p>${new Date().toLocaleString("pt-BR")}</p>
-    </div>
-    ${pedidosHtml}
-    <div class="print-footer">Impresso em ${new Date().toLocaleTimeString("pt-BR")}</div>
-  `;
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cozinha Mesa ${estadoMesa.numero}</title>
+<style>
+  @page { size: 58mm auto; margin: 3mm 2mm 4mm 2mm; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Courier New',Courier,monospace; font-size:4mm; color:#000; background:#fff; width:54mm; padding:0; }
+  .cc { text-align:center; } .cb { font-weight:bold; }
+  .cg { font-size:5mm; } .ct { font-weight:bold; font-size:3.5mm; margin:1mm 0; }
+  .ci { font-size:3.5mm; margin:0.5mm 0; }
+  .co { font-size:3mm; font-style:italic; padding-left:2mm; }
+  .sep { font-size:3mm; overflow:hidden; white-space:nowrap; margin:0.5mm 0; }
+  .cf { text-align:center; font-size:3mm; margin-top:2mm; }
+  .esp { height:4mm; }
+  .btn-print { display:block; width:100%; margin:4mm 0 0; padding:3mm; background:#c0392b; color:#fff; border:none; border-radius:2mm; font-size:3.5mm; font-weight:bold; cursor:pointer; font-family:sans-serif; }
+  @media print { .btn-print { display:none; } }
+</style></head><body>
+  <div class="cc cb cg">MIKAMI SUSHI</div>
+  <div class="cc">-- PEDIDO COZINHA --</div>
+  <div class="cc">Mesa: <strong>${estadoMesa.numero}</strong></div>
+  <div class="cc">${dataHora}</div>
+  ${pedidosLinhas}
+  <div class="sep">================================</div>
+  <div class="esp"></div>
+  <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+</body></html>`;
 
-  window.print();
+  const aba = window.open("", "_blank");
+  if (aba) { aba.document.open(); aba.document.write(html); aba.document.close(); }
+  else { toast("Permita popups para imprimir.", "info"); }
 }
 
 function imprimirConta() {
@@ -792,11 +813,12 @@ function imprimirConta() {
 
   // Gera linhas de item com alinhamento de pontos (estilo cupom)
   function linhaCupom(descricao, valor) {
-    const maxNome = 18;
+    // 58mm com fonte 3.2mm cabe ~26 chars por linha
+    const maxNome = 16;
     const nome = descricao.length > maxNome
       ? descricao.substring(0, maxNome)
       : descricao;
-    const pontos = ".".repeat(Math.max(2, 30 - nome.length - valor.length));
+    const pontos = ".".repeat(Math.max(1, 26 - nome.length - valor.length));
     return `<div class="ci">${nome}<span>${pontos}${valor}</span></div>`;
   }
 
@@ -805,6 +827,11 @@ function imprimirConta() {
     + (item.obs ? `<div class="co"> &rarr; ${item.obs}</div>` : "")
   ).join("");
 
+  // Abre aba com cupom formatado para impressão
+  _abrirAbaPreConta(estadoMesa.numero, todosItens, totalReal, dataHora, itensLinhas);
+}
+
+function _abrirAbaPreConta(numeroMesa, todosItens, totalReal, dataHora, itensLinhas) {
   // ── HTML do cupom (auto-contido, sem depender de style.css) ─
   const htmlCupom = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -813,56 +840,51 @@ function imprimirConta() {
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Pre-Conta Mesa ${estadoMesa.numero}</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{
-    font-family:'Courier New',Courier,monospace;
-    font-size:12px;
-    color:#000;
-    background:#fff;
-    width:100%;
-    max-width:280px;
-    margin:0 auto;
-    padding:6px 4px 20px;
+  /* Unidades em mm = tamanho físico real independente de resolução */
+  @page {
+    size: 58mm auto;
+    margin: 3mm 2mm 4mm 2mm;
   }
-  .cc{text-align:center}
-  .cb{font-weight:bold}
-  .cg{font-size:14px;letter-spacing:1px}
-  .cs{display:block;overflow:hidden;white-space:nowrap;margin:2px 0;font-size:11px}
-  .ct{font-weight:bold;text-transform:uppercase;font-size:11px;margin:4px 0 2px}
-  /* linha item: nome...valor */
-  .ci{
-    display:flex;
-    justify-content:space-between;
-    font-size:11px;
-    margin:1px 0;
-    white-space:nowrap;
-    overflow:hidden;
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 4mm;     /* ~11pt em papel 58mm */
+    color: #000;
+    background: #fff;
+    width: 54mm;
+    padding: 0;
   }
-  .ci span{white-space:nowrap}
-  .co{font-style:italic;font-size:10px;padding-left:6px;margin-bottom:1px}
-  .ctotal{
-    display:flex;
-    justify-content:space-between;
-    font-weight:bold;
-    font-size:13px;
-    border-top:2px solid #000;
-    margin-top:4px;
-    padding-top:4px;
+  .cc  { text-align: center; }
+  .cb  { font-weight: bold; }
+  .cg  { font-size: 5mm; letter-spacing: 0.3mm; }
+  .cs  { display: block; overflow: hidden; white-space: nowrap;
+         margin: 0.8mm 0; font-size: 3mm; }
+  .ct  { font-weight: bold; text-transform: uppercase;
+         font-size: 3.2mm; margin: 1.5mm 0 0.5mm; }
+  .ci  { display: flex; justify-content: space-between;
+         font-size: 3.2mm; margin: 0.5mm 0;
+         white-space: nowrap; overflow: hidden; }
+  .ci span { white-space: nowrap; flex-shrink: 0; }
+  .co  { font-style: italic; font-size: 2.8mm;
+         padding-left: 2mm; margin-bottom: 0.5mm; }
+  .ctotal {
+    display: flex; justify-content: space-between;
+    font-weight: bold; font-size: 4.5mm;
+    border-top: 0.4mm solid #000;
+    margin-top: 1mm; padding-top: 1.5mm;
   }
-  .cf{text-align:center;font-size:10px;margin-top:8px;border-top:1px dashed #000;padding-top:6px}
-  .esp{height:20px}
-  @media print{
-    body{max-width:58mm;padding:1mm 0 10mm}
-    @page{size:58mm auto;margin:2mm 1mm}
+  .cf  { text-align: center; font-size: 3mm;
+         margin-top: 2mm; border-top: 0.3mm dashed #000;
+         padding-top: 1.5mm; }
+  .esp { height: 4mm; }
+  /* Botão some ao imprimir */
+  .btn-print {
+    display: block; width: 100%; margin: 4mm 0 0;
+    padding: 3mm; background: #c0392b; color: #fff;
+    border: none; border-radius: 2mm; font-size: 3.5mm;
+    font-weight: bold; cursor: pointer; font-family: sans-serif;
   }
-  /* Botão imprimir — some ao imprimir */
-  .btn-print{
-    display:block;width:100%;margin:12px 0 0;
-    padding:10px;background:#c0392b;color:#fff;
-    border:none;border-radius:6px;font-size:13px;
-    font-weight:bold;cursor:pointer;font-family:sans-serif;
-  }
-  @media print{.btn-print{display:none}}
+  @media print { .btn-print { display: none; } }
 </style>
 </head>
 <body>
