@@ -32,6 +32,7 @@ const CARDAPIO = [
 
   // INDIVIDUAIS
   { nome: "Uramaki de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll de Camarão",       categoria: "Individuais", preco: 22.00, ativo: true },
   { nome: "Hot Roll de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll de Kani",          categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll Skin",             categoria: "Individuais", preco: 16.00, ativo: true },
