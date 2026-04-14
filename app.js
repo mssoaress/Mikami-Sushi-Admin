@@ -32,7 +32,6 @@ const CARDAPIO = [
 
   // INDIVIDUAIS
   { nome: "Uramaki de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Hot Roll de Camarão",       categoria: "Individuais", preco: 22.00, ativo: true },
   { nome: "Hot Roll de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll de Kani",          categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll Skin",             categoria: "Individuais", preco: 16.00, ativo: true },
@@ -79,7 +78,7 @@ const CARDAPIO = [
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
 ];
 
-const TOTAL_MESAS = 12;
+const TOTAL_MESAS = 16;
 
 // ============================================================
 // 2. UTILITÁRIOS
@@ -160,6 +159,21 @@ async function garantirProdutos() {
   } catch (err) { console.error("[Mikami] Seed produtos:", err); }
 }
 
+async function migrarDelivery() {
+  // Roda uma vez para marcar mesas 11-15 como delivery no Firestore
+  const flag = "mikami_delivery_v2";
+  if (localStorage.getItem(flag) === "ok") return;
+  try {
+    const updates = [];
+    for (let i = 11; i <= 16; i++) {
+      updates.push(updateDoc(doc(db, "mesas", `mesa_${i}`), { tipo: "delivery" }).catch(() => {}));
+    }
+    await Promise.all(updates);
+    localStorage.setItem(flag, "ok");
+    console.log("[Mikami] Mesas delivery atualizadas.");
+  } catch(e) { console.error(e); }
+}
+
 async function garantirMesas() {
   if (localStorage.getItem(SEED_VERSION + "_mesas") === "ok") return;
   try {
@@ -170,7 +184,9 @@ async function garantirMesas() {
       const id = `mesa_${i}`;
       if (!existentes.has(id)) {
         promises.push(setDoc(doc(db, "mesas", id), {
-          numero: i, status: "livre", abertaEm: null,
+          numero: i,
+          tipo: i >= 11 ? "delivery" : "restaurante",
+          status: "livre", abertaEm: null,
           total: 0, pedidosCount: 0, historicoPedidos: []
         }));
       }
@@ -202,10 +218,8 @@ function initIndex() {
   // Cancela listener ao sair da página
   window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
 
-  escutarFaturamentoDia();
-
   // Seeds em background, sem bloquear UI
-  Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
+  Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(console.error);
 }
 
 // Cache para diff de mesas — evita redesenhar cards que não mudaram
@@ -221,12 +235,16 @@ function _htmlCard(mesa, statusLabel) {
     ? mesa.historicoPedidos.reduce((a,p) => a+(p.total||0), 0)
     : (mesa.total || 0);
 
+  const isDelivery = mesa.tipo === "delivery";
   return `
-    <div class="mesa-card ${mesa.status}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
+    <div class="mesa-card ${mesa.status}${isDelivery ? " mesa-delivery" : ""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
       <div class="mesa-card-header">
         <div class="mesa-numero">${mesa.numero}</div>
-        <div class="mesa-status-pill status-${mesa.status}">
-          ${statusLabel[mesa.status] || mesa.status}
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <div class="mesa-status-pill status-${mesa.status}">
+            ${statusLabel[mesa.status] || mesa.status}
+          </div>
+          ${isDelivery ? `<div class="mesa-delivery-badge">🛵 Delivery</div>` : ""}
         </div>
       </div>
       <div class="mesa-card-info">
@@ -234,7 +252,7 @@ function _htmlCard(mesa, statusLabel) {
         <div class="mesa-meta">
           ${mesa.abertaEm
             ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
-            : "<span>Mesa livre</span>"}
+            : `<span>${isDelivery ? "Delivery livre" : "Mesa livre"}</span>`}
           ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
         </div>
       </div>
@@ -308,20 +326,7 @@ function renderStats(mesas) {
   document.getElementById("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
 }
 
-function escutarFaturamentoDia() {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const inicioHoje = Timestamp.fromDate(hoje);
 
-  const q = query(collection(db, "vendas"), where("fechadoEm", ">=", inicioHoje));
-
-  onSnapshot(q, snap => {
-    let total = 0;
-    snap.forEach(d => { total += d.data().total || 0; });
-    const el = document.getElementById("statTotalDia");
-    if (el) el.textContent = fmtMoeda(total);
-  });
-}
 
 // ============================================================
 // 4. PÁGINA: MESA
@@ -343,7 +348,9 @@ async function initMesa() {
   estadoMesa.numero = parseInt(params.get("mesa")) || 1;
   estadoMesa.mesaId = `mesa_${estadoMesa.numero}`;
 
-  document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
+  const tipoMesa = estadoMesa.dadosMesa?.tipo;
+  const labelMesa = tipoMesa === "delivery" ? `🛵 Delivery ${estadoMesa.numero}` : `Mesa ${estadoMesa.numero}`;
+  document.getElementById("mesaNumeroBadge").textContent = labelMesa;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
   // Tenta usar cache do sessionStorage para cardápio (evita leitura repetida)
@@ -711,7 +718,6 @@ function renderConta() {
 // ── Impressão ─────────────────────────────────────────────
 
 // FIX: imprime todos os pedidos não-entregues, não só o último
-
 function imprimirCozinha() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa || !mesa.historicoPedidos?.length) {
@@ -719,61 +725,41 @@ function imprimirCozinha() {
     return;
   }
 
+  // Pega todos os pedidos com status Novo ou Em preparo
   const pedidosParaImprimir = mesa.historicoPedidos.filter(
     p => p.status === "Novo" || p.status === "Em preparo"
   );
+
+  // Se não houver pedidos nesse estado, usa o último
   const alvo = pedidosParaImprimir.length > 0
     ? pedidosParaImprimir
     : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
 
-  _imprimirCozinhaAba(mesa, alvo);
-}
-
-function _imprimirCozinhaAba(mesa, alvo) {
-  const dataHora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-  const pedidosLinhas = alvo.map((pedido, idx) => {
-    const itens = (pedido.itens || []).map(item =>
-      `<div class="ci">${item.qty}x ${item.nome}</div>`
-      + (item.obs ? `<div class="co"> -> ${item.obs}</div>` : "")
-    ).join("");
-    return `<div class="sep">================================</div>
-            <div class="ct">PEDIDO ${idx + 1}</div>
-            <div class="sep">--------------------------------</div>
-            ${itens}`;
+  const pedidosHtml = alvo.map((pedido, idx) => {
+    const itensHtml = (pedido.itens || []).map(item => `
+      <div class="print-item">
+        <span>${item.qty}x ${item.nome}</span>
+      </div>
+      ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
+    `).join("");
+    return `
+      <div class="print-section-title">PEDIDO ${idx + 1}</div>
+      ${itensHtml}
+    `;
   }).join("");
 
-  const html = `<!DOCTYPE html><html lang="pt-BR"><head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Cozinha Mesa ${estadoMesa.numero}</title>
-<style>
-  @page { size: 58mm auto; margin: 3mm 2mm 4mm 2mm; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Courier New',Courier,monospace; font-size:4mm; color:#000; background:#fff; width:54mm; padding:0; }
-  .cc { text-align:center; } .cb { font-weight:bold; }
-  .cg { font-size:5mm; } .ct { font-weight:bold; font-size:3.5mm; margin:1mm 0; }
-  .ci { font-size:3.5mm; margin:0.5mm 0; }
-  .co { font-size:3mm; font-style:italic; padding-left:2mm; }
-  .sep { font-size:3mm; overflow:hidden; white-space:nowrap; margin:0.5mm 0; }
-  .cf { text-align:center; font-size:3mm; margin-top:2mm; }
-  .esp { height:4mm; }
-  .btn-print { display:block; width:100%; margin:4mm 0 0; padding:3mm; background:#c0392b; color:#fff; border:none; border-radius:2mm; font-size:3.5mm; font-weight:bold; cursor:pointer; font-family:sans-serif; }
-  @media print { .btn-print { display:none; } }
-</style></head><body>
-  <div class="cc cb cg">MIKAMI SUSHI</div>
-  <div class="cc">-- PEDIDO COZINHA --</div>
-  <div class="cc">Mesa: <strong>${estadoMesa.numero}</strong></div>
-  <div class="cc">${dataHora}</div>
-  ${pedidosLinhas}
-  <div class="sep">================================</div>
-  <div class="esp"></div>
-  <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
-</body></html>`;
+  document.getElementById("printArea").innerHTML = `
+    <div class="print-header">
+      <h2>MIKAMI SUSHI</h2>
+      <p>— PEDIDO COZINHA —</p>
+      <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
+      <p>${new Date().toLocaleString("pt-BR")}</p>
+    </div>
+    ${pedidosHtml}
+    <div class="print-footer">Impresso em ${new Date().toLocaleTimeString("pt-BR")}</div>
+  `;
 
-  const aba = window.open("", "_blank");
-  if (aba) { aba.document.open(); aba.document.write(html); aba.document.close(); }
-  else { toast("Permita popups para imprimir.", "info"); }
+  window.print();
 }
 
 function imprimirConta() {
@@ -783,13 +769,12 @@ function imprimirConta() {
     return;
   }
 
-  // ── Agrupa itens (lógica original intacta) ────────────────
   const todosItens = [];
   (mesa.historicoPedidos || []).forEach(pedido => {
     (pedido.itens || []).forEach(item => {
       const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
       if (exist) {
-        exist.qty      += item.qty;
+        exist.qty     += item.qty;
         exist.subtotal += item.preco * item.qty;
       } else {
         todosItens.push({
@@ -803,141 +788,33 @@ function imprimirConta() {
     });
   });
 
-  // Total pela fonte da verdade (historicoPedidos)
-  const totalReal = (mesa.historicoPedidos || [])
-    .reduce((acc, p) => acc + (p.total || 0), 0);
+  const itensHtml = todosItens.map(item => `
+    <div class="print-item">
+      <span>${item.qty}x ${item.nome}</span>
+      <span>${fmtMoeda(item.subtotal)}</span>
+    </div>
+    ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
+  `).join("");
 
-  const dataHora = new Date().toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
+  document.getElementById("printArea").innerHTML = `
+    <div class="print-header">
+      <h2>MIKAMI SUSHI</h2>
+      <p>— PRÉ-CONTA —</p>
+      <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
+      <p>${new Date().toLocaleString("pt-BR")}</p>
+    </div>
+    <div class="print-section-title">ITENS CONSUMIDOS</div>
+    ${itensHtml}
+    <div class="print-total">
+      <span>TOTAL</span>
+      <span>${fmtMoeda(mesa.total || 0)}</span>
+    </div>
+    <div class="print-footer">
+      Obrigado pela visita!<br>Mikami Sushi
+    </div>
+  `;
 
-  // Gera linhas de item com alinhamento de pontos (estilo cupom)
-  function linhaCupom(descricao, valor) {
-    // 58mm com fonte 3.2mm cabe ~26 chars por linha
-    const maxNome = 16;
-    const nome = descricao.length > maxNome
-      ? descricao.substring(0, maxNome)
-      : descricao;
-    const pontos = ".".repeat(Math.max(1, 26 - nome.length - valor.length));
-    return `<div class="ci">${nome}<span>${pontos}${valor}</span></div>`;
-  }
-
-  const itensLinhas = todosItens.map(item =>
-    linhaCupom(`${item.qty}x ${item.nome}`, fmtMoeda(item.subtotal))
-    + (item.obs ? `<div class="co"> &rarr; ${item.obs}</div>` : "")
-  ).join("");
-
-  // Abre aba com cupom formatado para impressão
-  _abrirAbaPreConta(estadoMesa.numero, todosItens, totalReal, dataHora, itensLinhas);
-}
-
-function _abrirAbaPreConta(numeroMesa, todosItens, totalReal, dataHora, itensLinhas) {
-  // ── HTML do cupom (auto-contido, sem depender de style.css) ─
-  const htmlCupom = `<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Pre-Conta Mesa ${estadoMesa.numero}</title>
-<style>
-  /* Unidades em mm = tamanho físico real independente de resolução */
-  @page {
-    size: 58mm auto;
-    margin: 3mm 2mm 4mm 2mm;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 4mm;     /* ~11pt em papel 58mm */
-    color: #000;
-    background: #fff;
-    width: 54mm;
-    padding: 0;
-  }
-  .cc  { text-align: center; }
-  .cb  { font-weight: bold; }
-  .cg  { font-size: 5mm; letter-spacing: 0.3mm; }
-  .cs  { display: block; overflow: hidden; white-space: nowrap;
-         margin: 0.8mm 0; font-size: 3mm; }
-  .ct  { font-weight: bold; text-transform: uppercase;
-         font-size: 3.2mm; margin: 1.5mm 0 0.5mm; }
-  .ci  { display: flex; justify-content: space-between;
-         font-size: 3.2mm; margin: 0.5mm 0;
-         white-space: nowrap; overflow: hidden; }
-  .ci span { white-space: nowrap; flex-shrink: 0; }
-  .co  { font-style: italic; font-size: 2.8mm;
-         padding-left: 2mm; margin-bottom: 0.5mm; }
-  .ctotal {
-    display: flex; justify-content: space-between;
-    font-weight: bold; font-size: 4.5mm;
-    border-top: 0.4mm solid #000;
-    margin-top: 1mm; padding-top: 1.5mm;
-  }
-  .cf  { text-align: center; font-size: 3mm;
-         margin-top: 2mm; border-top: 0.3mm dashed #000;
-         padding-top: 1.5mm; }
-  .esp { height: 4mm; }
-  /* Botão some ao imprimir */
-  .btn-print {
-    display: block; width: 100%; margin: 4mm 0 0;
-    padding: 3mm; background: #c0392b; color: #fff;
-    border: none; border-radius: 2mm; font-size: 3.5mm;
-    font-weight: bold; cursor: pointer; font-family: sans-serif;
-  }
-  @media print { .btn-print { display: none; } }
-</style>
-</head>
-<body>
-  <div class="cc cb cg">MIKAMI SUSHI</div>
-  <div class="cc cs">- - - PRE-CONTA - - -</div>
-  <div class="cc">Mesa: <strong>${estadoMesa.numero}</strong></div>
-  <div class="cc cs">${dataHora}</div>
-  <div class="cs">------------------------------</div>
-  <div class="ct">ITENS CONSUMIDOS</div>
-  <div class="cs">------------------------------</div>
-  ${itensLinhas}
-  <div class="cs">==============================</div>
-  <div class="ctotal"><span>TOTAL</span><span>${fmtMoeda(totalReal)}</span></div>
-  <div class="cs">==============================</div>
-  <div class="cf">Obrigado pela visita!<br>Mikami Sushi</div>
-  <div class="esp"></div>
-  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-</body>
-</html>`;
-
-  // Abre nova aba com o cupom
-  const aba = window.open("", "_blank");
-  if (aba) {
-    aba.document.open();
-    aba.document.write(htmlCupom);
-    aba.document.close();
-  } else {
-    // Fallback se popup blocker bloquear: usa printArea + window.print()
-    const itensHtmlFallback = todosItens.map(item => `
-      <div class="print-item">
-        <span>${item.qty}x ${item.nome}</span>
-        <span>${fmtMoeda(item.subtotal)}</span>
-      </div>
-      ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
-    `).join("");
-    document.getElementById("printArea").innerHTML = `
-      <div class="print-header">
-        <h2>MIKAMI SUSHI</h2>
-        <p>— PRÉ-CONTA —</p>
-        <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
-        <p>${dataHora}</p>
-      </div>
-      <div class="print-section-title">ITENS CONSUMIDOS</div>
-      ${itensHtmlFallback}
-      <div class="print-total">
-        <span>TOTAL</span>
-        <span>${fmtMoeda(totalReal)}</span>
-      </div>
-      <div class="print-footer">Obrigado pela visita!<br>Mikami Sushi</div>
-    `;
-    window.print();
-  }
+  window.print();
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
@@ -1165,7 +1042,7 @@ function renderCozinha(pedidos) {
       <div class="pedido-card ${statusClass[pedido.status] || "status-novo"}" data-pedido-id="${pedido.id}">
         <div class="pedido-card-header">
           <div>
-            <div class="pedido-card-mesa">Mesa ${pedido.mesaNumero}</div>
+            <div class="pedido-card-mesa">${pedido.mesaNumero >= 11 ? '🛵 Delivery ' + pedido.mesaNumero : 'Mesa ' + pedido.mesaNumero}</div>
             <div><span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${pedido.status || "Novo"}</span></div>
           </div>
           <div class="pedido-card-meta">
@@ -1270,7 +1147,82 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 let unsubRelatorio = null;  // para limpar listener anterior
 let vendasAtuais   = [];      // cache para impressão do relatório
 
-function initRelatorio() {
+
+// ============================================================
+// LOGIN — Relatório protegido por senha
+// ============================================================
+const SENHA_RELATORIO = "086431"; // altere aqui
+
+// Flag volátil — reseta toda vez que a página é carregada
+let _autenticado = false;
+
+function verificarLogin() {
+  return _autenticado;
+}
+
+function fazerLogin(senha) {
+  if (senha === SENHA_RELATORIO) {
+    _autenticado = true;
+    return true;
+  }
+  return false;
+}
+
+function fazerLogout() {
+  _autenticado = false;
+  window.location.reload();
+}
+
+function mostrarTelaLogin() {
+  const main = document.getElementById("relatorioMain");
+  if (!main) return;
+  main.innerHTML = `
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h2>Área Restrita</h2>
+      <p>Digite a senha para acessar o Relatório e Faturamento.</p>
+      <div class="login-campo">
+        <input type="password" id="senhaInput" placeholder="Senha" autocomplete="off" />
+        <button class="btn-primary btn-login" id="btnLogin">Entrar</button>
+      </div>
+      <div class="login-erro" id="loginErro"></div>
+    </div>
+  `;
+
+  const input = document.getElementById("senhaInput");
+  const btn   = document.getElementById("btnLogin");
+  const erro  = document.getElementById("loginErro");
+
+  function tentarLogin() {
+    if (fazerLogin(input.value.trim())) {
+      mostrarConteudoRelatorio();
+    } else {
+      erro.textContent = "Senha incorreta.";
+      input.value = "";
+      input.focus();
+      setTimeout(() => { erro.textContent = ""; }, 2000);
+    }
+  }
+
+  btn.addEventListener("click", tentarLogin);
+  input.addEventListener("keydown", e => { if (e.key === "Enter") tentarLogin(); });
+  input.focus();
+}
+
+function mostrarConteudoRelatorio() {
+  // Injeta o template no relatorioMain
+  const main = document.getElementById("relatorioMain");
+  const tpl  = document.getElementById("tplRelatorio");
+  if (main && tpl) {
+    main.innerHTML = "";
+    main.appendChild(tpl.content.cloneNode(true));
+  }
+  // Botão logout
+  document.getElementById("btnLogout")?.addEventListener("click", fazerLogout);
+  _iniciarConteudoRelatorio();
+}
+
+function _iniciarConteudoRelatorio() {
   iniciarRelogio();
 
   // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
@@ -1296,6 +1248,16 @@ function initRelatorio() {
 
   escutarVendas(hoje);
   window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
+  _iniciarGraficos();
+}
+
+function initRelatorio() {
+  iniciarRelogio();
+  if (verificarLogin()) {
+    mostrarConteudoRelatorio();
+  } else {
+    mostrarTelaLogin();
+  }
 }
 
 function escutarVendas(dataStr) {
@@ -1405,7 +1367,7 @@ function renderRelatorio(vendas) {
     return `
       <div class="venda-card">
         <div class="venda-card-header">
-          <span class="venda-mesa">Mesa ${venda.mesaNumero}</span>
+          <span class="venda-mesa">${venda.mesaNumero >= 11 ? "🛵 Delivery " + venda.mesaNumero : "Mesa " + venda.mesaNumero}</span>
           <span class="venda-hora">${fmtDataHora(venda.fechadoEm)}</span>
           <span class="venda-pagamento">${venda.formaPagamento || "—"}</span>
           <span class="venda-total-valor">${fmtMoeda(venda.total || 0)}</span>
@@ -1483,7 +1445,7 @@ function imprimirRelatorio(dataStr, vendas) {
     return `
       <div class="print-relatorio-venda">
         <div class="print-relatorio-venda-header">
-          <span>Mesa ${venda.mesaNumero}</span>
+          <span>${venda.mesaNumero >= 11 ? "Delivery " + venda.mesaNumero : "Mesa " + venda.mesaNumero}</span>
           <span>${fmtDataHora(venda.fechadoEm)}</span>
           <span>${venda.formaPagamento || "—"}</span>
           <span>${fmtMoeda(venda.total || 0)}</span>
@@ -1745,7 +1707,7 @@ function fecharModalEditar() {
 // ============================================================
 // 8. PÁGINA: FATURAMENTO
 // ============================================================
-function initFaturamento() {
+function _iniciarGraficos() {
   iniciarRelogio();
 
   // Carrega dados dos últimos 12 meses + semana atual
@@ -1936,4 +1898,3 @@ if      (pagina.includes("page-mesas"))    initIndex();
 else if (pagina.includes("page-mesa"))     initMesa();
 else if (pagina.includes("page-cozinha"))  initCozinha();
 else if (pagina.includes("page-relatorio")) initRelatorio();
-else if (pagina.includes("page-faturamento")) initFaturamento();

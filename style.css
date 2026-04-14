@@ -127,7 +127,7 @@ body:not(.page-mesa) .header-brand {
   top: var(--header-h); left: 0; right: 0;
   height: var(--stats-h);
   z-index: 90;
-  display: flex; align-items: center;
+  display: flex; align-items: center; justify-content: center;
   background: var(--preto-card);
   border-bottom: 1px solid var(--preto-borda);
   padding: 0 1.5rem;
@@ -148,7 +148,7 @@ body:not(.page-mesa) .header-brand {
   width: 100%; height: 100%;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
   gap: 1px;
   background: var(--preto-borda);
 }
@@ -447,15 +447,40 @@ body.page-faturamento { padding-top: var(--header-h); }
 .toast.erro    { background: var(--vermelho); }
 .toast.info    { background: var(--cinza-medio); }
 
+
+/* ── Mesas Delivery ────────────────────────────────────── */
+.mesa-delivery-badge {
+  font-family: var(--font-display);
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 20px;
+  background: rgba(41, 128, 185, 0.18);
+  color: #5dade2;
+  border: 1px solid rgba(41, 128, 185, 0.4);
+  white-space: nowrap;
+}
+
+.mesa-card.mesa-delivery::before {
+  background: #2980b9 !important; /* barra azul no topo */
+}
+.mesa-card.mesa-delivery.livre::before   { background: #2980b9 !important; }
+.mesa-card.mesa-delivery.ocupada::before { background: #1a6fa8 !important; }
+
+/* Badge delivery no relatório */
+.venda-mesa-delivery {
+  color: #5dade2;
+}
+
 /* ================================================================
    IMPRESSÃO
    ================================================================ */
 .print-area { display: none; }
 @media print {
-  /* A pré-conta agora abre em nova aba com HTML próprio.
-     Este bloco serve apenas para o relatório (window.print normal). */
   body > *:not(.print-area) { display: none !important; }
-  body { background: white; color: black; margin: 0; padding: 0 !important; }
+  body { background: white; color: black; padding: 0 !important; }
   .print-area { display: block !important; font-family: 'Courier New', monospace; font-size: 12px; color: #000; max-width: 320px; margin: 0 auto; }
   .print-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 6px; margin-bottom: 8px; }
   .print-header h2 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
@@ -471,6 +496,75 @@ body.page-faturamento { padding-top: var(--header-h); }
   .print-relatorio-resumo-linha { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
   .print-relatorio-venda { border-bottom: 1px dashed #999; padding: 5px 0; }
   .print-relatorio-venda-header { display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; margin-bottom: 3px; flex-wrap: wrap; gap: 4px; }
+}
+
+
+/* ================================================================
+   LOGIN — tela de senha do relatório
+   ================================================================ */
+.login-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 120px);
+  padding: 2rem 1rem;
+  gap: 1rem;
+  text-align: center;
+}
+.login-icon { font-size: 3rem; }
+.login-box h2 { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; color: var(--branco); }
+.login-box p  { font-size: 0.85rem; color: var(--cinza-texto); max-width: 280px; }
+.login-campo  { display: flex; gap: 0.5rem; width: 100%; max-width: 320px; }
+.login-campo input {
+  flex: 1;
+  background: var(--cinza);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.65rem 0.9rem;
+  color: var(--branco);
+  font-size: 0.95rem;
+  transition: border-color 0.18s;
+}
+.login-campo input:focus { border-color: var(--vermelho); outline: none; }
+.btn-login {
+  padding: 0.65rem 1.25rem;
+  background: var(--vermelho);
+  color: var(--branco);
+  border-radius: var(--raio);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.18s;
+}
+.btn-login:hover { background: var(--vermelho-soft); }
+.login-erro { font-size: 0.8rem; color: var(--vermelho-soft); min-height: 1.2rem; font-weight: 600; }
+
+/* Botão logout */
+.btn-logout {
+  background: var(--cinza);
+  color: var(--cinza-texto);
+  border: 1px solid var(--preto-borda);
+  transition: all 0.18s;
+}
+.btn-logout:hover { color: var(--vermelho-soft); border-color: var(--vermelho-soft); }
+
+/* Título de seção faturamento dentro do relatório */
+.fat-secao-titulo {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--cinza-texto);
+  padding: 1.25rem 1.5rem 0.5rem;
+  border-top: 1px solid var(--preto-borda);
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .login-box { min-height: calc(100vh - 160px); }
+  .fat-secao-titulo { padding: 1rem 1rem 0.4rem; }
 }
 
 /* ================================================================
@@ -630,6 +724,18 @@ body.page-faturamento { padding-top: var(--header-h); }
   .modal-acoes button { flex: 1; }
   .mesa-header-meta { display: none; }
 }
+
+
+  /* ── Bottom nav 3 itens ── */
+  .bottom-nav { justify-content: space-around; }
+
+  /* ── Cards cozinha mobile ── */
+  .pedido-card { padding: 0.85rem; }
+  .pedido-card-mesa { font-size: 1.15rem; }
+  .pedido-card-acoes button { padding: 0.65rem 0.4rem; font-size: 0.72rem; min-height: 44px; }
+  .filtro-btn { padding: 0.4rem 0.75rem; font-size: 0.7rem; min-height: 36px; }
+  .modal-box { max-height: 85dvh; }
+  .pagamento-btn { min-height: 52px; font-size: 1rem; }
 
 /* Mobile pequeno */
 @media (max-width: 400px) {
