@@ -32,6 +32,7 @@
     <button class="mesa-aba-btn active" data-aba="cardapio">📋 Cardápio</button>
     <button class="mesa-aba-btn" data-aba="pedido">🛒 Pedido <span id="pedidoBadge"></span></button>
     <button class="mesa-aba-btn" data-aba="conta">💰 Conta</button>
+    <button class="mesa-aba-btn mesa-aba-delivery" data-aba="entrega" style="display:none">🛵 Entrega</button>
   </div>
 
   <div class="mesa-layout">
@@ -65,6 +66,35 @@
           <strong id="pedidoTotal">R$ 0,00</strong>
         </div>
         <button class="btn-confirmar" id="btnConfirmarPedido" disabled>Confirmar Pedido →</button>
+      </div>
+    </div>
+
+    <!-- COLUNA D: ENTREGA (só delivery) -->
+    <div class="col-entrega" data-col="entrega">
+      <div class="col-header"><h2>🛵 Entrega</h2></div>
+      <div class="entrega-form">
+        <div class="entrega-locais" id="entregaLocais"></div>
+        <div class="entrega-resumo" id="entregaResumo" style="display:none">
+          <div class="entrega-resumo-linha">
+            <span>Subtotal pedidos:</span>
+            <span id="entregaSubtotal">R$ 0,00</span>
+          </div>
+          <div class="entrega-resumo-linha entrega-resumo-taxa">
+            <span>Taxa de entrega:</span>
+            <span id="entregaTaxaDisplay">R$ 0,00</span>
+          </div>
+          <div class="entrega-resumo-linha entrega-resumo-total">
+            <span>Total com entrega:</span>
+            <span id="entregaTotalDisplay">R$ 0,00</span>
+          </div>
+        </div>
+      </div>
+      <!-- Rodapé fixo fora do scroll -->
+      <div class="entrega-footer">
+        <div class="entrega-confirmado" id="entregaConfirmado"></div>
+        <button class="btn-confirmar-entrega btn-primary" id="btnConfirmarEntrega" style="display:none">
+          ✅ Confirmar Entrega
+        </button>
       </div>
     </div>
 

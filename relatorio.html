@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <title>Mikami Sushi — Relatório</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,7 +29,7 @@
     <div class="header-clock" id="headerClock"></div>
   </header>
 
-  <!-- Conteúdo dinâmico: login OU relatório completo -->
+  <!-- Área dinâmica: JS injeta login OU conteúdo aqui -->
   <div id="relatorioMain">
     <div class="loading-mesas" style="padding:4rem">
       <div class="loading-spinner"></div>
@@ -37,10 +37,9 @@
     </div>
   </div>
 
-  <!-- Template do conteúdo (oculto, injetado pelo JS após login) -->
+  <!-- Template do conteúdo completo (injetado após login) -->
   <template id="tplRelatorio">
 
-    <!-- RESUMO DO DIA -->
     <div class="relatorio-resumo">
       <div class="resumo-card">
         <span class="resumo-icon">💰</span>
@@ -65,7 +64,6 @@
       </div>
     </div>
 
-    <!-- FILTRO + BOTÕES -->
     <div class="relatorio-filtros">
       <label>Data:</label>
       <input type="date" id="filtroData" />
@@ -74,7 +72,6 @@
       <button class="btn-logout btn-sm" id="btnLogout">🔒 Sair</button>
     </div>
 
-    <!-- LISTA DE VENDAS DO DIA -->
     <main class="relatorio-main">
       <div class="vendas-lista" id="vendasLista">
         <div class="loading-mesas">
@@ -84,8 +81,8 @@
       </div>
     </main>
 
-    <!-- GRÁFICOS DE FATURAMENTO -->
     <div class="fat-secao-titulo">📊 Faturamento</div>
+
     <div class="fat-resumo">
       <div class="fat-card">
         <span class="fat-icon">📅</span>
