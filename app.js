@@ -780,12 +780,14 @@ function atualizarHeaderMesa() {
   document.getElementById("mesaAbertura").textContent =
     mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
 
-  // FIX: usa historicoPedidos como fonte da verdade para o total exibido
+  // Total dos pedidos + taxa de entrega (delivery)
   const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
-  const total = totalHistorico || mesa.total || 0;
+  const taxaEntregaHeader = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+  const total = (totalHistorico || mesa.total || 0) + taxaEntregaHeader;
   document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
   document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  document.getElementById("modalTotalCobrar")?.textContent && (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
+  const elModal = document.getElementById("modalTotalCobrar");
+  if (elModal) elModal.textContent = fmtMoeda(total);
 }
 
 function renderConta() {
@@ -1072,7 +1074,11 @@ async function fecharMesa() {
     const metodoBtn = document.querySelector(".pagamento-btn.selected");
     if (!metodoBtn) return;
     formaPagamento = metodoBtn.dataset.metodo;
-    pagamentos = [{ metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 }];
+    // Usa total com taxa de entrega para pagamento único
+    const _mesa = estadoMesa.dadosMesa;
+    const _sub  = (_mesa?.historicoPedidos || []).reduce((a,p) => a+(p.total||0), 0);
+    const _taxa = _mesa?.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+    pagamentos = [{ metodo: formaPagamento, valor: _sub + _taxa }];
   }
 
   btnFechar.disabled   = true;
@@ -1684,7 +1690,11 @@ function imprimirRelatorio(dataStr, vendas) {
 
 // ── Pagamento dividido — atualiza saldo restante ──────────────
 function atualizarRestante() {
-  const total = estadoMesa.dadosMesa?.total || 0;
+  // Total correto: pedidos + taxa de entrega (delivery)
+  const _mesa   = estadoMesa.dadosMesa;
+  const _subRst = (_mesa?.historicoPedidos || []).reduce((a,p) => a+(p.total||0), 0);
+  const _taxaRst = _mesa?.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+  const total   = (_subRst || _mesa?.total || 0) + _taxaRst;
   let distribuido = 0;
   document.querySelectorAll(".div-toggle.active").forEach(btn => {
     const metodo = btn.dataset.metodo;
@@ -1894,6 +1904,8 @@ function fecharModalEditar() {
 // ============================================================
 // 8. PÁGINA: FATURAMENTO
 // ============================================================
+function _iniciarGraficos() { initFaturamento(); }
+
 function initFaturamento() {
   iniciarRelogio();
 
