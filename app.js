@@ -35,6 +35,7 @@ const CARDAPIO = [
   { nome: "Hot Roll de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll de Kani",          categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll Skin",             categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll Camarão",             categoria: "Individuais", preco: 25.00, ativo: true },
   { nome: "Hosomaki de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Rolinho Primavera (4 un.)", categoria: "Individuais", preco: 15.00, ativo: true },
   { nome: "Croquete de Salmão (6 un.)",categoria: "Individuais", preco: 15.00, ativo: true },
@@ -68,17 +69,21 @@ const CARDAPIO = [
   { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta",   categoria: "Doces", preco: 22.00, ativo: true },
 
   // BEBIDAS
-  { nome: "Coca Zero Lata 220ml",    categoria: "Bebidas", preco: 4.50, ativo: true },
-  { nome: "Coca Lata 350ml",         categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Fanta Lata 220ml",        categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Kuat Lata 220ml",         categoria: "Bebidas", preco: 4.50, ativo: true },
+  { nome: "Coca Zero Lata ",    categoria: "Bebidas", preco: 6.00, ativo: true },
+  { nome: "Coca Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
+  { nome: "Fanta Lata ",        categoria: "Bebidas", preco: 6.00, ativo: true },
+  { nome: "Guaraná Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
+  { nome: "Guaraná Zero Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
+  { nome: "Copo Suco ",              categoria: "Bebidas", preco: 8.00, ativo: true },
+  { nome: "Copo Suco ",             categoria: "Bebidas", preco: 10.00, ativo: true },
   { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
   { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
+  { nome: "Coca Cola 1L Vidro",            categoria: "Bebidas", preco: 10.00, ativo: true },
 ];
 
-const TOTAL_MESAS = 12;
+const TOTAL_MESAS = 16;
 
 // ============================================================
 // 2. UTILITÁRIOS
@@ -159,6 +164,51 @@ async function garantirProdutos() {
   } catch (err) { console.error("[Mikami] Seed produtos:", err); }
 }
 
+
+async function migrarDelivery() {
+  if (localStorage.getItem("mikami_delivery_v4") === "ok") return;
+  try {
+    const ups = [];
+    for (let i = 11; i <= 20; i++) ups.push(updateDoc(doc(db,"mesas",`mesa_${i}`),{tipo:"delivery"}).catch(()=>{}));
+    await Promise.all(ups);
+    localStorage.setItem("mikami_delivery_v4","ok");
+  } catch(e){}
+}
+
+function initModalAddMesa() {
+  const btn = document.getElementById("btnAddMesa");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    document.getElementById("modalAddMesa").classList.add("open");
+    document.getElementById("addMesaStatus").textContent = "";
+  });
+  document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () => {
+    document.getElementById("modalAddMesa").classList.remove("open");
+  });
+  document.getElementById("btnAddRestaurante")?.addEventListener("click", () => adicionarMesa("restaurante"));
+  document.getElementById("btnAddDelivery")?.addEventListener("click", () => adicionarMesa("delivery"));
+}
+
+async function adicionarMesa(tipo) {
+  const status = document.getElementById("addMesaStatus");
+  if (status) { status.style.color="var(--cinza-texto)"; status.textContent = "Criando mesa..."; }
+  try {
+    const snap = await getDocs(collection(db,"mesas"));
+    const nums = snap.docs.map(d=>d.data().numero||0);
+    const prox = Math.max(...nums,0)+1;
+    await setDoc(doc(db,"mesas",`mesa_${prox}`),{
+      numero:prox, tipo,
+      status:"livre", abertaEm:null,
+      total:0, pedidosCount:0, historicoPedidos:[],
+      entrega:{local:"",taxa:0}
+    });
+    if (status){ status.style.color="var(--verde)"; status.textContent=`✓ Mesa ${prox} (${tipo==="delivery"?"🛵 Delivery":"🍽️ Restaurante"}) criada!`; }
+    setTimeout(()=>{ document.getElementById("modalAddMesa")?.classList.remove("open"); },1500);
+  } catch(e){
+    if(status){status.style.color="var(--vermelho-soft)";status.textContent="Erro ao criar mesa.";}
+  }
+}
+
 async function garantirMesas() {
   if (localStorage.getItem(SEED_VERSION + "_mesas") === "ok") return;
   try {
@@ -169,8 +219,11 @@ async function garantirMesas() {
       const id = `mesa_${i}`;
       if (!existentes.has(id)) {
         promises.push(setDoc(doc(db, "mesas", id), {
-          numero: i, status: "livre", abertaEm: null,
-          total: 0, pedidosCount: 0, historicoPedidos: []
+          numero: i,
+          tipo: i >= 11 ? "delivery" : "restaurante",
+          status: "livre", abertaEm: null,
+          total: 0, pedidosCount: 0, historicoPedidos: [],
+          entrega: { local: "", taxa: 0 }
         }));
       }
     }
@@ -201,51 +254,39 @@ function initIndex() {
   // Cancela listener ao sair da página
   window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
 
-  escutarFaturamentoDia();
-
   // Seeds em background, sem bloquear UI
-  Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
+  Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(console.error);
+  initModalAddMesa();
 }
 
 // Cache para diff de mesas — evita redesenhar cards que não mudaram
 const _mesaHash = new Map();
 
 function _hashMesa(m) {
-  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}`;
+  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}|${m.entrega?.taxa||0}|${m.entrega?.local||""}`;
 }
 
 function _htmlCard(mesa, statusLabel) {
-  const totalExibir = (mesa.historicoPedidos?.length)
-    ? mesa.historicoPedidos.reduce((a,p) => a+(p.total||0), 0)
-    : (mesa.total || 0);
-
-  const isDelivery = mesa.tipo === "delivery";
-
-  // Total com taxa de entrega se delivery
-  const taxaEntrega   = mesa.entrega?.taxa || 0;
-  const totalComTaxa  = totalExibir + taxaEntrega;
-
-  const metaLivre = isDelivery ? "Delivery livre" : "Mesa livre";
+  const totalBase   = mesa.historicoPedidos?.length ? mesa.historicoPedidos.reduce((a,p)=>a+(p.total||0),0) : (mesa.total||0);
+  const isDelivery  = mesa.tipo === "delivery";
+  const taxaEntrega = mesa.entrega?.taxa || 0;
+  const totalExibir = totalBase + taxaEntrega;
 
   return `
-    <div class="mesa-card ${mesa.status}${isDelivery ? " mesa-delivery" : ""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
+    <div class="mesa-card ${mesa.status}${isDelivery?" mesa-delivery":""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
       <div class="mesa-card-header">
         <div class="mesa-numero">${mesa.numero}</div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <div class="mesa-status-pill status-${mesa.status}">
-            ${statusLabel[mesa.status] || mesa.status}
-          </div>
-          ${isDelivery ? `<div class="mesa-delivery-badge">🛵 Delivery</div>` : ""}
+          <div class="mesa-status-pill status-${mesa.status}">${statusLabel[mesa.status]||mesa.status}</div>
+          ${isDelivery?`<div class="mesa-delivery-badge">🛵 Delivery</div>`:""}
         </div>
       </div>
       <div class="mesa-card-info">
-        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(totalComTaxa) : "—"}</div>
+        <div class="mesa-total">${mesa.status!=="livre"?fmtMoeda(totalExibir):"—"}</div>
         <div class="mesa-meta">
-          ${mesa.abertaEm
-            ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
-            : `<span>${metaLivre}</span>`}
-          ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
-          ${isDelivery && mesa.entrega?.local ? `<span>📍 ${mesa.entrega.local}</span>` : ""}
+          ${mesa.abertaEm?`<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`:`<span>${isDelivery?"Delivery livre":"Mesa livre"}</span>`}
+          ${mesa.pedidosCount?`<span>${mesa.pedidosCount} pedido(s)</span>`:""}
+          ${isDelivery&&mesa.entrega?.local?`<span>📍 ${mesa.entrega.local}</span>`:""}
         </div>
       </div>
     </div>
@@ -318,35 +359,21 @@ function renderStats(mesas) {
   document.getElementById("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
 }
 
-function escutarFaturamentoDia() {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const inicioHoje = Timestamp.fromDate(hoje);
 
-  const q = query(collection(db, "vendas"), where("fechadoEm", ">=", inicioHoje));
-
-  onSnapshot(q, snap => {
-    let total = 0;
-    snap.forEach(d => { total += d.data().total || 0; });
-    const el = document.getElementById("statTotalDia");
-    if (el) el.textContent = fmtMoeda(total);
-  });
-}
 
 // ============================================================
 // 4. PÁGINA: MESA
 // ============================================================
-
 const LOCAIS_ENTREGA = [
-  { nome: "Retirada",           taxa: 0,  icone: "🏠" },
-  { nome: "Cecilia",            taxa: 3,  icone: "📍" },
-  { nome: "Embebedado",         taxa: 5,  icone: "📍" },
-  { nome: "Pedra Branca",       taxa: 6,  icone: "📍" },
-  { nome: "Cumati",             taxa: 5,  icone: "📍" },
-  { nome: "Cecília de Cima",    taxa: 6,  icone: "📍" },
-  { nome: "Vilinha",            taxa: 6,  icone: "📍" },
-  { nome: "Boi Seco",           taxa: 15, icone: "📍" },
-  { nome: "Vertente do Lério",  taxa: 15, icone: "📍" },
+  { nome: "Retirada",          taxa: 0,  icone: "🏠" },
+  { nome: "Cecilia",           taxa: 3,  icone: "📍" },
+  { nome: "Embebedado",        taxa: 5,  icone: "📍" },
+  { nome: "Pedra Branca",      taxa: 6,  icone: "📍" },
+  { nome: "Cumati",            taxa: 5,  icone: "📍" },
+  { nome: "Cecília de Cima",   taxa: 6,  icone: "📍" },
+  { nome: "Vilinha",           taxa: 6,  icone: "📍" },
+  { nome: "Boi Seco",          taxa: 15, icone: "📍" },
+  { nome: "Vertente do Lério", taxa: 15, icone: "📍" },
 ];
 
 const estadoMesa = {
@@ -367,9 +394,7 @@ async function initMesa() {
   estadoMesa.numero = parseInt(params.get("mesa")) || 1;
   estadoMesa.mesaId = `mesa_${estadoMesa.numero}`;
 
-  const tipoMesaH = estadoMesa.dadosMesa?.tipo;
-  const labelMesa = tipoMesaH === "delivery" ? `🛵 Delivery ${estadoMesa.numero}` : `Mesa ${estadoMesa.numero}`;
-  document.getElementById("mesaNumeroBadge").textContent = labelMesa;
+  document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
   // Tenta usar cache do sessionStorage para cardápio (evita leitura repetida)
@@ -655,117 +680,87 @@ async function confirmarPedido() {
 
 // ── Conta da mesa ─────────────────────────────────────────
 
-// ── ENTREGA (mesas delivery) ─────────────────────────────
-
+// ── ENTREGA ──────────────────────────────────────────────
 function _configurarAbaEntrega(mesa) {
   if (mesa.tipo !== "delivery") return;
 
-  // Mostra aba mobile
+  // Mostra botão da aba mobile
   document.querySelectorAll(".mesa-aba-delivery").forEach(b => b.style.display = "");
 
-  // Mostra coluna desktop — força flex independente do CSS
-  const col = document.querySelector(".col-entrega");
-  if (col) {
-    col.style.setProperty("display", "flex", "important");
-    // Ajusta o grid do layout para 4 colunas no desktop
+  const isMobile = window.innerWidth < 768;
+
+  if (isMobile) {
+    // Mobile: NÃO força display — o sistema de abas (aba-ativa) controla
+    // col-entrega fica oculta até o usuário clicar na aba
+  } else {
+    // Desktop: mostra a coluna e ajusta o grid
+    const col = document.querySelector(".col-entrega");
+    if (col) col.style.display = "flex";
     const layout = document.querySelector(".mesa-layout");
-    if (layout && window.innerWidth >= 768) {
-      layout.style.gridTemplateColumns = "1fr 280px 260px 250px";
-    }
+    if (layout) layout.style.gridTemplateColumns = "1fr 280px 260px 250px";
   }
 
-  // Renderiza lista de locais
+  if (mesa.entrega?.taxa) estadoMesa.entrega = { local: mesa.entrega.local||"", taxa: mesa.entrega.taxa||0 };
   _renderLocaisEntrega(mesa.entrega?.local || "");
   _atualizarResumoEntrega();
 }
 
-function _renderLocaisEntrega(localSelecionado) {
-  const container = document.getElementById("entregaLocais");
-  if (!container) return;
-
-  container.innerHTML = LOCAIS_ENTREGA.map(loc => {
-    const ativo = loc.nome === localSelecionado;
-    return `
-      <div class="entrega-local-item ${ativo ? "ativo" : ""}" data-nome="${loc.nome}" data-taxa="${loc.taxa}">
-        <span class="entrega-local-icone">${loc.icone}</span>
-        <span class="entrega-local-nome">${loc.nome}</span>
-        <span class="entrega-local-taxa">${loc.taxa === 0 ? "Grátis" : "R$ " + loc.taxa.toFixed(2).replace(".", ",")}</span>
-      </div>
-    `;
+function _renderLocaisEntrega(sel) {
+  const c = document.getElementById("entregaLocais"); if(!c) return;
+  c.innerHTML = LOCAIS_ENTREGA.map(loc=>{
+    const ativo = loc.nome===sel;
+    return `<div class="entrega-local-item${ativo?" ativo":""}" data-nome="${loc.nome}" data-taxa="${loc.taxa}">
+      <span class="entrega-local-icone">${loc.icone}</span>
+      <span class="entrega-local-nome">${loc.nome}</span>
+      <span class="entrega-local-taxa">${loc.taxa===0?"Grátis":"R$ "+loc.taxa.toFixed(2).replace(".",",")}</span>
+    </div>`;
   }).join("");
-
-  container.querySelectorAll(".entrega-local-item").forEach(item => {
-    item.addEventListener("click", () => {
-      const nome = item.dataset.nome;
-      const taxa = parseFloat(item.dataset.taxa);
-      estadoMesa.entrega = { local: nome, taxa };
+  c.querySelectorAll(".entrega-local-item").forEach(item=>{
+    item.addEventListener("click",()=>{
+      const nome=item.dataset.nome, taxa=parseFloat(item.dataset.taxa);
+      estadoMesa.entrega={local:nome,taxa};
       _renderLocaisEntrega(nome);
       _atualizarResumoEntrega();
-      _salvarEntregaAuto(nome, taxa);
-      // Mostra botão confirmar
-      const btnConf = document.getElementById("btnConfirmarEntrega");
-      if (btnConf) btnConf.style.display = "";
-      const conf = document.getElementById("entregaConfirmado");
-      if (conf) conf.textContent = "";
+      updateDoc(doc(db,"mesas",estadoMesa.mesaId),{entrega:{local:nome,taxa}}).catch(()=>{});
+      const btn=document.getElementById("btnConfirmarEntrega");
+      const conf=document.getElementById("entregaConfirmado");
+      if(btn) btn.style.display="";
+      if(conf) conf.textContent="";
     });
   });
 }
 
-async function _confirmarEntrega() {
-  const local = estadoMesa.entrega?.local;
-  const taxa  = estadoMesa.entrega?.taxa ?? 0;
-
-  if (!local) {
-    toast("Selecione um local de entrega.", "erro");
-    return;
-  }
-
-  const btn = document.getElementById("btnConfirmarEntrega");
-  if (btn) { btn.disabled = true; btn.textContent = "Confirmando..."; }
-
-  try {
-    await updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
-      entrega: { local, taxa, confirmado: true }
-    });
-    const conf = document.getElementById("entregaConfirmado");
-    if (conf) conf.textContent = "✓ Entrega confirmada!";
-    if (btn)  { btn.style.display = "none"; btn.disabled = false; btn.textContent = "✅ Confirmar Entrega"; }
-    toast("Entrega confirmada!", "sucesso");
-  } catch(e) {
-    toast("Erro ao confirmar entrega.", "erro");
-    if (btn) { btn.disabled = false; btn.textContent = "✅ Confirmar Entrega"; }
-  }
-}
-
-async function _salvarEntregaAuto(local, taxa) {
-  try {
-    await updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
-      entrega: { local, taxa }
-    });
-  } catch(e) { console.error("Erro ao salvar entrega:", e); }
-}
-
 function _atualizarResumoEntrega() {
-  const mesa = estadoMesa.dadosMesa;
-  if (!mesa) return;
+  const mesa=estadoMesa.dadosMesa; if(!mesa) return;
+  const taxa=estadoMesa.entrega?.taxa||0;
+  const sub=(mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+  const total=sub+taxa;
+  const fmt=v=>"R$ "+v.toFixed(2).replace(".",",");
+  const el=id=>document.getElementById(id);
+  if(el("entregaResumo")) el("entregaResumo").style.display="";
+  if(el("entregaSubtotal"))    el("entregaSubtotal").textContent=fmt(sub);
+  if(el("entregaTaxaDisplay")) el("entregaTaxaDisplay").textContent=taxa===0?"Grátis":fmt(taxa);
+  if(el("entregaTotalDisplay"))el("entregaTotalDisplay").textContent=fmt(total);
+  if(el("contaTotalBadge"))  el("contaTotalBadge").textContent=fmt(total);
+  if(el("contaTotalFinal"))  el("contaTotalFinal").textContent=fmt(total);
+  if(el("modalTotalCobrar")) el("modalTotalCobrar").textContent=fmt(total);
+}
 
-  const taxa = estadoMesa.entrega?.taxa || 0;
-  const subtotal = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
-  const total = subtotal + taxa;
-
-  const resumo = document.getElementById("entregaResumo");
-  if (resumo) resumo.style.display = "";
-
-  const fmt = v => "R$ " + v.toFixed(2).replace(".", ",");
-  const el = id => document.getElementById(id);
-  if (el("entregaSubtotal"))    el("entregaSubtotal").textContent    = fmt(subtotal);
-  if (el("entregaTaxaDisplay")) el("entregaTaxaDisplay").textContent = taxa === 0 ? "Grátis" : fmt(taxa);
-  if (el("entregaTotalDisplay"))el("entregaTotalDisplay").textContent= fmt(total);
-
-  // Atualiza totais no header e modal
-  if (el("contaTotalBadge"))  el("contaTotalBadge").textContent  = fmt(total);
-  if (el("contaTotalFinal"))  el("contaTotalFinal").textContent  = fmt(total);
-  if (el("modalTotalCobrar")) el("modalTotalCobrar").textContent = fmt(total);
+async function _confirmarEntrega() {
+  const local=estadoMesa.entrega?.local, taxa=estadoMesa.entrega?.taxa??0;
+  if(!local){toast("Selecione um local de entrega.","erro");return;}
+  const btn=document.getElementById("btnConfirmarEntrega");
+  if(btn){btn.disabled=true;btn.textContent="Confirmando...";}
+  try {
+    await updateDoc(doc(db,"mesas",estadoMesa.mesaId),{entrega:{local,taxa,confirmado:true}});
+    const conf=document.getElementById("entregaConfirmado");
+    if(conf) conf.textContent="✓ Entrega confirmada!";
+    if(btn){btn.style.display="none";btn.disabled=false;btn.textContent="✅ Confirmar Entrega";}
+    toast("Entrega confirmada!","sucesso");
+  } catch(e){
+    toast("Erro ao confirmar.","erro");
+    if(btn){btn.disabled=false;btn.textContent="✅ Confirmar Entrega";}
+  }
 }
 
 function atualizarHeaderMesa() {
@@ -780,14 +775,13 @@ function atualizarHeaderMesa() {
   document.getElementById("mesaAbertura").textContent =
     mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
 
-  // Total dos pedidos + taxa de entrega (delivery)
-  const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
-  const taxaEntregaHeader = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-  const total = (totalHistorico || mesa.total || 0) + taxaEntregaHeader;
+  // FIX: usa historicoPedidos como fonte da verdade para o total exibido
+  const totalHistorico = (mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+  const taxaH = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+  const total = (totalHistorico||mesa.total||0) + taxaH;
   document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
   document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  const elModal = document.getElementById("modalTotalCobrar");
-  if (elModal) elModal.textContent = fmtMoeda(total);
+  const _em = document.getElementById("modalTotalCobrar"); if(_em) _em.textContent=fmtMoeda(total);
 }
 
 function renderConta() {
@@ -843,37 +837,18 @@ function renderConta() {
     `;
   }).join("");
 
-  // Bloco de entrega (só delivery com local confirmado)
-  const entrega = mesa.entrega;
-  const existeEntrega = mesa.tipo === "delivery" && entrega?.local;
-  const blocoEntrega  = existeEntrega ? (() => {
-    const taxa       = entrega.taxa || 0;
-    const subtotal   = historico.reduce((a, p) => a + (p.total || 0), 0);
-    const totalFinal = subtotal + taxa;
-    return `
-      <div class="conta-entrega-bloco">
-        <div class="conta-entrega-header">🛵 Entrega</div>
-        <div class="conta-item-linha">
-          <span class="conta-item-nome">📍 Local</span>
-          <span></span>
-          <span class="conta-item-val" style="color:#5dade2">${entrega.local}</span>
-        </div>
-        <div class="conta-item-linha">
-          <span class="conta-item-nome">Taxa de entrega</span>
-          <span></span>
-          <span class="conta-item-val" style="color:#5dade2">${taxa === 0 ? "Grátis" : fmtMoeda(taxa)}</span>
-        </div>
-        <div class="conta-item-linha" style="border-top:1px solid var(--preto-borda);padding-top:0.35rem;margin-top:0.2rem">
-          <span class="conta-item-nome" style="font-weight:700;color:var(--branco)">Total com entrega</span>
-          <span></span>
-          <span class="conta-item-val" style="color:var(--ouro-light);font-size:1rem">${fmtMoeda(totalFinal)}</span>
-        </div>
-      </div>
-    `;
-  })() : "";
-
-  if (existeEntrega) {
-    container.innerHTML += blocoEntrega;
+  // Bloco entrega
+  const _ent=mesa.entrega;
+  if(mesa.tipo==="delivery" && _ent?.local){
+    const _tC=_ent.taxa||0, _sC=historico.reduce((a,p)=>a+(p.total||0),0);
+    container.innerHTML+=`<div class="conta-entrega-bloco">
+      <div class="conta-entrega-header">🛵 Entrega</div>
+      <div class="conta-item-linha"><span class="conta-item-nome">📍 Local</span><span></span><span class="conta-item-val" style="color:#5dade2">${_ent.local}</span></div>
+      <div class="conta-item-linha"><span class="conta-item-nome">Taxa de entrega</span><span></span><span class="conta-item-val" style="color:#5dade2">${_tC===0?"Grátis":fmtMoeda(_tC)}</span></div>
+      <div class="conta-item-linha" style="border-top:1px solid var(--preto-borda);padding-top:.35rem;margin-top:.2rem">
+        <span class="conta-item-nome" style="font-weight:700;color:var(--branco)">Total com entrega</span><span></span>
+        <span class="conta-item-val" style="color:var(--ouro-light);font-size:1rem">${fmtMoeda(_sC+_tC)}</span>
+      </div></div>`;
   }
 
   // Rola para o final automaticamente
@@ -933,92 +908,45 @@ function imprimirCozinha() {
 }
 
 function imprimirConta() {
-  const mesa = estadoMesa.dadosMesa;
-  if (!mesa || !mesa.historicoPedidos?.length) {
-    toast("Nenhum item na conta.", "erro");
-    return;
-  }
-
-  const todosItens = [];
-  (mesa.historicoPedidos || []).forEach(pedido => {
-    (pedido.itens || []).forEach(item => {
-      const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
-      if (exist) { exist.qty += item.qty; exist.subtotal += item.preco * item.qty; }
-      else todosItens.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty, obs: item.obs });
-    });
-  });
-
-  const subtotal    = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
-  const taxaEntrega = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-  const localEntrega= mesa.entrega?.local || estadoMesa.entrega?.local || "";
-  const totalReal   = subtotal + taxaEntrega;
-  const isDelivery  = mesa.tipo === "delivery";
-
-  const dataHora = new Date().toLocaleString("pt-BR", {
-    day: "2-digit", month: "2-digit", year: "numeric",
-    hour: "2-digit", minute: "2-digit"
-  });
-
-  function linhaCupom(desc, valor) {
-    const maxNome = 16;
-    const nome = desc.length > maxNome ? desc.substring(0, maxNome) : desc;
-    const pontos = ".".repeat(Math.max(1, 26 - nome.length - valor.length));
-    return `<div class="ci">${nome}<span>${pontos}${valor}</span></div>`;
-  }
-
-  const itensLinhas = todosItens.map(item =>
-    linhaCupom(`${item.qty}x ${item.nome}`, fmtMoeda(item.subtotal))
-    + (item.obs ? `<div class="co"> &rarr; ${item.obs}</div>` : "")
-  ).join("");
-
-  const linhaEntrega = taxaEntrega > 0
-    ? linhaCupom("Taxa entrega", fmtMoeda(taxaEntrega)) : "";
-  const linhaLocal = isDelivery && localEntrega
-    ? linhaCupom("Local", localEntrega) : "";
-
-  const htmlCupom = `<!DOCTYPE html>
-<html lang="pt-BR"><head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>${isDelivery ? "Delivery" : "Pre-Conta Mesa"} ${estadoMesa.numero}</title>
-<style>
-  @page { size: 58mm auto; margin: 3mm 2mm 4mm 2mm; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family:'Courier New',Courier,monospace; font-size:4mm; color:#000; background:#fff; width:54mm; }
-  .cc{text-align:center} .cb{font-weight:bold} .cg{font-size:5mm}
-  .cs{display:block;overflow:hidden;white-space:nowrap;margin:.8mm 0;font-size:3mm}
-  .ct{font-weight:bold;text-transform:uppercase;font-size:3.2mm;margin:1.5mm 0 .5mm}
-  .ci{display:flex;justify-content:space-between;font-size:3.2mm;margin:.5mm 0;white-space:nowrap;overflow:hidden}
-  .ci span{white-space:nowrap;flex-shrink:0}
-  .co{font-style:italic;font-size:2.8mm;padding-left:2mm;margin-bottom:.5mm}
-  .ctotal{display:flex;justify-content:space-between;font-weight:bold;font-size:4.5mm;border-top:.4mm solid #000;margin-top:1mm;padding-top:1.5mm}
-  .cf{text-align:center;font-size:3mm;margin-top:2mm;border-top:.3mm dashed #000;padding-top:1.5mm}
-  .esp{height:4mm}
-  .btn-print{display:block;width:100%;margin:4mm 0 0;padding:3mm;background:#c0392b;color:#fff;border:none;border-radius:2mm;font-size:3.5mm;font-weight:bold;cursor:pointer}
-  @media print{.btn-print{display:none}}
-</style></head><body>
-  <div class="cc cb cg">MIKAMI SUSHI</div>
-  <div class="cc cs">${isDelivery ? "-- DELIVERY --" : "-- PRE-CONTA --"}</div>
-  <div class="cc">${isDelivery ? "🛵 Delivery" : "Mesa"}: <strong>${estadoMesa.numero}</strong></div>
-  <div class="cc cs">${dataHora}</div>
-  <div class="cs">------------------------------</div>
-  <div class="ct">ITENS CONSUMIDOS</div>
-  <div class="cs">------------------------------</div>
-  ${itensLinhas}
-  ${linhaLocal || linhaEntrega ? `<div class="cs">------------------------------</div>` : ""}
-  ${linhaLocal}
-  ${linhaEntrega}
-  <div class="cs">==============================</div>
-  <div class="ctotal"><span>TOTAL</span><span>${fmtMoeda(totalReal)}</span></div>
-  <div class="cs">==============================</div>
-  <div class="cf">Obrigado pela visita!<br>Mikami Sushi</div>
-  <div class="esp"></div>
-  <button class="btn-print" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  const mesa=estadoMesa.dadosMesa;
+  if(!mesa||!mesa.historicoPedidos?.length){toast("Nenhum item na conta.","erro");return;}
+  const todosItens=[];
+  (mesa.historicoPedidos||[]).forEach(p=>(p.itens||[]).forEach(item=>{
+    const ex=todosItens.find(i=>i.nome===item.nome&&!item.obs&&!i.obs);
+    if(ex){ex.qty+=item.qty;ex.subtotal+=item.preco*item.qty;}
+    else todosItens.push({nome:item.nome,qty:item.qty,preco:item.preco,subtotal:item.preco*item.qty,obs:item.obs});
+  }));
+  const sub=(mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+  const taxa=mesa.entrega?.taxa||estadoMesa.entrega?.taxa||0;
+  const local=mesa.entrega?.local||estadoMesa.entrega?.local||"";
+  const totalR=sub+taxa;
+  const isD=mesa.tipo==="delivery";
+  const dh=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+  const lc=(d,v)=>{const n=d.length>16?d.substring(0,16):d;return`<div class="ci">${n}<span>${".".repeat(Math.max(1,26-n.length-v.length))}${v}</span></div>`;};
+  const itL=todosItens.map(i=>lc(`${i.qty}x ${i.nome}`,fmtMoeda(i.subtotal))+(i.obs?`<div class="co"> &rarr; ${i.obs}</div>`:""  )).join("");
+  const lLoc=isD&&local?lc("Local",local):"";
+  const lTax=taxa>0?lc("Taxa entrega",fmtMoeda(taxa)):"";
+  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${isD?"Delivery":"Pre-Conta"} ${estadoMesa.numero}</title>
+<style>@page{size:58mm auto;margin:3mm 2mm 4mm 2mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:4mm;color:#000;background:#fff;width:54mm}.cc{text-align:center}.cb{font-weight:bold}.cg{font-size:5mm}.cs{display:block;overflow:hidden;white-space:nowrap;margin:.8mm 0;font-size:3mm}.ct{font-weight:bold;text-transform:uppercase;font-size:3.2mm;margin:1.5mm 0 .5mm}.ci{display:flex;justify-content:space-between;font-size:3.2mm;margin:.5mm 0;white-space:nowrap;overflow:hidden}.ci span{white-space:nowrap;flex-shrink:0}.co{font-style:italic;font-size:2.8mm;padding-left:2mm}.ctotal{display:flex;justify-content:space-between;font-weight:bold;font-size:4.5mm;border-top:.4mm solid #000;margin-top:1mm;padding-top:1.5mm}.cf{text-align:center;font-size:3mm;margin-top:2mm;border-top:.3mm dashed #000;padding-top:1.5mm}.esp{height:4mm}.bp{display:block;width:100%;margin:4mm 0 0;padding:3mm;background:#c0392b;color:#fff;border:none;border-radius:2mm;font-size:3.5mm;font-weight:bold;cursor:pointer}@media print{.bp{display:none}}</style></head><body>
+<div class="cc cb cg">MIKAMI SUSHI</div>
+<div class="cc cs">${isD?"-- DELIVERY --":"-- PRE-CONTA --"}</div>
+<div class="cc">${isD?"🛵 Delivery":"Mesa"}: <strong>${estadoMesa.numero}</strong></div>
+<div class="cc cs">${dh}</div>
+<div class="cs">------------------------------</div>
+<div class="ct">ITENS CONSUMIDOS</div>
+<div class="cs">------------------------------</div>
+${itL}
+${lLoc||lTax?`<div class="cs">------------------------------</div>`:""}${lLoc}${lTax}
+<div class="cs">==============================</div>
+<div class="ctotal"><span>TOTAL</span><span>${fmtMoeda(totalR)}</span></div>
+<div class="cs">==============================</div>
+<div class="cf">Obrigado pela visita!<br>Mikami Sushi</div>
+<div class="esp"></div>
+<button class="bp" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
 </body></html>`;
-
-  const aba = window.open("", "_blank");
-  if (aba) { aba.document.open(); aba.document.write(htmlCupom); aba.document.close(); }
-  else { window.print(); }
+  const aba=window.open("","_blank");
+  if(aba){aba.document.open();aba.document.write(html);aba.document.close();}
+  else window.print();
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
@@ -1028,10 +956,15 @@ function abrirModalFechar() {
     toast("Mesa já está livre.", "info");
     return;
   }
-  if ((mesa.total || 0) <= 0) {
+  const subModal = (mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+  const taxaModal = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+  if ((subModal + taxaModal) <= 0) {
     toast("Conta zerada. Nada a fechar.", "info");
     return;
   }
+  // Atualiza o total no modal antes de abrir
+  const elModal = document.getElementById("modalTotalCobrar");
+  if (elModal) elModal.textContent = fmtMoeda(subModal + taxaModal);
   document.getElementById("modalFecharMesa").classList.add("open");
 }
 
@@ -1074,11 +1007,10 @@ async function fecharMesa() {
     const metodoBtn = document.querySelector(".pagamento-btn.selected");
     if (!metodoBtn) return;
     formaPagamento = metodoBtn.dataset.metodo;
-    // Usa total com taxa de entrega para pagamento único
-    const _mesa = estadoMesa.dadosMesa;
-    const _sub  = (_mesa?.historicoPedidos || []).reduce((a,p) => a+(p.total||0), 0);
-    const _taxa = _mesa?.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-    pagamentos = [{ metodo: formaPagamento, valor: _sub + _taxa }];
+    const _mF=estadoMesa.dadosMesa;
+    const _sF=(_mF?.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+    const _tF=_mF?.entrega?.taxa||estadoMesa.entrega?.taxa||0;
+    pagamentos=[{metodo:formaPagamento,valor:_sF+_tF}];
   }
 
   btnFechar.disabled   = true;
@@ -1090,18 +1022,18 @@ async function fecharMesa() {
     // FIX: recalcula o total somando historicoPedidos (fonte da verdade)
     // Evita usar mesa.total que pode estar errado por race condition
     const historico = mesa.historicoPedidos || [];
-    const subtotalPedidos = historico.reduce((acc, p) => acc + (p.total || 0), 0);
-    const taxaEntrega = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-    const localEntrega = mesa.entrega?.local || estadoMesa.entrega?.local || "";
-    const totalReal = subtotalPedidos + taxaEntrega;
+    const subTotal  = historico.reduce((acc,p)=>acc+(p.total||0),0);
+    const taxaF     = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
+    const localF    = mesa.entrega?.local || estadoMesa.entrega?.local || "";
+    const totalReal = subTotal + taxaF;
 
-    await addDoc(collection(db, "vendas"), {
+    await addDoc(collection(db,"vendas"),{
       mesaNumero:     estadoMesa.numero,
       mesaId:         estadoMesa.mesaId,
-      itens:          historico.flatMap(p => p.itens || []),
+      itens:          historico.flatMap(p=>p.itens||[]),
       total:          totalReal,
-      taxaEntrega:    taxaEntrega || null,
-      localEntrega:   localEntrega || null,
+      taxaEntrega:    taxaF||null,
+      localEntrega:   localF||null,
       formaPagamento: formaPagamento,
       pagamentos:     pagamentos,
       fechadoEm:      serverTimestamp()
@@ -1122,8 +1054,8 @@ async function fecharMesa() {
       abertaEm:         null,
       total:            0,
       pedidosCount:     0,
-      historicoPedidos: [],
-      entrega: { local: "", taxa: 0 }
+      historicoPedidos:[],
+      entrega:{local:"",taxa:0}
     });
 
     fecharModal();
@@ -1255,7 +1187,7 @@ function renderCozinha(pedidos) {
       <div class="pedido-card ${statusClass[pedido.status] || "status-novo"}" data-pedido-id="${pedido.id}">
         <div class="pedido-card-header">
           <div>
-            <div class="pedido-card-mesa">${pedido.mesaNumero >= 11 ? '🛵 Delivery ' + pedido.mesaNumero : 'Mesa ' + pedido.mesaNumero}</div>
+            <div class="pedido-card-mesa">${pedido.mesaNumero>=11?'🛵 '+pedido.mesaNumero:'Mesa '+pedido.mesaNumero}</div>
             <div><span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${pedido.status || "Novo"}</span></div>
           </div>
           <div class="pedido-card-meta">
@@ -1360,6 +1292,25 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 let unsubRelatorio = null;  // para limpar listener anterior
 let vendasAtuais   = [];      // cache para impressão do relatório
 
+
+const SENHA_RELATORIO = "086431";
+let _autenticado = false;
+function verificarLogin(){return _autenticado;}
+function fazerLogin(s){if(s===SENHA_RELATORIO){_autenticado=true;return true;}return false;}
+function fazerLogout(){_autenticado=false;window.location.reload();}
+function mostrarTelaLogin(){
+  const m=document.getElementById("relatorioMain");if(!m)return;
+  m.innerHTML=`<div class="login-box"><div class="login-icon">🔐</div><h2>Área Restrita</h2><p>Digite a senha para acessar o Relatório.</p><div class="login-campo"><input type="password" id="senhaInput" placeholder="Senha" autocomplete="off"/><button class="btn-primary btn-login" id="btnLogin">Entrar</button></div><div class="login-erro" id="loginErro"></div></div>`;
+  const inp=document.getElementById("senhaInput"),btn=document.getElementById("btnLogin"),err=document.getElementById("loginErro");
+  function t(){if(fazerLogin(inp.value.trim())){mostrarConteudoRelatorio();}else{err.textContent="Senha incorreta.";inp.value="";inp.focus();setTimeout(()=>{err.textContent="";},2000);}}
+  btn.addEventListener("click",t);inp.addEventListener("keydown",e=>{if(e.key==="Enter")t();});inp.focus();
+}
+function mostrarConteudoRelatorio(){
+  const m=document.getElementById("relatorioMain"),t=document.getElementById("tplRelatorio");
+  if(m&&t){m.innerHTML="";m.appendChild(t.content.cloneNode(true));}
+  document.getElementById("btnLogout")?.addEventListener("click",fazerLogout);
+  _iniciarConteudoRelatorio();
+}
 function _iniciarConteudoRelatorio() {
   iniciarRelogio();
 
@@ -1389,69 +1340,10 @@ function _iniciarConteudoRelatorio() {
   _iniciarGraficos();
 }
 
-// ============================================================
-// LOGIN — Relatório protegido por senha
-// ============================================================
-const SENHA_RELATORIO = "086431";
-let _autenticado = false; // volátil — reseta a cada carregamento
-
-function verificarLogin()  { return _autenticado; }
-function fazerLogin(senha) { if (senha === SENHA_RELATORIO) { _autenticado = true; return true; } return false; }
-function fazerLogout()     { _autenticado = false; window.location.reload(); }
-
-function mostrarTelaLogin() {
-  const main = document.getElementById("relatorioMain");
-  if (!main) return;
-  main.innerHTML = `
-    <div class="login-box">
-      <div class="login-icon">🔐</div>
-      <h2>Área Restrita</h2>
-      <p>Digite a senha para acessar o Relatório e Faturamento.</p>
-      <div class="login-campo">
-        <input type="password" id="senhaInput" placeholder="Senha" autocomplete="off" />
-        <button class="btn-primary btn-login" id="btnLogin">Entrar</button>
-      </div>
-      <div class="login-erro" id="loginErro"></div>
-    </div>
-  `;
-  const input = document.getElementById("senhaInput");
-  const btn   = document.getElementById("btnLogin");
-  const erro  = document.getElementById("loginErro");
-  function tentarLogin() {
-    if (fazerLogin(input.value.trim())) {
-      mostrarConteudoRelatorio();
-    } else {
-      erro.textContent = "Senha incorreta.";
-      input.value = "";
-      input.focus();
-      setTimeout(() => { erro.textContent = ""; }, 2000);
-    }
-  }
-  btn.addEventListener("click", tentarLogin);
-  input.addEventListener("keydown", e => { if (e.key === "Enter") tentarLogin(); });
-  input.focus();
-}
-
-function mostrarConteudoRelatorio() {
-  const main = document.getElementById("relatorioMain");
-  const tpl  = document.getElementById("tplRelatorio");
-  if (main && tpl) {
-    main.innerHTML = "";
-    main.appendChild(tpl.content.cloneNode(true));
-  }
-  document.getElementById("btnLogout")?.addEventListener("click", fazerLogout);
-  _iniciarConteudoRelatorio();
-}
-
-function initRelatorio() {
+function initRelatorio(){
   iniciarRelogio();
-  if (verificarLogin()) {
-    mostrarConteudoRelatorio();
-  } else {
-    mostrarTelaLogin();
-  }
+  if(verificarLogin()){mostrarConteudoRelatorio();}else{mostrarTelaLogin();}
 }
-
 
 function escutarVendas(dataStr) {
   // Cancela listener anterior se existir
@@ -1560,7 +1452,7 @@ function renderRelatorio(vendas) {
     return `
       <div class="venda-card">
         <div class="venda-card-header">
-          <span class="venda-mesa">${venda.mesaNumero >= 11 ? "🛵 Delivery " + venda.mesaNumero : "Mesa " + venda.mesaNumero}</span>
+          <span class="venda-mesa">${venda.mesaNumero>=11?"🛵 Delivery "+venda.mesaNumero:"Mesa "+venda.mesaNumero}</span>
           <span class="venda-hora">${fmtDataHora(venda.fechadoEm)}</span>
           <span class="venda-pagamento">${venda.formaPagamento || "—"}</span>
           <span class="venda-total-valor">${fmtMoeda(venda.total || 0)}</span>
@@ -1638,7 +1530,7 @@ function imprimirRelatorio(dataStr, vendas) {
     return `
       <div class="print-relatorio-venda">
         <div class="print-relatorio-venda-header">
-          <span>${venda.mesaNumero >= 11 ? "Delivery " + venda.mesaNumero : "Mesa " + venda.mesaNumero}</span>
+          <span>Mesa ${venda.mesaNumero}</span>
           <span>${fmtDataHora(venda.fechadoEm)}</span>
           <span>${venda.formaPagamento || "—"}</span>
           <span>${fmtMoeda(venda.total || 0)}</span>
@@ -1690,11 +1582,10 @@ function imprimirRelatorio(dataStr, vendas) {
 
 // ── Pagamento dividido — atualiza saldo restante ──────────────
 function atualizarRestante() {
-  // Total correto: pedidos + taxa de entrega (delivery)
-  const _mesa   = estadoMesa.dadosMesa;
-  const _subRst = (_mesa?.historicoPedidos || []).reduce((a,p) => a+(p.total||0), 0);
-  const _taxaRst = _mesa?.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-  const total   = (_subRst || _mesa?.total || 0) + _taxaRst;
+  const _mR=estadoMesa.dadosMesa;
+  const _sR=(_mR?.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
+  const _tR=_mR?.entrega?.taxa||estadoMesa.entrega?.taxa||0;
+  const total=(_sR||_mR?.total||0)+_tR;
   let distribuido = 0;
   document.querySelectorAll(".div-toggle.active").forEach(btn => {
     const metodo = btn.dataset.metodo;
@@ -1904,7 +1795,7 @@ function fecharModalEditar() {
 // ============================================================
 // 8. PÁGINA: FATURAMENTO
 // ============================================================
-function _iniciarGraficos() { initFaturamento(); }
+function _iniciarGraficos(){initFaturamento();}
 
 function initFaturamento() {
   iniciarRelogio();
@@ -2097,4 +1988,3 @@ if      (pagina.includes("page-mesas"))    initIndex();
 else if (pagina.includes("page-mesa"))     initMesa();
 else if (pagina.includes("page-cozinha"))  initCozinha();
 else if (pagina.includes("page-relatorio")) initRelatorio();
-else if (pagina.includes("page-faturamento")) initFaturamento();
