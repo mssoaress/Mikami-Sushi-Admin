@@ -29,7 +29,7 @@ const CARDAPIO = [
   { nome: "Combo 10 Hot Skin + 10 Uramaki + 10 Hosomaki Kani",             categoria: "Combos",      preco: 43.00, ativo: true },
   { nome: "Combo 20 Hot Roll Sortidas",                                     categoria: "Combos",      preco: 32.00, ativo: true },
   { nome: "Combo 2 Joe + 2 Niguiri + 5 Uramaki + 5 Hosomaki + 6 Hot Roll", categoria: "Combos",      preco: 46.00, ativo: true },
-
+ 
   // INDIVIDUAIS
   { nome: "Uramaki de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
@@ -42,7 +42,7 @@ const CARDAPIO = [
   { nome: "Hot Dog Salmão",            categoria: "Individuais", preco: 30.00, ativo: true },
   { nome: "Hot Dog Salmão e Camarão",  categoria: "Individuais", preco: 35.00, ativo: true },
   { nome: "Sunomono",                  categoria: "Individuais", preco: 10.00, ativo: true },
-
+ 
   // ESPECIAIS
   { nome: "Uramaki Kani com Camarão",                          categoria: "Especiais", preco: 27.00, ativo: true },
   { nome: "Uramaki Salmão Geleia",                             categoria: "Especiais", preco: 27.00, ativo: true },
@@ -51,27 +51,27 @@ const CARDAPIO = [
   { nome: "Joe (3 un.)",                                       categoria: "Especiais", preco: 18.00, ativo: true },
   { nome: "Niguiri (3 un.)",                                   categoria: "Especiais", preco: 15.00, ativo: true },
   { nome: "Mikami Supremo 500g",                               categoria: "Especiais", preco: 45.00, ativo: true },
-
+ 
   // TEMAKIS
   { nome: "Temaki Copo Salmão", categoria: "Temakis", preco: 28.00, ativo: true },
   { nome: "Temaki de Salmão",   categoria: "Temakis", preco: 25.00, ativo: true },
   { nome: "Temaki de Kani",     categoria: "Temakis", preco: 22.00, ativo: true },
   { nome: "Temaki de Skin",     categoria: "Temakis", preco: 21.00, ativo: true },
   { nome: "Temaki de Camarão",  categoria: "Temakis", preco: 30.00, ativo: true },
-
+ 
   // YAKISOBA
   { nome: "Yakisoba Individual",  categoria: "Yakisoba", preco: 20.00, ativo: true },
   { nome: "Yakisoba 2 Pessoas",   categoria: "Yakisoba", preco: 30.00, ativo: true },
-
+ 
   // DOCES
   { nome: "Harumaki Banana com Nutella",                           categoria: "Doces", preco: 20.00, ativo: true },
   { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta",   categoria: "Doces", preco: 22.00, ativo: true },
-
+ 
   // BEBIDAS
-  { nome: "Coca Zero Lata 220ml",    categoria: "Bebidas", preco: 4.50, ativo: true },
+  { nome: "Coca Zero Lata 220ml",    categoria: "Bebidas", preco: 6.00, ativo: true },
   { nome: "Coca Lata 350ml",         categoria: "Bebidas", preco: 6.00, ativo: true },
   { nome: "Fanta Lata 220ml",        categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Kuat Lata 220ml",         categoria: "Bebidas", preco: 4.50, ativo: true },
+  { nome: "Kuat Lata 220ml",         categoria: "Bebidas", preco: 6.00, ativo: true },
   { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
   { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
