@@ -31,27 +31,27 @@ const CARDAPIO = [
   { nome: "Combo 2 Joe + 2 Niguiri + 5 Uramaki + 5 Hosomaki + 6 Hot Roll", categoria: "Combos",      preco: 46.00, ativo: true },
 
   // INDIVIDUAIS
-  { nome: "Uramaki de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Hot Roll de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Hot Roll de Kani",          categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Hot Roll Skin",             categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Hot Roll Camarão",             categoria: "Individuais", preco: 25.00, ativo: true },
-  { nome: "Hosomaki de Salmão",        categoria: "Individuais", preco: 16.00, ativo: true },
-  { nome: "Rolinho Primavera (4 un.)", categoria: "Individuais", preco: 15.00, ativo: true },
-  { nome: "Croquete de Salmão (6 un.)",categoria: "Individuais", preco: 15.00, ativo: true },
-  { nome: "Kani Queijo (6 un.)",       categoria: "Individuais", preco: 15.00, ativo: true },
-  { nome: "Hot Dog Salmão",            categoria: "Individuais", preco: 30.00, ativo: true },
-  { nome: "Hot Dog Salmão e Camarão",  categoria: "Individuais", preco: 35.00, ativo: true },
-  { nome: "Sunomono",                  categoria: "Individuais", preco: 10.00, ativo: true },
+  { nome: "Uramaki de Salmão",          categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll de Kani",           categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll Skin",              categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Hot Roll Camarão",           categoria: "Individuais", preco: 25.00, ativo: true },
+  { nome: "Hosomaki de Salmão",         categoria: "Individuais", preco: 16.00, ativo: true },
+  { nome: "Rolinho Primavera (4 un.)",  categoria: "Individuais", preco: 15.00, ativo: true },
+  { nome: "Croquete de Salmão (6 un.)", categoria: "Individuais", preco: 15.00, ativo: true },
+  { nome: "Kani Queijo (6 un.)",        categoria: "Individuais", preco: 15.00, ativo: true },
+  { nome: "Hot Dog Salmão",             categoria: "Individuais", preco: 30.00, ativo: true },
+  { nome: "Hot Dog Salmão e Camarão",   categoria: "Individuais", preco: 35.00, ativo: true },
+  { nome: "Sunomono",                   categoria: "Individuais", preco: 10.00, ativo: true },
 
   // ESPECIAIS
-  { nome: "Uramaki Kani com Camarão",                          categoria: "Especiais", preco: 27.00, ativo: true },
-  { nome: "Uramaki Salmão Geleia",                             categoria: "Especiais", preco: 27.00, ativo: true },
-  { nome: "Hot Especial",                                      categoria: "Especiais", preco: 22.00, ativo: true },
-  { nome: "Nathos de Salmão e Geleia (4 un.)",                 categoria: "Especiais", preco: 15.00, ativo: true },
-  { nome: "Joe (3 un.)",                                       categoria: "Especiais", preco: 18.00, ativo: true },
-  { nome: "Niguiri (3 un.)",                                   categoria: "Especiais", preco: 15.00, ativo: true },
-  { nome: "Mikami Supremo 500g",                               categoria: "Especiais", preco: 45.00, ativo: true },
+  { nome: "Uramaki Kani com Camarão",               categoria: "Especiais", preco: 27.00, ativo: true },
+  { nome: "Uramaki Salmão Geleia",                  categoria: "Especiais", preco: 27.00, ativo: true },
+  { nome: "Hot Especial",                           categoria: "Especiais", preco: 22.00, ativo: true },
+  { nome: "Nathos de Salmão e Geleia (4 un.)",      categoria: "Especiais", preco: 15.00, ativo: true },
+  { nome: "Joe (3 un.)",                            categoria: "Especiais", preco: 18.00, ativo: true },
+  { nome: "Niguiri (3 un.)",                        categoria: "Especiais", preco: 15.00, ativo: true },
+  { nome: "Mikami Supremo 500g",                    categoria: "Especiais", preco: 45.00, ativo: true },
 
   // TEMAKIS
   { nome: "Temaki Copo Salmão", categoria: "Temakis", preco: 28.00, ativo: true },
@@ -61,29 +61,29 @@ const CARDAPIO = [
   { nome: "Temaki de Camarão",  categoria: "Temakis", preco: 30.00, ativo: true },
 
   // YAKISOBA
-  { nome: "Yakisoba Individual",  categoria: "Yakisoba", preco: 20.00, ativo: true },
-  { nome: "Yakisoba 2 Pessoas",   categoria: "Yakisoba", preco: 30.00, ativo: true },
+  { nome: "Yakisoba Individual", categoria: "Yakisoba", preco: 20.00, ativo: true },
+  { nome: "Yakisoba 2 Pessoas",  categoria: "Yakisoba", preco: 30.00, ativo: true },
 
   // DOCES
-  { nome: "Harumaki Banana com Nutella",                           categoria: "Doces", preco: 20.00, ativo: true },
-  { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta",   categoria: "Doces", preco: 22.00, ativo: true },
+  { nome: "Harumaki Banana com Nutella",                         categoria: "Doces", preco: 20.00, ativo: true },
+  { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta",  categoria: "Doces", preco: 22.00, ativo: true },
 
   // BEBIDAS
-  { nome: "Coca Zero Lata ",    categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Coca Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Fanta Lata ",        categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Guaraná Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Guaraná Zero Lata ",         categoria: "Bebidas", preco: 6.00, ativo: true },
-  { nome: "Copo Suco ",              categoria: "Bebidas", preco: 8.00, ativo: true },
-  { nome: "Copo Suco ",             categoria: "Bebidas", preco: 10.00, ativo: true },
-  { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00, ativo: true },
-  { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00, ativo: true },
-  { nome: "Água",                    categoria: "Bebidas", preco: 3.00, ativo: true },
-  { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00, ativo: true },
-  { nome: "Coca Cola 1L Vidro",            categoria: "Bebidas", preco: 10.00, ativo: true },
+  { nome: "Coca Zero Lata",          categoria: "Bebidas", preco: 6.00,  ativo: true },
+  { nome: "Coca Lata",               categoria: "Bebidas", preco: 6.00,  ativo: true },
+  { nome: "Fanta Lata",              categoria: "Bebidas", preco: 6.00,  ativo: true },
+  { nome: "Guaraná Lata",            categoria: "Bebidas", preco: 6.00,  ativo: true },
+  { nome: "Guaraná Zero Lata",       categoria: "Bebidas", preco: 6.00,  ativo: true },
+  { nome: "Copo Suco P",             categoria: "Bebidas", preco: 8.00,  ativo: true },
+  { nome: "Copo Suco G",             categoria: "Bebidas", preco: 10.00, ativo: true },
+  { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.00,  ativo: true },
+  { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.00,  ativo: true },
+  { nome: "Água",                    categoria: "Bebidas", preco: 3.00,  ativo: true },
+  { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.00,  ativo: true },
+  { nome: "Coca Cola 1L Vidro",      categoria: "Bebidas", preco: 10.00, ativo: true },
 ];
 
-const TOTAL_MESAS = 16;
+const TOTAL_MESAS = 12;
 
 // ============================================================
 // 2. UTILITÁRIOS
@@ -144,69 +144,21 @@ function iniciarRelogio() {
 
 // ── SEED: chave de versão no localStorage ────────────────────
 // Só roda seeds se nunca rodou neste dispositivo ou versão mudou
-const SEED_VERSION = `mikami_seed_v${CARDAPIO.length}_m${TOTAL_MESAS}`;
+const SEED_VERSION = `mikami_seed_v${CARDAPIO.length}_m${TOTAL_MESAS}_r3`;
 
 async function garantirProdutos() {
   if (localStorage.getItem(SEED_VERSION + "_prod") === "ok") return;
   try {
-    const snap = await getDocs(collection(db, "produtos"));
-    if (snap.size >= CARDAPIO.length) {
-      localStorage.setItem(SEED_VERSION + "_prod", "ok");
-      return;
-    }
-    const existentes = new Set(snap.docs.map(d => d.id));
+    // Sempre faz upsert de todos os produtos — garante que edições no app.js sejam aplicadas
     await Promise.all(CARDAPIO.map((p, i) => {
       const id = `prod_${i.toString().padStart(3, "0")}`;
-      return existentes.has(id) ? Promise.resolve() : setDoc(doc(db, "produtos", id), p);
+      return setDoc(doc(db, "produtos", id), p);
     }));
     localStorage.setItem(SEED_VERSION + "_prod", "ok");
-    console.log("[Mikami] Cardápio carregado.");
+    // Limpa cache do sessionStorage para forçar releitura do cardápio
+    Object.keys(sessionStorage).filter(k => k.startsWith("mikami_produtos_")).forEach(k => sessionStorage.removeItem(k));
+    console.log("[Mikami] Cardápio atualizado.");
   } catch (err) { console.error("[Mikami] Seed produtos:", err); }
-}
-
-
-async function migrarDelivery() {
-  if (localStorage.getItem("mikami_delivery_v4") === "ok") return;
-  try {
-    const ups = [];
-    for (let i = 11; i <= 20; i++) ups.push(updateDoc(doc(db,"mesas",`mesa_${i}`),{tipo:"delivery"}).catch(()=>{}));
-    await Promise.all(ups);
-    localStorage.setItem("mikami_delivery_v4","ok");
-  } catch(e){}
-}
-
-function initModalAddMesa() {
-  const btn = document.getElementById("btnAddMesa");
-  if (!btn) return;
-  btn.addEventListener("click", () => {
-    document.getElementById("modalAddMesa").classList.add("open");
-    document.getElementById("addMesaStatus").textContent = "";
-  });
-  document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () => {
-    document.getElementById("modalAddMesa").classList.remove("open");
-  });
-  document.getElementById("btnAddRestaurante")?.addEventListener("click", () => adicionarMesa("restaurante"));
-  document.getElementById("btnAddDelivery")?.addEventListener("click", () => adicionarMesa("delivery"));
-}
-
-async function adicionarMesa(tipo) {
-  const status = document.getElementById("addMesaStatus");
-  if (status) { status.style.color="var(--cinza-texto)"; status.textContent = "Criando mesa..."; }
-  try {
-    const snap = await getDocs(collection(db,"mesas"));
-    const nums = snap.docs.map(d=>d.data().numero||0);
-    const prox = Math.max(...nums,0)+1;
-    await setDoc(doc(db,"mesas",`mesa_${prox}`),{
-      numero:prox, tipo,
-      status:"livre", abertaEm:null,
-      total:0, pedidosCount:0, historicoPedidos:[],
-      entrega:{local:"",taxa:0}
-    });
-    if (status){ status.style.color="var(--verde)"; status.textContent=`✓ Mesa ${prox} (${tipo==="delivery"?"🛵 Delivery":"🍽️ Restaurante"}) criada!`; }
-    setTimeout(()=>{ document.getElementById("modalAddMesa")?.classList.remove("open"); },1500);
-  } catch(e){
-    if(status){status.style.color="var(--vermelho-soft)";status.textContent="Erro ao criar mesa.";}
-  }
 }
 
 async function garantirMesas() {
@@ -219,11 +171,8 @@ async function garantirMesas() {
       const id = `mesa_${i}`;
       if (!existentes.has(id)) {
         promises.push(setDoc(doc(db, "mesas", id), {
-          numero: i,
-          tipo: i >= 11 ? "delivery" : "restaurante",
-          status: "livre", abertaEm: null,
-          total: 0, pedidosCount: 0, historicoPedidos: [],
-          entrega: { local: "", taxa: 0 }
+          numero: i, status: "livre", abertaEm: null,
+          total: 0, pedidosCount: 0, historicoPedidos: []
         }));
       }
     }
@@ -254,39 +203,40 @@ function initIndex() {
   // Cancela listener ao sair da página
   window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
 
+  escutarFaturamentoDia();
+
   // Seeds em background, sem bloquear UI
-  Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(console.error);
-  initModalAddMesa();
+  Promise.all([garantirProdutos(), garantirMesas()]).catch(console.error);
 }
 
 // Cache para diff de mesas — evita redesenhar cards que não mudaram
 const _mesaHash = new Map();
 
 function _hashMesa(m) {
-  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}|${m.entrega?.taxa||0}|${m.entrega?.local||""}`;
+  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}`;
 }
 
 function _htmlCard(mesa, statusLabel) {
-  const totalBase   = mesa.historicoPedidos?.length ? mesa.historicoPedidos.reduce((a,p)=>a+(p.total||0),0) : (mesa.total||0);
-  const isDelivery  = mesa.tipo === "delivery";
-  const taxaEntrega = mesa.entrega?.taxa || 0;
-  const totalExibir = totalBase + taxaEntrega;
+  // Recalcula total pelo historicoPedidos se disponível
+  const totalExibir = (mesa.historicoPedidos?.length)
+    ? mesa.historicoPedidos.reduce((a,p) => a+(p.total||0), 0)
+    : (mesa.total || 0);
 
   return `
-    <div class="mesa-card ${mesa.status}${isDelivery?" mesa-delivery":""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
+    <div class="mesa-card ${mesa.status}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
       <div class="mesa-card-header">
         <div class="mesa-numero">${mesa.numero}</div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <div class="mesa-status-pill status-${mesa.status}">${statusLabel[mesa.status]||mesa.status}</div>
-          ${isDelivery?`<div class="mesa-delivery-badge">🛵 Delivery</div>`:""}
+        <div class="mesa-status-pill status-${mesa.status}">
+          ${statusLabel[mesa.status] || mesa.status}
         </div>
       </div>
       <div class="mesa-card-info">
-        <div class="mesa-total">${mesa.status!=="livre"?fmtMoeda(totalExibir):"—"}</div>
+        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(totalExibir) : "—"}</div>
         <div class="mesa-meta">
-          ${mesa.abertaEm?`<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`:`<span>${isDelivery?"Delivery livre":"Mesa livre"}</span>`}
-          ${mesa.pedidosCount?`<span>${mesa.pedidosCount} pedido(s)</span>`:""}
-          ${isDelivery&&mesa.entrega?.local?`<span>📍 ${mesa.entrega.local}</span>`:""}
+          ${mesa.abertaEm
+            ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
+            : "<span>Mesa livre</span>"}
+          ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
         </div>
       </div>
     </div>
@@ -359,28 +309,28 @@ function renderStats(mesas) {
   document.getElementById("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
 }
 
+function escutarFaturamentoDia() {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const inicioHoje = Timestamp.fromDate(hoje);
 
+  const q = query(collection(db, "vendas"), where("fechadoEm", ">=", inicioHoje));
+
+  onSnapshot(q, snap => {
+    let total = 0;
+    snap.forEach(d => { total += d.data().total || 0; });
+    const el = document.getElementById("statTotalDia");
+    if (el) el.textContent = fmtMoeda(total);
+  });
+}
 
 // ============================================================
 // 4. PÁGINA: MESA
 // ============================================================
-const LOCAIS_ENTREGA = [
-  { nome: "Retirada",          taxa: 0,  icone: "🏠" },
-  { nome: "Cecilia",           taxa: 3,  icone: "📍" },
-  { nome: "Embebedado",        taxa: 5,  icone: "📍" },
-  { nome: "Pedra Branca",      taxa: 6,  icone: "📍" },
-  { nome: "Cumati",            taxa: 5,  icone: "📍" },
-  { nome: "Cecília de Cima",   taxa: 6,  icone: "📍" },
-  { nome: "Vilinha",           taxa: 6,  icone: "📍" },
-  { nome: "Boi Seco",          taxa: 15, icone: "📍" },
-  { nome: "Vertente do Lério", taxa: 15, icone: "📍" },
-];
-
 const estadoMesa = {
   numero: null,
   mesaId: null,
   dadosMesa: null,
-  entrega: { local: "", taxa: 0 },
   pedidoAtual: [],
   produtos: [],
   categoriaAtiva: "Todos",
@@ -423,7 +373,6 @@ async function initMesa() {
     estadoMesa.dadosMesa = snap.data();
     atualizarHeaderMesa();
     renderConta();
-    _configurarAbaEntrega(snap.data());
   });
 
   // Eventos
@@ -436,7 +385,6 @@ async function initMesa() {
   document.getElementById("btnImprimirCozinha").addEventListener("click", imprimirCozinha);
   document.getElementById("btnImprimirConta").addEventListener("click", imprimirConta);
   document.getElementById("btnFecharMesa").addEventListener("click", abrirModalFechar);
-  document.getElementById("btnConfirmarEntrega")?.addEventListener("click", _confirmarEntrega);
   document.getElementById("btnCancelarFechar").addEventListener("click", fecharModal);
   document.getElementById("btnConfirmarFechar").addEventListener("click", fecharMesa);
 
@@ -679,90 +627,6 @@ async function confirmarPedido() {
 }
 
 // ── Conta da mesa ─────────────────────────────────────────
-
-// ── ENTREGA ──────────────────────────────────────────────
-function _configurarAbaEntrega(mesa) {
-  if (mesa.tipo !== "delivery") return;
-
-  // Mostra botão da aba mobile
-  document.querySelectorAll(".mesa-aba-delivery").forEach(b => b.style.display = "");
-
-  const isMobile = window.innerWidth < 768;
-
-  if (isMobile) {
-    // Mobile: NÃO força display — o sistema de abas (aba-ativa) controla
-    // col-entrega fica oculta até o usuário clicar na aba
-  } else {
-    // Desktop: mostra a coluna e ajusta o grid
-    const col = document.querySelector(".col-entrega");
-    if (col) col.style.display = "flex";
-    const layout = document.querySelector(".mesa-layout");
-    if (layout) layout.style.gridTemplateColumns = "1fr 280px 260px 250px";
-  }
-
-  if (mesa.entrega?.taxa) estadoMesa.entrega = { local: mesa.entrega.local||"", taxa: mesa.entrega.taxa||0 };
-  _renderLocaisEntrega(mesa.entrega?.local || "");
-  _atualizarResumoEntrega();
-}
-
-function _renderLocaisEntrega(sel) {
-  const c = document.getElementById("entregaLocais"); if(!c) return;
-  c.innerHTML = LOCAIS_ENTREGA.map(loc=>{
-    const ativo = loc.nome===sel;
-    return `<div class="entrega-local-item${ativo?" ativo":""}" data-nome="${loc.nome}" data-taxa="${loc.taxa}">
-      <span class="entrega-local-icone">${loc.icone}</span>
-      <span class="entrega-local-nome">${loc.nome}</span>
-      <span class="entrega-local-taxa">${loc.taxa===0?"Grátis":"R$ "+loc.taxa.toFixed(2).replace(".",",")}</span>
-    </div>`;
-  }).join("");
-  c.querySelectorAll(".entrega-local-item").forEach(item=>{
-    item.addEventListener("click",()=>{
-      const nome=item.dataset.nome, taxa=parseFloat(item.dataset.taxa);
-      estadoMesa.entrega={local:nome,taxa};
-      _renderLocaisEntrega(nome);
-      _atualizarResumoEntrega();
-      updateDoc(doc(db,"mesas",estadoMesa.mesaId),{entrega:{local:nome,taxa}}).catch(()=>{});
-      const btn=document.getElementById("btnConfirmarEntrega");
-      const conf=document.getElementById("entregaConfirmado");
-      if(btn) btn.style.display="";
-      if(conf) conf.textContent="";
-    });
-  });
-}
-
-function _atualizarResumoEntrega() {
-  const mesa=estadoMesa.dadosMesa; if(!mesa) return;
-  const taxa=estadoMesa.entrega?.taxa||0;
-  const sub=(mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-  const total=sub+taxa;
-  const fmt=v=>"R$ "+v.toFixed(2).replace(".",",");
-  const el=id=>document.getElementById(id);
-  if(el("entregaResumo")) el("entregaResumo").style.display="";
-  if(el("entregaSubtotal"))    el("entregaSubtotal").textContent=fmt(sub);
-  if(el("entregaTaxaDisplay")) el("entregaTaxaDisplay").textContent=taxa===0?"Grátis":fmt(taxa);
-  if(el("entregaTotalDisplay"))el("entregaTotalDisplay").textContent=fmt(total);
-  if(el("contaTotalBadge"))  el("contaTotalBadge").textContent=fmt(total);
-  if(el("contaTotalFinal"))  el("contaTotalFinal").textContent=fmt(total);
-  if(el("modalTotalCobrar")) el("modalTotalCobrar").textContent=fmt(total);
-}
-
-async function _confirmarEntrega() {
-  const local=estadoMesa.entrega?.local, taxa=estadoMesa.entrega?.taxa??0;
-  if(!local){toast("Selecione um local de entrega.","erro");return;}
-  const btn=document.getElementById("btnConfirmarEntrega");
-  if(btn){btn.disabled=true;btn.textContent="Confirmando...";}
-  try {
-    await updateDoc(doc(db,"mesas",estadoMesa.mesaId),{entrega:{local,taxa,confirmado:true}});
-    const conf=document.getElementById("entregaConfirmado");
-    if(conf) conf.textContent="✓ Entrega confirmada!";
-    if(btn){btn.style.display="none";btn.disabled=false;btn.textContent="✅ Confirmar Entrega";}
-    toast("Entrega confirmada!","sucesso");
-  } catch(e){
-    toast("Erro ao confirmar.","erro");
-    if(btn){btn.disabled=false;btn.textContent="✅ Confirmar Entrega";}
-  }
-}
-
 function atualizarHeaderMesa() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa) return;
@@ -776,12 +640,11 @@ function atualizarHeaderMesa() {
     mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
 
   // FIX: usa historicoPedidos como fonte da verdade para o total exibido
-  const totalHistorico = (mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-  const taxaH = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-  const total = (totalHistorico||mesa.total||0) + taxaH;
+  const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
+  const total = totalHistorico || mesa.total || 0;
   document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
   document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  const _em = document.getElementById("modalTotalCobrar"); if(_em) _em.textContent=fmtMoeda(total);
+  document.getElementById("modalTotalCobrar")?.textContent && (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
 }
 
 function renderConta() {
@@ -836,20 +699,6 @@ function renderConta() {
       </div>
     `;
   }).join("");
-
-  // Bloco entrega
-  const _ent=mesa.entrega;
-  if(mesa.tipo==="delivery" && _ent?.local){
-    const _tC=_ent.taxa||0, _sC=historico.reduce((a,p)=>a+(p.total||0),0);
-    container.innerHTML+=`<div class="conta-entrega-bloco">
-      <div class="conta-entrega-header">🛵 Entrega</div>
-      <div class="conta-item-linha"><span class="conta-item-nome">📍 Local</span><span></span><span class="conta-item-val" style="color:#5dade2">${_ent.local}</span></div>
-      <div class="conta-item-linha"><span class="conta-item-nome">Taxa de entrega</span><span></span><span class="conta-item-val" style="color:#5dade2">${_tC===0?"Grátis":fmtMoeda(_tC)}</span></div>
-      <div class="conta-item-linha" style="border-top:1px solid var(--preto-borda);padding-top:.35rem;margin-top:.2rem">
-        <span class="conta-item-nome" style="font-weight:700;color:var(--branco)">Total com entrega</span><span></span>
-        <span class="conta-item-val" style="color:var(--ouro-light);font-size:1rem">${fmtMoeda(_sC+_tC)}</span>
-      </div></div>`;
-  }
 
   // Rola para o final automaticamente
   container.scrollTop = container.scrollHeight;
@@ -908,45 +757,58 @@ function imprimirCozinha() {
 }
 
 function imprimirConta() {
-  const mesa=estadoMesa.dadosMesa;
-  if(!mesa||!mesa.historicoPedidos?.length){toast("Nenhum item na conta.","erro");return;}
-  const todosItens=[];
-  (mesa.historicoPedidos||[]).forEach(p=>(p.itens||[]).forEach(item=>{
-    const ex=todosItens.find(i=>i.nome===item.nome&&!item.obs&&!i.obs);
-    if(ex){ex.qty+=item.qty;ex.subtotal+=item.preco*item.qty;}
-    else todosItens.push({nome:item.nome,qty:item.qty,preco:item.preco,subtotal:item.preco*item.qty,obs:item.obs});
-  }));
-  const sub=(mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-  const taxa=mesa.entrega?.taxa||estadoMesa.entrega?.taxa||0;
-  const local=mesa.entrega?.local||estadoMesa.entrega?.local||"";
-  const totalR=sub+taxa;
-  const isD=mesa.tipo==="delivery";
-  const dh=new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
-  const lc=(d,v)=>{const n=d.length>16?d.substring(0,16):d;return`<div class="ci">${n}<span>${".".repeat(Math.max(1,26-n.length-v.length))}${v}</span></div>`;};
-  const itL=todosItens.map(i=>lc(`${i.qty}x ${i.nome}`,fmtMoeda(i.subtotal))+(i.obs?`<div class="co"> &rarr; ${i.obs}</div>`:""  )).join("");
-  const lLoc=isD&&local?lc("Local",local):"";
-  const lTax=taxa>0?lc("Taxa entrega",fmtMoeda(taxa)):"";
-  const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>${isD?"Delivery":"Pre-Conta"} ${estadoMesa.numero}</title>
-<style>@page{size:58mm auto;margin:3mm 2mm 4mm 2mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Courier New',monospace;font-size:4mm;color:#000;background:#fff;width:54mm}.cc{text-align:center}.cb{font-weight:bold}.cg{font-size:5mm}.cs{display:block;overflow:hidden;white-space:nowrap;margin:.8mm 0;font-size:3mm}.ct{font-weight:bold;text-transform:uppercase;font-size:3.2mm;margin:1.5mm 0 .5mm}.ci{display:flex;justify-content:space-between;font-size:3.2mm;margin:.5mm 0;white-space:nowrap;overflow:hidden}.ci span{white-space:nowrap;flex-shrink:0}.co{font-style:italic;font-size:2.8mm;padding-left:2mm}.ctotal{display:flex;justify-content:space-between;font-weight:bold;font-size:4.5mm;border-top:.4mm solid #000;margin-top:1mm;padding-top:1.5mm}.cf{text-align:center;font-size:3mm;margin-top:2mm;border-top:.3mm dashed #000;padding-top:1.5mm}.esp{height:4mm}.bp{display:block;width:100%;margin:4mm 0 0;padding:3mm;background:#c0392b;color:#fff;border:none;border-radius:2mm;font-size:3.5mm;font-weight:bold;cursor:pointer}@media print{.bp{display:none}}</style></head><body>
-<div class="cc cb cg">MIKAMI SUSHI</div>
-<div class="cc cs">${isD?"-- DELIVERY --":"-- PRE-CONTA --"}</div>
-<div class="cc">${isD?"🛵 Delivery":"Mesa"}: <strong>${estadoMesa.numero}</strong></div>
-<div class="cc cs">${dh}</div>
-<div class="cs">------------------------------</div>
-<div class="ct">ITENS CONSUMIDOS</div>
-<div class="cs">------------------------------</div>
-${itL}
-${lLoc||lTax?`<div class="cs">------------------------------</div>`:""}${lLoc}${lTax}
-<div class="cs">==============================</div>
-<div class="ctotal"><span>TOTAL</span><span>${fmtMoeda(totalR)}</span></div>
-<div class="cs">==============================</div>
-<div class="cf">Obrigado pela visita!<br>Mikami Sushi</div>
-<div class="esp"></div>
-<button class="bp" onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
-</body></html>`;
-  const aba=window.open("","_blank");
-  if(aba){aba.document.open();aba.document.write(html);aba.document.close();}
-  else window.print();
+  const mesa = estadoMesa.dadosMesa;
+  if (!mesa || !mesa.historicoPedidos?.length) {
+    toast("Nenhum item na conta.", "erro");
+    return;
+  }
+
+  const todosItens = [];
+  (mesa.historicoPedidos || []).forEach(pedido => {
+    (pedido.itens || []).forEach(item => {
+      const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
+      if (exist) {
+        exist.qty     += item.qty;
+        exist.subtotal += item.preco * item.qty;
+      } else {
+        todosItens.push({
+          nome:     item.nome,
+          qty:      item.qty,
+          preco:    item.preco,
+          subtotal: item.preco * item.qty,
+          obs:      item.obs
+        });
+      }
+    });
+  });
+
+  const itensHtml = todosItens.map(item => `
+    <div class="print-item">
+      <span>${item.qty}x ${item.nome}</span>
+      <span>${fmtMoeda(item.subtotal)}</span>
+    </div>
+    ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
+  `).join("");
+
+  document.getElementById("printArea").innerHTML = `
+    <div class="print-header">
+      <h2>MIKAMI SUSHI</h2>
+      <p>— PRÉ-CONTA —</p>
+      <p>Mesa: <strong>${estadoMesa.numero}</strong></p>
+      <p>${new Date().toLocaleString("pt-BR")}</p>
+    </div>
+    <div class="print-section-title">ITENS CONSUMIDOS</div>
+    ${itensHtml}
+    <div class="print-total">
+      <span>TOTAL</span>
+      <span>${fmtMoeda(mesa.total || 0)}</span>
+    </div>
+    <div class="print-footer">
+      Obrigado pela visita!<br>Mikami Sushi
+    </div>
+  `;
+
+  window.print();
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
@@ -956,15 +818,10 @@ function abrirModalFechar() {
     toast("Mesa já está livre.", "info");
     return;
   }
-  const subModal = (mesa.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-  const taxaModal = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-  if ((subModal + taxaModal) <= 0) {
+  if ((mesa.total || 0) <= 0) {
     toast("Conta zerada. Nada a fechar.", "info");
     return;
   }
-  // Atualiza o total no modal antes de abrir
-  const elModal = document.getElementById("modalTotalCobrar");
-  if (elModal) elModal.textContent = fmtMoeda(subModal + taxaModal);
   document.getElementById("modalFecharMesa").classList.add("open");
 }
 
@@ -1007,10 +864,7 @@ async function fecharMesa() {
     const metodoBtn = document.querySelector(".pagamento-btn.selected");
     if (!metodoBtn) return;
     formaPagamento = metodoBtn.dataset.metodo;
-    const _mF=estadoMesa.dadosMesa;
-    const _sF=(_mF?.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-    const _tF=_mF?.entrega?.taxa||estadoMesa.entrega?.taxa||0;
-    pagamentos=[{metodo:formaPagamento,valor:_sF+_tF}];
+    pagamentos = [{ metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 }];
   }
 
   btnFechar.disabled   = true;
@@ -1022,18 +876,14 @@ async function fecharMesa() {
     // FIX: recalcula o total somando historicoPedidos (fonte da verdade)
     // Evita usar mesa.total que pode estar errado por race condition
     const historico = mesa.historicoPedidos || [];
-    const subTotal  = historico.reduce((acc,p)=>acc+(p.total||0),0);
-    const taxaF     = mesa.entrega?.taxa || estadoMesa.entrega?.taxa || 0;
-    const localF    = mesa.entrega?.local || estadoMesa.entrega?.local || "";
-    const totalReal = subTotal + taxaF;
+    const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0);
 
-    await addDoc(collection(db,"vendas"),{
+    // Salva venda no histórico
+    await addDoc(collection(db, "vendas"), {
       mesaNumero:     estadoMesa.numero,
       mesaId:         estadoMesa.mesaId,
-      itens:          historico.flatMap(p=>p.itens||[]),
+      itens:          historico.flatMap(p => p.itens || []),
       total:          totalReal,
-      taxaEntrega:    taxaF||null,
-      localEntrega:   localF||null,
       formaPagamento: formaPagamento,
       pagamentos:     pagamentos,
       fechadoEm:      serverTimestamp()
@@ -1054,8 +904,7 @@ async function fecharMesa() {
       abertaEm:         null,
       total:            0,
       pedidosCount:     0,
-      historicoPedidos:[],
-      entrega:{local:"",taxa:0}
+      historicoPedidos: []
     });
 
     fecharModal();
@@ -1187,7 +1036,7 @@ function renderCozinha(pedidos) {
       <div class="pedido-card ${statusClass[pedido.status] || "status-novo"}" data-pedido-id="${pedido.id}">
         <div class="pedido-card-header">
           <div>
-            <div class="pedido-card-mesa">${pedido.mesaNumero>=11?'🛵 '+pedido.mesaNumero:'Mesa '+pedido.mesaNumero}</div>
+            <div class="pedido-card-mesa">Mesa ${pedido.mesaNumero}</div>
             <div><span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${pedido.status || "Novo"}</span></div>
           </div>
           <div class="pedido-card-meta">
@@ -1292,26 +1141,7 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 let unsubRelatorio = null;  // para limpar listener anterior
 let vendasAtuais   = [];      // cache para impressão do relatório
 
-
-const SENHA_RELATORIO = "086431";
-let _autenticado = false;
-function verificarLogin(){return _autenticado;}
-function fazerLogin(s){if(s===SENHA_RELATORIO){_autenticado=true;return true;}return false;}
-function fazerLogout(){_autenticado=false;window.location.reload();}
-function mostrarTelaLogin(){
-  const m=document.getElementById("relatorioMain");if(!m)return;
-  m.innerHTML=`<div class="login-box"><div class="login-icon">🔐</div><h2>Área Restrita</h2><p>Digite a senha para acessar o Relatório.</p><div class="login-campo"><input type="password" id="senhaInput" placeholder="Senha" autocomplete="off"/><button class="btn-primary btn-login" id="btnLogin">Entrar</button></div><div class="login-erro" id="loginErro"></div></div>`;
-  const inp=document.getElementById("senhaInput"),btn=document.getElementById("btnLogin"),err=document.getElementById("loginErro");
-  function t(){if(fazerLogin(inp.value.trim())){mostrarConteudoRelatorio();}else{err.textContent="Senha incorreta.";inp.value="";inp.focus();setTimeout(()=>{err.textContent="";},2000);}}
-  btn.addEventListener("click",t);inp.addEventListener("keydown",e=>{if(e.key==="Enter")t();});inp.focus();
-}
-function mostrarConteudoRelatorio(){
-  const m=document.getElementById("relatorioMain"),t=document.getElementById("tplRelatorio");
-  if(m&&t){m.innerHTML="";m.appendChild(t.content.cloneNode(true));}
-  document.getElementById("btnLogout")?.addEventListener("click",fazerLogout);
-  _iniciarConteudoRelatorio();
-}
-function _iniciarConteudoRelatorio() {
+function initRelatorio() {
   iniciarRelogio();
 
   // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
@@ -1337,12 +1167,6 @@ function _iniciarConteudoRelatorio() {
 
   escutarVendas(hoje);
   window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
-  _iniciarGraficos();
-}
-
-function initRelatorio(){
-  iniciarRelogio();
-  if(verificarLogin()){mostrarConteudoRelatorio();}else{mostrarTelaLogin();}
 }
 
 function escutarVendas(dataStr) {
@@ -1452,7 +1276,7 @@ function renderRelatorio(vendas) {
     return `
       <div class="venda-card">
         <div class="venda-card-header">
-          <span class="venda-mesa">${venda.mesaNumero>=11?"🛵 Delivery "+venda.mesaNumero:"Mesa "+venda.mesaNumero}</span>
+          <span class="venda-mesa">Mesa ${venda.mesaNumero}</span>
           <span class="venda-hora">${fmtDataHora(venda.fechadoEm)}</span>
           <span class="venda-pagamento">${venda.formaPagamento || "—"}</span>
           <span class="venda-total-valor">${fmtMoeda(venda.total || 0)}</span>
@@ -1582,10 +1406,7 @@ function imprimirRelatorio(dataStr, vendas) {
 
 // ── Pagamento dividido — atualiza saldo restante ──────────────
 function atualizarRestante() {
-  const _mR=estadoMesa.dadosMesa;
-  const _sR=(_mR?.historicoPedidos||[]).reduce((a,p)=>a+(p.total||0),0);
-  const _tR=_mR?.entrega?.taxa||estadoMesa.entrega?.taxa||0;
-  const total=(_sR||_mR?.total||0)+_tR;
+  const total = estadoMesa.dadosMesa?.total || 0;
   let distribuido = 0;
   document.querySelectorAll(".div-toggle.active").forEach(btn => {
     const metodo = btn.dataset.metodo;
@@ -1795,8 +1616,6 @@ function fecharModalEditar() {
 // ============================================================
 // 8. PÁGINA: FATURAMENTO
 // ============================================================
-function _iniciarGraficos(){initFaturamento();}
-
 function initFaturamento() {
   iniciarRelogio();
 
@@ -1988,3 +1807,4 @@ if      (pagina.includes("page-mesas"))    initIndex();
 else if (pagina.includes("page-mesa"))     initMesa();
 else if (pagina.includes("page-cozinha"))  initCozinha();
 else if (pagina.includes("page-relatorio")) initRelatorio();
+else if (pagina.includes("page-faturamento")) initFaturamento();
