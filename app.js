@@ -13,10 +13,21 @@
 
 import {
   db,
-  collection, doc,
-  getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, where, orderBy,
-  serverTimestamp, Timestamp, increment
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  orderBy,
+  serverTimestamp,
+  Timestamp,
+  increment,
 } from "./firebase.js";
 
 // ============================================================
@@ -24,66 +35,212 @@ import {
 // ============================================================
 const CARDAPIO = [
   // COMBOS
-  { nome: "Combo Temaki Salmão + 10 Hot Roll",                              categoria: "Combos",      preco: 37.0,  ativo: true },
-  { nome: "Combo Mini Dog + 3 Croquetes + 3 Uramaki",                      categoria: "Combos",      preco: 32.0,  ativo: true },
-  { nome: "Combo 10 Hot Skin + 10 Uramaki + 10 Hosomaki Kani",             categoria: "Combos",      preco: 43.0,  ativo: true },
-  { nome: "Combo 20 Hot Roll Sortidas",                                     categoria: "Combos",      preco: 32.0,  ativo: true },
-  { nome: "Combo 2 Joe + 2 Niguiri + 5 Uramaki + 5 Hosomaki + 6 Hot Roll", categoria: "Combos",      preco: 46.0,  ativo: true },
+  {
+    nome: "Combo Temaki Salmão + 10 Hot Roll",
+    categoria: "Combos",
+    preco: 37.0,
+    ativo: true,
+  },
+  {
+    nome: "Combo Mini Dog + 3 Croquetes + 3 Uramaki",
+    categoria: "Combos",
+    preco: 32.0,
+    ativo: true,
+  },
+  {
+    nome: "Combo 10 Hot Skin + 10 Uramaki + 10 Hosomaki Kani",
+    categoria: "Combos",
+    preco: 43.0,
+    ativo: true,
+  },
+  {
+    nome: "Combo 20 Hot Roll Sortidas",
+    categoria: "Combos",
+    preco: 32.0,
+    ativo: true,
+  },
+  {
+    nome: "Combo 2 Joe + 2 Niguiri + 5 Uramaki + 5 Hosomaki + 6 Hot Roll",
+    categoria: "Combos",
+    preco: 46.0,
+    ativo: true,
+  },
 
   // INDIVIDUAIS
-  { nome: "Uramaki de Salmão",          categoria: "Individuais", preco: 16.0,  ativo: true },
-  { nome: "Hot Roll de Salmão",         categoria: "Individuais", preco: 16.0,  ativo: true },
-  { nome: "Hot Roll de Kani",           categoria: "Individuais", preco: 16.0,  ativo: true },
-  { nome: "Hot Roll Skin",              categoria: "Individuais", preco: 16.0,  ativo: true },
-  { nome: "Hot Roll Camarão",           categoria: "Individuais", preco: 25.0,  ativo: true },
-  { nome: "Hosomaki de Salmão",         categoria: "Individuais", preco: 16.0,  ativo: true },
-  { nome: "Rolinho Primavera (4 un.)",  categoria: "Individuais", preco: 15.0,  ativo: true },
-  { nome: "Croquete de Salmão (6 un.)", categoria: "Individuais", preco: 15.0,  ativo: true },
-  { nome: "Kani Queijo (6 un.)",        categoria: "Individuais", preco: 15.0,  ativo: true },
-  { nome: "Hot Dog Salmão",             categoria: "Individuais", preco: 30.0,  ativo: true },
-  { nome: "Hot Dog Salmão e Camarão",   categoria: "Individuais", preco: 35.0,  ativo: true },
-  { nome: "Sunomono",                   categoria: "Individuais", preco: 10.0,  ativo: true },
-  { nome: "Poke",                       categoria: "Individuais", preco: 37.0,  ativo: true },
+  {
+    nome: "Uramaki de Salmão",
+    categoria: "Individuais",
+    preco: 16.0,
+    ativo: true,
+  },
+  {
+    nome: "Hot Roll de Salmão",
+    categoria: "Individuais",
+    preco: 16.0,
+    ativo: true,
+  },
+  {
+    nome: "Hot Roll de Kani",
+    categoria: "Individuais",
+    preco: 16.0,
+    ativo: true,
+  },
+  { nome: "Hot Roll Skin", categoria: "Individuais", preco: 16.0, ativo: true },
+  {
+    nome: "Hosomaki de Salmão",
+    categoria: "Individuais",
+    preco: 16.0,
+    ativo: true,
+  },
+  {
+    nome: "Rolinho Primavera (4 un.)",
+    categoria: "Individuais",
+    preco: 15.0,
+    ativo: true,
+  },
+  {
+    nome: "Croquete de Salmão (6 un.)",
+    categoria: "Individuais",
+    preco: 15.0,
+    ativo: true,
+  },
+  {
+    nome: "Kani Queijo (6 un.)",
+    categoria: "Individuais",
+    preco: 15.0,
+    ativo: true,
+  },
+  {
+    nome: "Hot Dog Salmão",
+    categoria: "Individuais",
+    preco: 30.0,
+    ativo: true,
+  },
+  {
+    nome: "Hot Dog Salmão e Camarão",
+    categoria: "Individuais",
+    preco: 35.0,
+    ativo: true,
+  },
+  { nome: "Sunomono", categoria: "Individuais", preco: 10.0, ativo: true },
 
   // ESPECIAIS
-  { nome: "Uramaki Kani com Camarão",          categoria: "Especiais", preco: 27.0,  ativo: true },
-  { nome: "Uramaki Salmão Geleia",             categoria: "Especiais", preco: 27.0,  ativo: true },
-  { nome: "Hot Especial",                      categoria: "Especiais", preco: 22.0,  ativo: true },
-  { nome: "Nathos de Salmão e Geleia (4 un.)", categoria: "Especiais", preco: 15.0,  ativo: true },
-  { nome: "Joe (3 un.)",                       categoria: "Especiais", preco: 18.0,  ativo: true },
-  { nome: "Niguiri (3 un.)",                   categoria: "Especiais", preco: 15.0,  ativo: true },
-  { nome: "Mikami Supremo 500g",               categoria: "Especiais", preco: 55.0,  ativo: true },
+  {
+    nome: "Uramaki Kani com Camarão",
+    categoria: "Especiais",
+    preco: 27.0,
+    ativo: true,
+  },
+  {
+    nome: "Uramaki Salmão Geleia",
+    categoria: "Especiais",
+    preco: 27.0,
+    ativo: true,
+  },
+  { nome: "Hot Especial", categoria: "Especiais", preco: 22.0, ativo: true },
+  {
+    nome: "Nathos de Salmão e Geleia (4 un.)",
+    categoria: "Especiais",
+    preco: 15.0,
+    ativo: true,
+  },
+  { nome: "Joe (3 un.)", categoria: "Especiais", preco: 18.0, ativo: true },
+  { nome: "Niguiri (3 un.)", categoria: "Especiais", preco: 15.0, ativo: true },
+  {
+    nome: "Mikami Supremo 500g",
+    categoria: "Especiais",
+    preco: 45.0,
+    ativo: true,
+  },
 
   // TEMAKIS
-  { nome: "Temaki Copo Salmão", categoria: "Temakis", preco: 28.0, ativo: true },
-  { nome: "Temaki de Salmão",   categoria: "Temakis", preco: 25.0, ativo: true },
-  { nome: "Temaki de Kani",     categoria: "Temakis", preco: 22.0, ativo: true },
-  { nome: "Temaki de Skin",     categoria: "Temakis", preco: 21.0, ativo: true },
-  { nome: "Temaki de Camarão",  categoria: "Temakis", preco: 30.0, ativo: true },
+  {
+    nome: "Temaki Copo Salmão",
+    categoria: "Temakis",
+    preco: 28.0,
+    ativo: true,
+  },
+  { nome: "Temaki de Salmão", categoria: "Temakis", preco: 25.0, ativo: true },
+  { nome: "Temaki de Kani", categoria: "Temakis", preco: 22.0, ativo: true },
+  { nome: "Temaki de Skin", categoria: "Temakis", preco: 21.0, ativo: true },
+  { nome: "Temaki de Camarão", categoria: "Temakis", preco: 30.0, ativo: true },
 
   // YAKISOBA
-  { nome: "Yakisoba Individual", categoria: "Yakisoba", preco: 20.0, ativo: true },
-  { nome: "Yakisoba 2 Pessoas",  categoria: "Yakisoba", preco: 30.0, ativo: true },
+  {
+    nome: "Yakisoba Individual",
+    categoria: "Yakisoba",
+    preco: 20.0,
+    ativo: true,
+  },
+  {
+    nome: "Yakisoba 2 Pessoas",
+    categoria: "Yakisoba",
+    preco: 30.0,
+    ativo: true,
+  },
 
   // DOCES
-  { nome: "Harumaki Banana com Nutella",                        categoria: "Doces", preco: 20.0, ativo: true },
-  { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta", categoria: "Doces", preco: 22.0, ativo: true },
+  {
+    nome: "Harumaki Banana com Nutella",
+    categoria: "Doces",
+    preco: 20.0,
+    ativo: true,
+  },
+  {
+    nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta",
+    categoria: "Doces",
+    preco: 22.0,
+    ativo: true,
+  },
 
   // BEBIDAS
-  { nome: "Coca Zero Lata",          categoria: "Bebidas", preco: 6.0,  ativo: true },
-  { nome: "Coca Lata",               categoria: "Bebidas", preco: 6.0,  ativo: true },
-  { nome: "Fanta Lata",              categoria: "Bebidas", preco: 6.0,  ativo: true },
-  { nome: "Guaraná Lata",            categoria: "Bebidas", preco: 6.0,  ativo: true },
-  { nome: "Guaraná Antártica 1L",    categoria: "Bebidas", preco: 10.0, ativo: true },
-  { nome: "Guaraná Zero Lata",       categoria: "Bebidas", preco: 6.0,  ativo: true },
-  { nome: "Copo Suco P",             categoria: "Bebidas", preco: 8.0,  ativo: true },
-  { nome: "Copo Suco G",             categoria: "Bebidas", preco: 10.0, ativo: true },
-  { nome: "Jarra de Suco",           categoria: "Bebidas", preco: 15.0, ativo: true },
-  { nome: "Coca Mini Pet 250ml",     categoria: "Bebidas", preco: 5.0,  ativo: true },
-  { nome: "Coca Zero Mini Pet 250ml",categoria: "Bebidas", preco: 5.0,  ativo: true },
-  { nome: "Água",                    categoria: "Bebidas", preco: 3.0,  ativo: true },
-  { nome: "Água com Gás",            categoria: "Bebidas", preco: 4.0,  ativo: true },
-  { nome: "Coca Cola 1L Vidro",      categoria: "Bebidas", preco: 10.0, ativo: true },
+  {
+    nome: "Coca Zero Lata",
+    categoria: "Bebidas",
+    preco: 6.0,
+    ativo: true,
+  },
+  { nome: "Coca Lata", categoria: "Bebidas", preco: 6.0, ativo: true },
+  { nome: "Fanta Lata", categoria: "Bebidas", preco: 6.0, ativo: true },
+  { nome: "Kuat Lata", categoria: "Bebidas", preco: 6.0, ativo: true },
+  { nome: "Água", categoria: "Bebidas", preco: 3.0, ativo: true },
+  { nome: "Água com Gás", categoria: "Bebidas", preco: 4.0, ativo: true },
+  {
+    nome: "Coca Cola 1L Vidro",
+    categoria: "Bebidas",
+    preco: 10.0,
+    ativo: true,
+  },
+  {
+    nome: "Guaraná Antártica 1L",
+    categoria: "Bebidas",
+    preco: 10.0,
+    ativo: true,
+  },
+  {
+    nome: "Suco de Laranja com Morango",
+    categoria: "Bebidas",
+    preco: 10.0,
+    ativo: true,
+  },
+  {
+    nome: "Copo de Suco P",
+    categoria: "Bebidas",
+    preco: 8.0,
+    ativo: true,
+  },
+  {
+    nome: "Copo de Suco G",
+    categoria: "Bebidas",
+    preco: 10.0,
+    ativo: true,
+  },
+  {
+    nome: "Jarra de Suco",
+    categoria: "Bebidas",
+    preco: 15.0,
+    ativo: true,
+  },
 ];
 
 const TOTAL_MESAS = 12;
@@ -93,7 +250,10 @@ const TOTAL_MESAS = 12;
 // ============================================================
 
 function fmtMoeda(v) {
-  return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return Number(v || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
 function fmtHora(ts) {
@@ -105,15 +265,18 @@ function fmtHora(ts) {
 function fmtDataHora(ts) {
   if (!ts) return "—";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
-  return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) +
-         " " + d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return (
+    d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }) +
+    " " +
+    d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  );
 }
 
 function fmtTempo(ts) {
   if (!ts) return "";
   const d = ts.toDate ? ts.toDate() : new Date(ts);
   const diff = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (diff < 60)   return `${diff}s`;
+  if (diff < 60) return `${diff}s`;
   if (diff < 3600) return `${Math.floor(diff / 60)}min`;
   return `${Math.floor(diff / 3600)}h ${Math.floor((diff % 3600) / 60)}min`;
 }
@@ -138,7 +301,9 @@ function iniciarRelogio() {
   if (!el) return;
   const atualizar = () => {
     el.textContent = new Date().toLocaleTimeString("pt-BR", {
-      hour: "2-digit", minute: "2-digit", second: "2-digit"
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
     });
   };
   atualizar();
@@ -150,53 +315,55 @@ function iniciarRelogio() {
 const SEED_VERSION = `mikami_seed_v${CARDAPIO.length}_m${TOTAL_MESAS}`;
 
 async function garantirProdutos() {
-  const hash = CARDAPIO.map(p => p.nome + p.preco).join("") + CARDAPIO.length;
-  const hashNum = hash.split("").reduce((a, c) => (Math.imul(31, a) + c.charCodeAt(0)) | 0, 0) >>> 0;
-  const cacheKey = `mikami_prod_${CARDAPIO.length}_${hashNum}`;
-
-  // Limpa chaves antigas de outros formatos
-  Object.keys(localStorage).filter(k => k.startsWith("mikami_prod") && k !== cacheKey).forEach(k => localStorage.removeItem(k));
-
-  if (localStorage.getItem(cacheKey) === "ok") return;
-
+  if (localStorage.getItem(SEED_VERSION + "_prod") === "ok") return;
   try {
-    // 1. Upsert de todos os produtos (seguro — cria antes de apagar)
-    await Promise.all(
-      CARDAPIO.map((p, i) => setDoc(doc(db, "produtos", `prod_${i.toString().padStart(3, "0")}`), p))
-    );
-    // 2. Remove sobras de versões antigas
     const snap = await getDocs(collection(db, "produtos"));
-    const validos = new Set(CARDAPIO.map((_, i) => `prod_${i.toString().padStart(3, "0")}`));
-    const sobras  = snap.docs.filter(d => !validos.has(d.id));
-    if (sobras.length) await Promise.all(sobras.map(d => deleteDoc(doc(db, "produtos", d.id))));
-
-    Object.keys(sessionStorage).filter(k => k.startsWith("mikami_produtos_")).forEach(k => sessionStorage.removeItem(k));
-    localStorage.setItem(cacheKey, "ok");
-    console.log(`[Mikami] Cardápio sincronizado: ${CARDAPIO.length} produtos, ${sobras.length} removidos.`);
-  } catch (err) { console.error("[Mikami] Erro no sync:", err); }
+    if (snap.size >= CARDAPIO.length) {
+      localStorage.setItem(SEED_VERSION + "_prod", "ok");
+      return;
+    }
+    const existentes = new Set(snap.docs.map((d) => d.id));
+    await Promise.all(
+      CARDAPIO.map((p, i) => {
+        const id = `prod_${i.toString().padStart(3, "0")}`;
+        return existentes.has(id)
+          ? Promise.resolve()
+          : setDoc(doc(db, "produtos", id), p);
+      }),
+    );
+    localStorage.setItem(SEED_VERSION + "_prod", "ok");
+    console.log("[Mikami] Cardápio carregado.");
+  } catch (err) {
+    console.error("[Mikami] Seed produtos:", err);
+  }
 }
 
 async function garantirMesas() {
   if (localStorage.getItem(SEED_VERSION + "_mesas") === "ok") return;
   try {
     const snap = await getDocs(collection(db, "mesas"));
-    const existentes = new Set(snap.docs.map(d => d.id));
+    const existentes = new Set(snap.docs.map((d) => d.id));
     const promises = [];
     for (let i = 1; i <= TOTAL_MESAS; i++) {
       const id = `mesa_${i}`;
       if (!existentes.has(id)) {
-        promises.push(setDoc(doc(db, "mesas", id), {
-          numero: i,
-          tipo: i >= 11 ? "delivery" : "restaurante",
-          status: "livre", abertaEm: null,
-          total: 0, pedidosCount: 0, historicoPedidos: [],
-          entrega: { local: "", taxa: 0 }
-        }));
+        promises.push(
+          setDoc(doc(db, "mesas", id), {
+            numero: i,
+            status: "livre",
+            abertaEm: null,
+            total: 0,
+            pedidosCount: 0,
+            historicoPedidos: [],
+          }),
+        );
       }
     }
     if (promises.length) await Promise.all(promises);
     localStorage.setItem(SEED_VERSION + "_mesas", "ok");
-  } catch (err) { console.error("[Mikami] Seed mesas:", err); }
+  } catch (err) {
+    console.error("[Mikami] Seed mesas:", err);
+  }
 }
 
 // ============================================================
@@ -204,19 +371,26 @@ async function garantirMesas() {
 // ============================================================
 
 async function migrarDelivery() {
-  if (localStorage.getItem("mikami_delivery_v6") === "ok") return;
+  ["mikami_delivery_v5", "mikami_delivery_v6"].forEach((k) =>
+    localStorage.removeItem(k),
+  );
+  if (localStorage.getItem("mikami_delivery_v7") === "ok") return;
   try {
     const snap = await getDocs(collection(db, "mesas"));
     const ups = snap.docs
-      .filter(d => (d.data().numero || 0) >= 11)
-      .map(d => updateDoc(d.ref, {
-        tipo: "delivery",
-        entrega: d.data().entrega || { local: "", taxa: 0 }
-      }));
+      .filter((d) => (d.data().numero || 0) >= 11)
+      .map((d) =>
+        updateDoc(d.ref, {
+          tipo: "delivery",
+          entrega: d.data().entrega || { local: "", taxa: 0 },
+        }),
+      );
     await Promise.all(ups);
-    localStorage.setItem("mikami_delivery_v6", "ok");
-    console.log("[Mikami] Mesas delivery migradas.");
-  } catch(e) { console.error(e); }
+    localStorage.setItem("mikami_delivery_v7", "ok");
+    console.log("[Mikami] Mesas delivery migradas (v7).");
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 function initModalAddMesa() {
@@ -227,33 +401,52 @@ function initModalAddMesa() {
     document.getElementById("addMesaStatus").textContent = "";
     document.getElementById("addMesaStatus").style.color = "var(--cinza-texto)";
   });
-  document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () => {
-    document.getElementById("modalAddMesa").classList.remove("open");
-  });
-  document.getElementById("btnAddRestaurante")?.addEventListener("click", () => adicionarMesa("restaurante"));
-  document.getElementById("btnAddDelivery")?.addEventListener("click", () => adicionarMesa("delivery"));
+  document
+    .getElementById("btnCancelarAddMesa")
+    ?.addEventListener("click", () =>
+      document.getElementById("modalAddMesa").classList.remove("open"),
+    );
+  document
+    .getElementById("btnAddRestaurante")
+    ?.addEventListener("click", () => adicionarMesa("restaurante"));
+  document
+    .getElementById("btnAddDelivery")
+    ?.addEventListener("click", () => adicionarMesa("delivery"));
 }
 
 async function adicionarMesa(tipo) {
   const status = document.getElementById("addMesaStatus");
-  if (status) { status.style.color = "var(--cinza-texto)"; status.textContent = "Criando mesa..."; }
+  if (status) {
+    status.style.color = "var(--cinza-texto)";
+    status.textContent = "Criando mesa...";
+  }
   try {
     const snap = await getDocs(collection(db, "mesas"));
-    const nums = snap.docs.map(d => d.data().numero || 0);
+    const nums = snap.docs.map((d) => d.data().numero || 0);
     const prox = Math.max(...nums, 0) + 1;
     await setDoc(doc(db, "mesas", `mesa_${prox}`), {
-      numero: prox, tipo,
-      status: "livre", abertaEm: null,
-      total: 0, pedidosCount: 0, historicoPedidos: [],
-      entrega: { local: "", taxa: 0 }
+      numero: prox,
+      tipo,
+      status: "livre",
+      abertaEm: null,
+      total: 0,
+      pedidosCount: 0,
+      historicoPedidos: [],
+      entrega: { local: "", taxa: 0 },
     });
     if (status) {
       status.style.color = "var(--verde)";
       status.textContent = `✓ Mesa ${prox} (${tipo === "delivery" ? "🛵 Delivery" : "🍽️ Restaurante"}) criada!`;
     }
-    setTimeout(() => { document.getElementById("modalAddMesa")?.classList.remove("open"); }, 1500);
-  } catch(e) {
-    if (status) { status.style.color = "var(--vermelho-soft)"; status.textContent = "Erro ao criar mesa."; }
+    setTimeout(
+      () => document.getElementById("modalAddMesa")?.classList.remove("open"),
+      1500,
+    );
+  } catch (e) {
+    if (status) {
+      status.style.color = "var(--vermelho-soft)";
+      status.textContent = "Erro ao criar mesa.";
+    }
   }
 }
 
@@ -263,23 +456,32 @@ function initIndex() {
   // UI carrega IMEDIATAMENTE — seeds rodam em paralelo no background
   // OTIMIZAÇÃO: debounce de 80ms — agrupa múltiplos snapshots simultâneos
   let _debounceTimer = null;
-  const _unsubMesas = onSnapshot(collection(db, "mesas"), snap => {
+  const _unsubMesas = onSnapshot(collection(db, "mesas"), (snap) => {
     clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(() => {
       const mesas = [];
-      snap.forEach(d => mesas.push({ id: d.id, ...d.data() }));
+      snap.forEach((d) => mesas.push({ id: d.id, ...d.data() }));
       mesas.sort((a, b) => a.numero - b.numero);
       renderMesas(mesas);
       renderStats(mesas);
     }, 80);
   });
   // Cancela listener ao sair da página
-  window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
+  window.addEventListener(
+    "pagehide",
+    () => {
+      _unsubMesas();
+      clearTimeout(_debounceTimer);
+    },
+    { once: true },
+  );
 
   escutarFaturamentoDia();
 
   // Seeds em background, sem bloquear UI
-  Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(console.error);
+  Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(
+    console.error,
+  );
   initModalAddMesa();
 }
 
@@ -287,30 +489,31 @@ function initIndex() {
 const _mesaHash = new Map();
 
 function _hashMesa(m) {
-  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds||0}|${m.entrega?.taxa||0}|${m.entrega?.local||""}`;
+  return `${m.status}|${m.total}|${m.pedidosCount}|${m.abertaEm?.seconds || 0}`;
 }
 
 function _htmlCard(mesa, statusLabel) {
-  const totalBase   = mesa.historicoPedidos?.length ? mesa.historicoPedidos.reduce((a,p)=>a+(p.total||0),0) : (mesa.total||0);
-  const isDelivery  = mesa.tipo === "delivery";
+  const totalBase = mesa.historicoPedidos?.length
+    ? mesa.historicoPedidos.reduce((a, p) => a + (p.total || 0), 0)
+    : mesa.total || 0;
+  const isDelivery = mesa.tipo === "delivery";
   const taxaEntrega = mesa.entrega?.taxa || 0;
   const totalExibir = totalBase + taxaEntrega;
-
   return `
-    <div class="mesa-card ${mesa.status}${isDelivery?" mesa-delivery":""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
+    <div class="mesa-card ${mesa.status}${isDelivery ? " mesa-delivery" : ""}" data-mesa-id="${mesa.id}" data-mesa-num="${mesa.numero}">
       <div class="mesa-card-header">
         <div class="mesa-numero">${mesa.numero}</div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-          <div class="mesa-status-pill status-${mesa.status}">${statusLabel[mesa.status]||mesa.status}</div>
-          ${isDelivery?`<div class="mesa-delivery-badge">🛵 Delivery</div>`:""}
+          <div class="mesa-status-pill status-${mesa.status}">${statusLabel[mesa.status] || mesa.status}</div>
+          ${isDelivery ? `<div class="mesa-delivery-badge">🛵 Delivery</div>` : ""}
         </div>
       </div>
       <div class="mesa-card-info">
-        <div class="mesa-total">${mesa.status!=="livre"?fmtMoeda(totalExibir):"—"}</div>
+        <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(totalExibir) : "—"}</div>
         <div class="mesa-meta">
-          ${mesa.abertaEm?`<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`:`<span>${isDelivery?"Delivery livre":"Mesa livre"}</span>`}
-          ${mesa.pedidosCount?`<span>${mesa.pedidosCount} pedido(s)</span>`:""}
-          ${isDelivery&&mesa.entrega?.local?`<span>📍 ${mesa.entrega.local}</span>`:""}
+          ${mesa.abertaEm ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>` : `<span>${isDelivery ? "Delivery livre" : "Mesa livre"}</span>`}
+          ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
+          ${isDelivery && mesa.entrega?.local ? `<span>📍 ${mesa.entrega.local}</span>` : ""}
         </div>
       </div>
     </div>
@@ -320,20 +523,26 @@ function _htmlCard(mesa, statusLabel) {
 function renderMesas(mesas) {
   const grid = document.getElementById("mesasGrid");
   if (!grid) return;
-  const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
+  const statusLabel = {
+    livre: "Livre",
+    ocupada: "Ocupada",
+    aguardando: "Aguardando Pagto.",
+  };
 
   // Primeira vez: renderiza tudo de uma vez com fragment (rápido)
   if (!grid.querySelector(".mesa-card")) {
-    grid.innerHTML = mesas.map(m => _htmlCard(m, statusLabel)).join("");
-    mesas.forEach(m => _mesaHash.set(m.id, _hashMesa(m)));
-    grid.querySelectorAll(".mesa-card").forEach(c => {
-      c.addEventListener("click", () => { window.location.href = `mesa.html?mesa=${c.dataset.mesaNum}`; });
+    grid.innerHTML = mesas.map((m) => _htmlCard(m, statusLabel)).join("");
+    mesas.forEach((m) => _mesaHash.set(m.id, _hashMesa(m)));
+    grid.querySelectorAll(".mesa-card").forEach((c) => {
+      c.addEventListener("click", () => {
+        window.location.href = `mesa.html?mesa=${c.dataset.mesaNum}`;
+      });
     });
     return;
   }
 
   // Atualizações seguintes: diff — só redesenha o card que mudou
-  mesas.forEach(mesa => {
+  mesas.forEach((mesa) => {
     const novoHash = _hashMesa(mesa);
     if (_mesaHash.get(mesa.id) === novoHash) return; // sem mudança, pula
     _mesaHash.set(mesa.id, novoHash);
@@ -342,7 +551,9 @@ function renderMesas(mesas) {
     const tmp = document.createElement("div");
     tmp.innerHTML = _htmlCard(mesa, statusLabel);
     const novo = tmp.firstElementChild;
-    novo.addEventListener("click", () => { window.location.href = `mesa.html?mesa=${novo.dataset.mesaNum}`; });
+    novo.addEventListener("click", () => {
+      window.location.href = `mesa.html?mesa=${novo.dataset.mesaNum}`;
+    });
 
     if (antigo) grid.replaceChild(novo, antigo);
     else grid.appendChild(novo);
@@ -364,9 +575,11 @@ function _criarCardMesa(mesa, statusLabel) {
     <div class="mesa-card-info">
       <div class="mesa-total">${mesa.status !== "livre" ? fmtMoeda(mesa.total || 0) : "—"}</div>
       <div class="mesa-meta">
-        ${mesa.abertaEm
-          ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
-          : "<span>Mesa livre</span>"}
+        ${
+          mesa.abertaEm
+            ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>`
+            : "<span>Mesa livre</span>"
+        }
         ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
       </div>
     </div>
@@ -378,9 +591,15 @@ function _criarCardMesa(mesa, statusLabel) {
 }
 
 function renderStats(mesas) {
-  document.getElementById("statLivres").textContent     = mesas.filter(m => m.status === "livre").length;
-  document.getElementById("statOcupadas").textContent   = mesas.filter(m => m.status === "ocupada").length;
-  document.getElementById("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
+  document.getElementById("statLivres").textContent = mesas.filter(
+    (m) => m.status === "livre",
+  ).length;
+  document.getElementById("statOcupadas").textContent = mesas.filter(
+    (m) => m.status === "ocupada",
+  ).length;
+  document.getElementById("statAguardando").textContent = mesas.filter(
+    (m) => m.status === "aguardando",
+  ).length;
 }
 
 function escutarFaturamentoDia() {
@@ -388,11 +607,16 @@ function escutarFaturamentoDia() {
   hoje.setHours(0, 0, 0, 0);
   const inicioHoje = Timestamp.fromDate(hoje);
 
-  const q = query(collection(db, "vendas"), where("fechadoEm", ">=", inicioHoje));
+  const q = query(
+    collection(db, "vendas"),
+    where("fechadoEm", ">=", inicioHoje),
+  );
 
-  onSnapshot(q, snap => {
+  onSnapshot(q, (snap) => {
     let total = 0;
-    snap.forEach(d => { total += d.data().total || 0; });
+    snap.forEach((d) => {
+      total += d.data().total || 0;
+    });
     const el = document.getElementById("statTotalDia");
     if (el) el.textContent = fmtMoeda(total);
   });
@@ -401,14 +625,27 @@ function escutarFaturamentoDia() {
 // ============================================================
 // 4. PÁGINA: MESA
 // ============================================================
+const LOCAIS_ENTREGA = [
+  { nome: "Retirada", taxa: 0, icone: "🏠" },
+  { nome: "Cecilia", taxa: 3, icone: "📍" },
+  { nome: "Embebedado", taxa: 5, icone: "📍" },
+  { nome: "Pedra Branca", taxa: 6, icone: "📍" },
+  { nome: "Cumati", taxa: 5, icone: "📍" },
+  { nome: "Cecília de Cima", taxa: 6, icone: "📍" },
+  { nome: "Vilinha", taxa: 6, icone: "📍" },
+  { nome: "Boi Seco", taxa: 15, icone: "📍" },
+  { nome: "Vertente do Lério", taxa: 15, icone: "📍" },
+];
+
 const estadoMesa = {
   numero: null,
   mesaId: null,
   dadosMesa: null,
+  entrega: { local: "", taxa: 0 },
   pedidoAtual: [],
   produtos: [],
   categoriaAtiva: "Todos",
-  buscaTermo: ""
+  buscaTermo: "",
 };
 
 async function initMesa() {
@@ -418,59 +655,86 @@ async function initMesa() {
   estadoMesa.numero = parseInt(params.get("mesa")) || 1;
   estadoMesa.mesaId = `mesa_${estadoMesa.numero}`;
 
-  document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
+  document.getElementById("mesaNumeroBadge").textContent =
+    `Mesa ${estadoMesa.numero}`;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
-  // Carrega produtos do Firestore; usa CARDAPIO local como fallback se estiver vazio/incompleto
+  // Tenta usar cache do sessionStorage para cardápio (evita leitura repetida)
   try {
-    const snapProd = await getDocs(collection(db, "produtos"));
-    snapProd.forEach(d => estadoMesa.produtos.push({ id: d.id, ...d.data() }));
-    if (estadoMesa.produtos.length < CARDAPIO.length * 0.8) {
-      estadoMesa.produtos = CARDAPIO.map((p, i) => ({ id: `prod_${i.toString().padStart(3,"0")}`, ...p }));
-      Object.keys(localStorage).filter(k => k.startsWith("mikami_prod")).forEach(k => localStorage.removeItem(k));
-      garantirProdutos().catch(console.error);
+    const cacheKey = `mikami_produtos_${SEED_VERSION}`;
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      estadoMesa.produtos = JSON.parse(cached);
+    } else {
+      const snapProd = await getDocs(collection(db, "produtos"));
+      snapProd.forEach((d) =>
+        estadoMesa.produtos.push({ id: d.id, ...d.data() }),
+      );
+      estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
+      sessionStorage.setItem(cacheKey, JSON.stringify(estadoMesa.produtos));
     }
-    estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
   } catch (err) {
-    estadoMesa.produtos = CARDAPIO.map((p, i) => ({ id: `prod_${i.toString().padStart(3,"0")}`, ...p }));
-    estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
+    toast("Erro ao carregar cardápio.", "erro");
+    console.error(err);
   }
 
   renderCategorias();
   renderProdutos();
 
   // Escuta a mesa em tempo real
-  onSnapshot(doc(db, "mesas", estadoMesa.mesaId), snap => {
+  onSnapshot(doc(db, "mesas", estadoMesa.mesaId), (snap) => {
     if (!snap.exists()) return;
     estadoMesa.dadosMesa = snap.data();
     atualizarHeaderMesa();
     renderConta();
+    _configurarAbaEntrega(snap.data());
   });
 
   // Eventos
-  document.getElementById("buscaProduto").addEventListener("input", e => {
+  document.getElementById("buscaProduto").addEventListener("input", (e) => {
     estadoMesa.buscaTermo = e.target.value.toLowerCase();
     renderProdutos();
   });
 
-  document.getElementById("btnConfirmarPedido").addEventListener("click", confirmarPedido);
-  document.getElementById("btnImprimirCozinha").addEventListener("click", imprimirCozinha);
-  document.getElementById("btnImprimirConta").addEventListener("click", imprimirConta);
-  document.getElementById("btnFecharMesa").addEventListener("click", abrirModalFechar);
-  document.getElementById("btnCancelarFechar").addEventListener("click", fecharModal);
-  document.getElementById("btnConfirmarFechar").addEventListener("click", fecharMesa);
+  document
+    .getElementById("btnConfirmarPedido")
+    .addEventListener("click", confirmarPedido);
+  document
+    .getElementById("btnImprimirCozinha")
+    .addEventListener("click", imprimirCozinha);
+  document
+    .getElementById("btnImprimirConta")
+    .addEventListener("click", imprimirConta);
+  document
+    .getElementById("btnFecharMesa")
+    .addEventListener("click", abrirModalFechar);
+  document
+    .getElementById("btnConfirmarEntrega")
+    ?.addEventListener("click", _confirmarEntrega);
+  document
+    .getElementById("btnCancelarFechar")
+    .addEventListener("click", fecharModal);
+  document
+    .getElementById("btnConfirmarFechar")
+    .addEventListener("click", fecharMesa);
 
-  document.querySelectorAll(".pagamento-btn").forEach(btn => {
+  document.querySelectorAll(".pagamento-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".pagamento-btn").forEach(b => b.classList.remove("selected"));
+      document
+        .querySelectorAll(".pagamento-btn")
+        .forEach((b) => b.classList.remove("selected"));
       btn.classList.add("selected");
       document.getElementById("btnConfirmarFechar").disabled = false;
     });
   });
 
   // Modal editar pedido
-  document.getElementById("btnCancelarEdicao")?.addEventListener("click", fecharModalEditar);
-  document.getElementById("btnSalvarEdicao")?.addEventListener("click", salvarEdicaoPedido);
+  document
+    .getElementById("btnCancelarEdicao")
+    ?.addEventListener("click", fecharModalEditar);
+  document
+    .getElementById("btnSalvarEdicao")
+    ?.addEventListener("click", salvarEdicaoPedido);
 
   // Modal pagamento dividido
   initModalPagamento();
@@ -478,17 +742,26 @@ async function initMesa() {
 
 // ── Cardápio ──────────────────────────────────────────────
 function renderCategorias() {
-  const cats = ["Todos", ...new Set(estadoMesa.produtos.map(p => p.categoria))];
+  const cats = [
+    "Todos",
+    ...new Set(estadoMesa.produtos.map((p) => p.categoria)),
+  ];
   const container = document.getElementById("categoriasTabs");
-  container.innerHTML = cats.map(c => `
+  container.innerHTML = cats
+    .map(
+      (c) => `
     <button class="cat-btn ${c === estadoMesa.categoriaAtiva ? "active" : ""}"
             data-cat="${c}">${c}</button>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  container.querySelectorAll(".cat-btn").forEach(btn => {
+  container.querySelectorAll(".cat-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       estadoMesa.categoriaAtiva = btn.dataset.cat;
-      container.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+      container
+        .querySelectorAll(".cat-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       renderProdutos();
     });
@@ -496,14 +769,16 @@ function renderCategorias() {
 }
 
 function renderProdutos() {
-  let lista = estadoMesa.produtos.filter(p => p.ativo !== false);
+  let lista = estadoMesa.produtos.filter((p) => p.ativo !== false);
 
   if (estadoMesa.categoriaAtiva !== "Todos") {
-    lista = lista.filter(p => p.categoria === estadoMesa.categoriaAtiva);
+    lista = lista.filter((p) => p.categoria === estadoMesa.categoriaAtiva);
   }
 
   if (estadoMesa.buscaTermo) {
-    lista = lista.filter(p => p.nome.toLowerCase().includes(estadoMesa.buscaTermo));
+    lista = lista.filter((p) =>
+      p.nome.toLowerCase().includes(estadoMesa.buscaTermo),
+    );
   }
 
   const container = document.getElementById("produtosLista");
@@ -513,7 +788,9 @@ function renderProdutos() {
     return;
   }
 
-  container.innerHTML = lista.map(p => `
+  container.innerHTML = lista
+    .map(
+      (p) => `
     <div class="produto-card" data-id="${p.id}">
       <div class="produto-info">
         <span class="produto-nome">${p.nome}</span>
@@ -522,16 +799,18 @@ function renderProdutos() {
       <span class="produto-preco">${fmtMoeda(p.preco)}</span>
       <button class="produto-add-btn" data-id="${p.id}" title="Adicionar ao pedido">+</button>
     </div>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  container.querySelectorAll(".produto-add-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
+  container.querySelectorAll(".produto-add-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
       adicionarAoPedido(btn.dataset.id);
     });
   });
 
-  container.querySelectorAll(".produto-card").forEach(card => {
+  container.querySelectorAll(".produto-card").forEach((card) => {
     card.addEventListener("click", () => {
       adicionarAoPedido(card.dataset.id);
     });
@@ -540,10 +819,10 @@ function renderProdutos() {
 
 // ── Pedido atual ──────────────────────────────────────────
 function adicionarAoPedido(prodId) {
-  const prod = estadoMesa.produtos.find(p => p.id === prodId);
+  const prod = estadoMesa.produtos.find((p) => p.id === prodId);
   if (!prod) return;
 
-  const existente = estadoMesa.pedidoAtual.find(i => i.prodId === prodId);
+  const existente = estadoMesa.pedidoAtual.find((i) => i.prodId === prodId);
   if (existente) {
     existente.qty++;
   } else {
@@ -552,7 +831,7 @@ function adicionarAoPedido(prodId) {
       nome: prod.nome,
       preco: prod.preco,
       qty: 1,
-      obs: ""
+      obs: "",
     });
   }
 
@@ -566,9 +845,10 @@ function renderPedidoAtual() {
 
   const totalPedido = itens.reduce((acc, i) => acc + i.preco * i.qty, 0);
 
-  document.getElementById("pedidoCount").textContent           = `${itens.length} item(ns)`;
-  document.getElementById("pedidoTotal").textContent           = fmtMoeda(totalPedido);
-  document.getElementById("btnConfirmarPedido").disabled       = itens.length === 0;
+  document.getElementById("pedidoCount").textContent =
+    `${itens.length} item(ns)`;
+  document.getElementById("pedidoTotal").textContent = fmtMoeda(totalPedido);
+  document.getElementById("btnConfirmarPedido").disabled = itens.length === 0;
 
   if (!itens.length) {
     container.innerHTML = `
@@ -579,7 +859,9 @@ function renderPedidoAtual() {
     return;
   }
 
-  container.innerHTML = itens.map((item, idx) => `
+  container.innerHTML = itens
+    .map(
+      (item, idx) => `
     <div class="pedido-item" data-idx="${idx}">
       <div class="pedido-item-header">
         <span class="pedido-item-nome">${item.nome}</span>
@@ -600,9 +882,11 @@ function renderPedidoAtual() {
         data-idx="${idx}"
       >${item.obs}</textarea>
     </div>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  container.querySelectorAll(".qty-btn").forEach(btn => {
+  container.querySelectorAll(".qty-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = parseInt(btn.dataset.idx);
       if (btn.dataset.acao === "inc") {
@@ -617,14 +901,14 @@ function renderPedidoAtual() {
     });
   });
 
-  container.querySelectorAll(".remove-item-btn").forEach(btn => {
+  container.querySelectorAll(".remove-item-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       estadoMesa.pedidoAtual.splice(parseInt(btn.dataset.idx), 1);
       renderPedidoAtual();
     });
   });
 
-  container.querySelectorAll(".obs-input").forEach(input => {
+  container.querySelectorAll(".obs-input").forEach((input) => {
     input.addEventListener("input", () => {
       const idx = parseInt(input.dataset.idx);
       if (estadoMesa.pedidoAtual[idx]) {
@@ -649,18 +933,18 @@ async function confirmarPedido() {
     // Salva pedido na coleção "pedidos"
     const pedidoData = {
       mesaNumero: estadoMesa.numero,
-      mesaId:     estadoMesa.mesaId,
-      itens: itens.map(i => ({
+      mesaId: estadoMesa.mesaId,
+      itens: itens.map((i) => ({
         prodId: i.prodId,
-        nome:   i.nome,
-        preco:  i.preco,
-        qty:    i.qty,
-        obs:    i.obs || ""
+        nome: i.nome,
+        preco: i.preco,
+        qty: i.qty,
+        obs: i.obs || "",
       })),
-      total:     totalPedido,
-      status:    "Novo",
+      total: totalPedido,
+      status: "Novo",
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     };
 
     const pedidoRef = await addDoc(collection(db, "pedidos"), pedidoData);
@@ -670,20 +954,23 @@ async function confirmarPedido() {
     const mesaSnap = await getDoc(mesaRef);
     const mesaData = mesaSnap.data();
 
-    const novoHistorico = [...(mesaData.historicoPedidos || []), {
-      pedidoId: pedidoRef.id,
-      itens:    pedidoData.itens,
-      total:    totalPedido,
-      status:   "Novo",
-      criadoEm: new Date().toISOString()
-    }];
+    const novoHistorico = [
+      ...(mesaData.historicoPedidos || []),
+      {
+        pedidoId: pedidoRef.id,
+        itens: pedidoData.itens,
+        total: totalPedido,
+        status: "Novo",
+        criadoEm: new Date().toISOString(),
+      },
+    ];
 
     await updateDoc(mesaRef, {
-      status:            "ocupada",
-      abertaEm:          mesaData.abertaEm || serverTimestamp(),
-      total:             increment(totalPedido),   // FIX: sem race condition
-      pedidosCount:      increment(1),             // FIX: sem race condition
-      historicoPedidos:  novoHistorico
+      status: "ocupada",
+      abertaEm: mesaData.abertaEm || serverTimestamp(),
+      total: increment(totalPedido), // FIX: sem race condition
+      pedidosCount: increment(1), // FIX: sem race condition
+      historicoPedidos: novoHistorico,
     });
 
     estadoMesa.pedidoAtual = [];
@@ -699,24 +986,140 @@ async function confirmarPedido() {
 }
 
 // ── Conta da mesa ─────────────────────────────────────────
+
+// ── ENTREGA ──────────────────────────────────────────────
+function _configurarAbaEntrega(mesa) {
+  if (mesa.tipo !== "delivery") return;
+  document
+    .querySelectorAll(".mesa-aba-delivery")
+    .forEach((b) => (b.style.display = ""));
+  const isMobile = window.innerWidth < 768;
+  if (!isMobile) {
+    const col = document.querySelector(".col-entrega");
+    if (col) col.style.display = "flex";
+    const layout = document.querySelector(".mesa-layout");
+    if (layout) layout.style.gridTemplateColumns = "1fr 280px 260px 250px";
+  }
+  if (mesa.entrega?.local)
+    estadoMesa.entrega = {
+      local: mesa.entrega.local,
+      taxa: mesa.entrega.taxa || 0,
+    };
+  _renderLocaisEntrega(mesa.entrega?.local || "");
+  _atualizarResumoEntrega();
+}
+
+function _renderLocaisEntrega(sel) {
+  const c = document.getElementById("entregaLocais");
+  if (!c) return;
+  c.innerHTML = LOCAIS_ENTREGA.map((loc) => {
+    const ativo = loc.nome === sel;
+    return `<div class="entrega-local-item${ativo ? " ativo" : ""}" data-nome="${loc.nome}" data-taxa="${loc.taxa}">
+      <span class="entrega-local-icone">${loc.icone}</span>
+      <span class="entrega-local-nome">${loc.nome}</span>
+      <span class="entrega-local-taxa">${loc.taxa === 0 ? "Grátis" : "R$ " + loc.taxa.toFixed(2).replace(".", ",")}</span>
+    </div>`;
+  }).join("");
+  c.querySelectorAll(".entrega-local-item").forEach((item) => {
+    item.addEventListener("click", () => {
+      const nome = item.dataset.nome,
+        taxa = parseFloat(item.dataset.taxa);
+      estadoMesa.entrega = { local: nome, taxa };
+      _renderLocaisEntrega(nome);
+      _atualizarResumoEntrega();
+      updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
+        entrega: { local: nome, taxa },
+      }).catch(() => {});
+      const btn = document.getElementById("btnConfirmarEntrega");
+      if (btn) btn.style.display = "";
+      const conf = document.getElementById("entregaConfirmado");
+      if (conf) conf.textContent = "";
+    });
+  });
+}
+
+function _atualizarResumoEntrega() {
+  const mesa = estadoMesa.dadosMesa;
+  if (!mesa) return;
+  const taxa = estadoMesa.entrega?.taxa || 0;
+  const sub = (mesa.historicoPedidos || []).reduce(
+    (a, p) => a + (p.total || 0),
+    0,
+  );
+  const tot = sub + taxa;
+  const fmt = (v) => "R$ " + v.toFixed(2).replace(".", ",");
+  const el = (id) => document.getElementById(id);
+  if (el("entregaResumo")) el("entregaResumo").style.display = "";
+  if (el("entregaSubtotal")) el("entregaSubtotal").textContent = fmt(sub);
+  if (el("entregaTaxaDisplay"))
+    el("entregaTaxaDisplay").textContent = taxa === 0 ? "Grátis" : fmt(taxa);
+  if (el("entregaTotalDisplay"))
+    el("entregaTotalDisplay").textContent = fmt(tot);
+  if (el("contaTotalBadge")) el("contaTotalBadge").textContent = fmt(tot);
+  if (el("contaTotalFinal")) el("contaTotalFinal").textContent = fmt(tot);
+  if (el("modalTotalCobrar")) el("modalTotalCobrar").textContent = fmt(tot);
+}
+
+async function _confirmarEntrega() {
+  const local = estadoMesa.entrega?.local,
+    taxa = estadoMesa.entrega?.taxa ?? 0;
+  if (!local) {
+    toast("Selecione um local de entrega.", "erro");
+    return;
+  }
+  const btn = document.getElementById("btnConfirmarEntrega");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Confirmando...";
+  }
+  try {
+    await updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
+      entrega: { local, taxa, confirmado: true },
+    });
+    const conf = document.getElementById("entregaConfirmado");
+    if (conf) conf.textContent = "✓ Entrega confirmada!";
+    if (btn) {
+      btn.style.display = "none";
+      btn.disabled = false;
+      btn.textContent = "✅ Confirmar Entrega";
+    }
+    toast("Entrega confirmada!", "sucesso");
+  } catch (e) {
+    toast("Erro ao confirmar.", "erro");
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "✅ Confirmar Entrega";
+    }
+  }
+}
+
 function atualizarHeaderMesa() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa) return;
 
-  const statusMap = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
+  const statusMap = {
+    livre: "Livre",
+    ocupada: "Ocupada",
+    aguardando: "Aguardando Pagto.",
+  };
   const badge = document.getElementById("mesaStatusBadge");
   badge.textContent = statusMap[mesa.status] || mesa.status;
-  badge.className   = `mesa-status-badge ${mesa.status}`;
+  badge.className = `mesa-status-badge ${mesa.status}`;
 
-  document.getElementById("mesaAbertura").textContent =
-    mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
+  document.getElementById("mesaAbertura").textContent = mesa.abertaEm
+    ? `Aberta às ${fmtHora(mesa.abertaEm)}`
+    : "Mesa livre";
 
   // FIX: usa historicoPedidos como fonte da verdade para o total exibido
-  const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
+  const totalHistorico = (mesa.historicoPedidos || []).reduce(
+    (a, p) => a + (p.total || 0),
+    0,
+  );
   const total = totalHistorico || mesa.total || 0;
   document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
   document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  document.getElementById("modalTotalCobrar")?.textContent && (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
+  document.getElementById("modalTotalCobrar")?.textContent &&
+    (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
 }
 
 function renderConta() {
@@ -724,7 +1127,7 @@ function renderConta() {
   if (!mesa) return;
 
   const container = document.getElementById("contaHistorico");
-  const historico  = mesa.historicoPedidos || [];
+  const historico = mesa.historicoPedidos || [];
 
   if (!historico.length) {
     container.innerHTML = `<div class="conta-vazia"><span>Nenhum pedido confirmado ainda.</span></div>`;
@@ -732,27 +1135,35 @@ function renderConta() {
   }
 
   const badgeClass = {
-    "Novo":       "badge-novo",
+    Novo: "badge-novo",
     "Em preparo": "badge-preparo",
-    "Pronto":     "badge-pronto",
-    "Entregue":   "badge-entregue"
+    Pronto: "badge-pronto",
+    Entregue: "badge-entregue",
   };
 
-  container.innerHTML = historico.map((pedido, idx) => {
-    const itemsHtml = (pedido.itens || []).map(item => `
+  container.innerHTML = historico
+    .map((pedido, idx) => {
+      const itemsHtml = (pedido.itens || [])
+        .map(
+          (item) => `
       <div class="conta-item-linha">
         <span class="conta-item-nome">${item.nome}</span>
         <span class="conta-item-qty">${item.qty}x</span>
         <span class="conta-item-val">${fmtMoeda(item.preco * item.qty)}</span>
       </div>
       ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
-    `).join("");
+    `,
+        )
+        .join("");
 
-    const hora = pedido.criadoEm
-      ? new Date(pedido.criadoEm).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-      : "";
+      const hora = pedido.criadoEm
+        ? new Date(pedido.criadoEm).toLocaleTimeString("pt-BR", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "";
 
-    return `
+      return `
       <div class="conta-pedido-grupo">
         <div class="conta-pedido-header">
           <span class="conta-pedido-seq">Pedido #${idx + 1}</span>
@@ -770,13 +1181,14 @@ function renderConta() {
         </div>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 
   // Rola para o final automaticamente
   container.scrollTop = container.scrollHeight;
 
   // Eventos editar pedido
-  container.querySelectorAll(".btn-editar-pedido-conta").forEach(btn => {
+  container.querySelectorAll(".btn-editar-pedido-conta").forEach((btn) => {
     btn.addEventListener("click", () => abrirModalEditar(btn.dataset.pedidoId));
   });
 }
@@ -793,26 +1205,33 @@ function imprimirCozinha() {
 
   // Pega todos os pedidos com status Novo ou Em preparo
   const pedidosParaImprimir = mesa.historicoPedidos.filter(
-    p => p.status === "Novo" || p.status === "Em preparo"
+    (p) => p.status === "Novo" || p.status === "Em preparo",
   );
 
   // Se não houver pedidos nesse estado, usa o último
-  const alvo = pedidosParaImprimir.length > 0
-    ? pedidosParaImprimir
-    : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
+  const alvo =
+    pedidosParaImprimir.length > 0
+      ? pedidosParaImprimir
+      : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
 
-  const pedidosHtml = alvo.map((pedido, idx) => {
-    const itensHtml = (pedido.itens || []).map(item => `
+  const pedidosHtml = alvo
+    .map((pedido, idx) => {
+      const itensHtml = (pedido.itens || [])
+        .map(
+          (item) => `
       <div class="print-item">
         <span>${item.qty}x ${item.nome}</span>
       </div>
       ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
-    `).join("");
-    return `
+    `,
+        )
+        .join("");
+      return `
       <div class="print-section-title">PEDIDO ${idx + 1}</div>
       ${itensHtml}
     `;
-  }).join("");
+    })
+    .join("");
 
   document.getElementById("printArea").innerHTML = `
     <div class="print-header">
@@ -836,31 +1255,37 @@ function imprimirConta() {
   }
 
   const todosItens = [];
-  (mesa.historicoPedidos || []).forEach(pedido => {
-    (pedido.itens || []).forEach(item => {
-      const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
+  (mesa.historicoPedidos || []).forEach((pedido) => {
+    (pedido.itens || []).forEach((item) => {
+      const exist = todosItens.find(
+        (i) => i.nome === item.nome && !item.obs && !i.obs,
+      );
       if (exist) {
-        exist.qty     += item.qty;
+        exist.qty += item.qty;
         exist.subtotal += item.preco * item.qty;
       } else {
         todosItens.push({
-          nome:     item.nome,
-          qty:      item.qty,
-          preco:    item.preco,
+          nome: item.nome,
+          qty: item.qty,
+          preco: item.preco,
           subtotal: item.preco * item.qty,
-          obs:      item.obs
+          obs: item.obs,
         });
       }
     });
   });
 
-  const itensHtml = todosItens.map(item => `
+  const itensHtml = todosItens
+    .map(
+      (item) => `
     <div class="print-item">
       <span>${item.qty}x ${item.nome}</span>
       <span>${fmtMoeda(item.subtotal)}</span>
     </div>
     ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
-  `).join("");
+  `,
+    )
+    .join("");
 
   document.getElementById("printArea").innerHTML = `
     <div class="print-header">
@@ -899,17 +1324,27 @@ function abrirModalFechar() {
 
 function fecharModal() {
   document.getElementById("modalFecharMesa").classList.remove("open");
-  document.querySelectorAll(".pagamento-btn").forEach(b => b.classList.remove("selected"));
+  document
+    .querySelectorAll(".pagamento-btn")
+    .forEach((b) => b.classList.remove("selected"));
   document.getElementById("btnConfirmarFechar").disabled = true;
   // Reset divisão
   const tabUnico = document.getElementById("tabPagUnico");
   const tabDivid = document.getElementById("tabPagDividido");
-  if (tabUnico) { tabUnico.classList.add("active"); tabDivid.classList.remove("active"); }
+  if (tabUnico) {
+    tabUnico.classList.add("active");
+    tabDivid.classList.remove("active");
+  }
   const secUnico = document.getElementById("secPagUnico");
   const secDivid = document.getElementById("secPagDividido");
-  if (secUnico) { secUnico.style.display = ""; secDivid.style.display = "none"; }
-  document.querySelectorAll(".div-valor-input").forEach(i => i.value = "");
-  document.querySelectorAll(".div-toggle").forEach(b => b.classList.remove("active"));
+  if (secUnico) {
+    secUnico.style.display = "";
+    secDivid.style.display = "none";
+  }
+  document.querySelectorAll(".div-valor-input").forEach((i) => (i.value = ""));
+  document
+    .querySelectorAll(".div-toggle")
+    .forEach((b) => b.classList.remove("active"));
   atualizarRestante();
 }
 
@@ -918,28 +1353,39 @@ async function fecharMesa() {
   if (btnFechar.disabled) return;
 
   // Detecta modo: único ou dividido
-  const isDividido = document.getElementById("tabPagDividido")?.classList.contains("active");
+  const isDividido = document
+    .getElementById("tabPagDividido")
+    ?.classList.contains("active");
   let formaPagamento = "";
   let pagamentos = [];
 
   if (isDividido) {
     // Coleta valores digitados
-    document.querySelectorAll(".div-toggle.active").forEach(btn => {
+    document.querySelectorAll(".div-toggle.active").forEach((btn) => {
       const metodo = btn.dataset.metodo;
-      const input  = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
-      const val    = parseFloat(input?.value?.replace(",", ".") || "0");
+      const input = document.querySelector(
+        `.div-valor-input[data-metodo="${metodo}"]`,
+      );
+      const val = parseFloat(input?.value?.replace(",", ".") || "0");
       if (val > 0) pagamentos.push({ metodo, valor: val });
     });
-    if (!pagamentos.length) { toast("Selecione ao menos um método de pagamento.", "erro"); return; }
-    formaPagamento = pagamentos.map(p => `${p.metodo} (${fmtMoeda(p.valor)})`).join(" + ");
+    if (!pagamentos.length) {
+      toast("Selecione ao menos um método de pagamento.", "erro");
+      return;
+    }
+    formaPagamento = pagamentos
+      .map((p) => `${p.metodo} (${fmtMoeda(p.valor)})`)
+      .join(" + ");
   } else {
     const metodoBtn = document.querySelector(".pagamento-btn.selected");
     if (!metodoBtn) return;
     formaPagamento = metodoBtn.dataset.metodo;
-    pagamentos = [{ metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 }];
+    pagamentos = [
+      { metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 },
+    ];
   }
 
-  btnFechar.disabled   = true;
+  btnFechar.disabled = true;
   btnFechar.textContent = "Fechando...";
 
   try {
@@ -952,40 +1398,43 @@ async function fecharMesa() {
 
     // Salva venda no histórico
     await addDoc(collection(db, "vendas"), {
-      mesaNumero:     estadoMesa.numero,
-      mesaId:         estadoMesa.mesaId,
-      itens:          historico.flatMap(p => p.itens || []),
-      total:          totalReal,
+      mesaNumero: estadoMesa.numero,
+      mesaId: estadoMesa.mesaId,
+      itens: historico.flatMap((p) => p.itens || []),
+      total: totalReal,
       formaPagamento: formaPagamento,
-      pagamentos:     pagamentos,
-      fechadoEm:      serverTimestamp()
+      pagamentos: pagamentos,
+      fechadoEm: serverTimestamp(),
     });
 
     // Marca pedidos da mesa como Entregue no Firestore
     const pedidosSnap = await getDocs(
-      query(collection(db, "pedidos"), where("mesaId", "==", estadoMesa.mesaId))
+      query(
+        collection(db, "pedidos"),
+        where("mesaId", "==", estadoMesa.mesaId),
+      ),
     );
-    const marcacoes = pedidosSnap.docs.map(d =>
-      updateDoc(d.ref, { status: "Entregue", updatedAt: serverTimestamp() })
+    const marcacoes = pedidosSnap.docs.map((d) =>
+      updateDoc(d.ref, { status: "Entregue", updatedAt: serverTimestamp() }),
     );
     await Promise.all(marcacoes);
 
     // Reseta a mesa
     await updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
-      status:           "livre",
-      abertaEm:         null,
-      total:            0,
-      pedidosCount:     0,
-      historicoPedidos: []
+      status: "livre",
+      abertaEm: null,
+      total: 0,
+      pedidosCount: 0,
+      historicoPedidos: [],
     });
 
     fecharModal();
     toast("Mesa fechada com sucesso!", "sucesso");
-    setTimeout(() => window.location.href = "index.html", 1500);
+    setTimeout(() => (window.location.href = "index.html"), 1500);
   } catch (err) {
     console.error("[Mikami] Erro ao fechar mesa:", err);
     toast("Erro ao fechar mesa. Tente novamente.", "erro");
-    btnFechar.disabled   = false;
+    btnFechar.disabled = false;
     btnFechar.textContent = "Confirmar Fechamento";
   }
 }
@@ -993,22 +1442,28 @@ async function fecharMesa() {
 // ============================================================
 // 5. PÁGINA: COZINHA
 // ============================================================
-let filtroAtivo    = "todos";
-let pedidosCached  = [];  // FIX: cache local para re-renderizar no filtro
+let filtroAtivo = "todos";
+let pedidosCached = []; // FIX: cache local para re-renderizar no filtro
 
 function initCozinha() {
   iniciarRelogio();
   // Bind modal editar na cozinha
-  document.getElementById("btnCancelarEdicaoCozinha")?.addEventListener("click", fecharModalEditar);
-  document.getElementById("btnSalvarEdicaoCozinha")?.addEventListener("click", salvarEdicaoPedido);
+  document
+    .getElementById("btnCancelarEdicaoCozinha")
+    ?.addEventListener("click", fecharModalEditar);
+  document
+    .getElementById("btnSalvarEdicaoCozinha")
+    ?.addEventListener("click", salvarEdicaoPedido);
 
   // FIX: filtro re-renderiza com dados em cache, sem precisar de novo snapshot
-  document.querySelectorAll(".filtro-btn").forEach(btn => {
+  document.querySelectorAll(".filtro-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       filtroAtivo = btn.dataset.filtro;
-      document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("active"));
+      document
+        .querySelectorAll(".filtro-btn")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
-      renderCozinha(pedidosCached);  // usa cache
+      renderCozinha(pedidosCached); // usa cache
     });
   });
 
@@ -1018,29 +1473,36 @@ function initCozinha() {
   const q = query(
     collection(db, "pedidos"),
     where("createdAt", ">=", Timestamp.fromDate(_inicioCozinha)),
-    orderBy("createdAt", "desc")
+    orderBy("createdAt", "desc"),
   );
 
   // OTIMIZAÇÃO: throttle 200ms — evita re-render em rajadas de pedidos
   let _throttleCozinha = null;
-  const _unsubCoz = onSnapshot(q, snap => {
+  const _unsubCoz = onSnapshot(q, (snap) => {
     const dados = [];
-    snap.forEach(d => dados.push({ id: d.id, ...d.data() }));
+    snap.forEach((d) => dados.push({ id: d.id, ...d.data() }));
     if (_throttleCozinha) return; // já tem render agendado
     _throttleCozinha = setTimeout(() => {
       _throttleCozinha = null;
       pedidosCached = dados;
       renderCozinha(pedidosCached);
-      const ativos = pedidosCached.filter(p => p.status !== "Entregue");
+      const ativos = pedidosCached.filter((p) => p.status !== "Entregue");
       const el = document.getElementById("pedidosAtivosCount");
       if (el) el.textContent = `${ativos.length} pedido(s) ativo(s)`;
     }, 200);
   });
-  window.addEventListener("pagehide", () => { _unsubCoz(); clearTimeout(_throttleCozinha); }, { once: true });
+  window.addEventListener(
+    "pagehide",
+    () => {
+      _unsubCoz();
+      clearTimeout(_throttleCozinha);
+    },
+    { once: true },
+  );
 
   // Atualiza tempos a cada 30s
   setInterval(() => {
-    document.querySelectorAll(".pedido-card-tempo[data-ts]").forEach(el => {
+    document.querySelectorAll(".pedido-card-tempo[data-ts]").forEach((el) => {
       const ts = parseInt(el.dataset.ts);
       if (ts) el.textContent = fmtTempo({ toDate: () => new Date(ts) });
     });
@@ -1052,7 +1514,7 @@ function renderCozinha(pedidos) {
 
   let filtrados = pedidos;
   if (filtroAtivo !== "todos") {
-    filtrados = pedidos.filter(p => p.status === filtroAtivo);
+    filtrados = pedidos.filter((p) => p.status === filtroAtivo);
   }
 
   if (!filtrados.length) {
@@ -1065,46 +1527,53 @@ function renderCozinha(pedidos) {
   }
 
   const statusClass = {
-    "Novo":       "status-novo",
+    Novo: "status-novo",
     "Em preparo": "status-preparo",
-    "Pronto":     "status-pronto",
-    "Entregue":   "status-entregue"
+    Pronto: "status-pronto",
+    Entregue: "status-entregue",
   };
 
   const badgeClass = {
-    "Novo":       "badge-novo",
+    Novo: "badge-novo",
     "Em preparo": "badge-preparo",
-    "Pronto":     "badge-pronto",
-    "Entregue":   "badge-entregue"
+    Pronto: "badge-pronto",
+    Entregue: "badge-entregue",
   };
 
-  grid.innerHTML = filtrados.map(pedido => {
-    const tsMs = pedido.createdAt?.toMillis ? pedido.createdAt.toMillis() : null;
+  grid.innerHTML = filtrados
+    .map((pedido) => {
+      const tsMs = pedido.createdAt?.toMillis
+        ? pedido.createdAt.toMillis()
+        : null;
 
-    const itensHtml = (pedido.itens || []).map(item => `
+      const itensHtml = (pedido.itens || [])
+        .map(
+          (item) => `
       <div class="pedido-card-item">
         <span class="pedido-card-item-qty">${item.qty}x</span>
         <span class="pedido-card-item-nome">${item.nome}</span>
         ${item.obs ? `<span class="pedido-card-item-obs">→ ${item.obs}</span>` : ""}
       </div>
-    `).join("");
+    `,
+        )
+        .join("");
 
-    let botoesHtml = "";
-    if (pedido.status === "Novo") {
-      botoesHtml = `
+      let botoesHtml = "";
+      if (pedido.status === "Novo") {
+        botoesHtml = `
         <button class="btn-secondary" data-id="${pedido.id}" data-status="Em preparo">▶ Em preparo</button>
         <button class="btn-editar-cozinha btn-secondary" data-pedido-id="${pedido.id}">✏️</button>
       `;
-    } else if (pedido.status === "Em preparo") {
-      botoesHtml = `
+      } else if (pedido.status === "Em preparo") {
+        botoesHtml = `
         <button class="btn-primary" data-id="${pedido.id}" data-status="Pronto">✓ Marcar Pronto</button>
         <button class="btn-editar-cozinha btn-secondary" data-pedido-id="${pedido.id}">✏️</button>
       `;
-    } else if (pedido.status === "Pronto") {
-      botoesHtml = `<button class="btn-secondary" data-id="${pedido.id}" data-status="Entregue">✓ Marcar Entregue</button>`;
-    }
+      } else if (pedido.status === "Pronto") {
+        botoesHtml = `<button class="btn-secondary" data-id="${pedido.id}" data-status="Entregue">✓ Marcar Entregue</button>`;
+      }
 
-    return `
+      return `
       <div class="pedido-card ${statusClass[pedido.status] || "status-novo"}" data-pedido-id="${pedido.id}">
         <div class="pedido-card-header">
           <div>
@@ -1125,22 +1594,29 @@ function renderCozinha(pedidos) {
         </div>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 
-  grid.querySelectorAll("[data-id][data-status]").forEach(btn => {
+  grid.querySelectorAll("[data-id][data-status]").forEach((btn) => {
     btn.addEventListener("click", () =>
-      atualizarStatusPedido(btn.dataset.id, btn.dataset.status)
+      atualizarStatusPedido(btn.dataset.id, btn.dataset.status),
     );
   });
 
-  grid.querySelectorAll(".btn-excluir-pedido").forEach(btn => {
+  grid.querySelectorAll(".btn-excluir-pedido").forEach((btn) => {
     btn.addEventListener("click", () =>
-      excluirPedido(btn.dataset.excluirId, btn.dataset.mesaId, parseFloat(btn.dataset.total))
+      excluirPedido(
+        btn.dataset.excluirId,
+        btn.dataset.mesaId,
+        parseFloat(btn.dataset.total),
+      ),
     );
   });
 
-  grid.querySelectorAll(".btn-editar-cozinha").forEach(btn => {
-    btn.addEventListener("click", () => abrirModalEditarCozinha(btn.dataset.pedidoId));
+  grid.querySelectorAll(".btn-editar-cozinha").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      abrirModalEditarCozinha(btn.dataset.pedidoId),
+    );
   });
 }
 
@@ -1149,22 +1625,25 @@ async function atualizarStatusPedido(pedidoId, novoStatus) {
     // OTIMIZAÇÃO: busca pedido e atualiza status em paralelo
     const [_, pedidoSnap] = await Promise.all([
       updateDoc(doc(db, "pedidos", pedidoId), {
-        status:    novoStatus,
-        updatedAt: serverTimestamp()
+        status: novoStatus,
+        updatedAt: serverTimestamp(),
       }),
-      getDoc(doc(db, "pedidos", pedidoId))
+      getDoc(doc(db, "pedidos", pedidoId)),
     ]);
 
     if (!pedidoSnap.exists()) return;
     const pedidoData = pedidoSnap.data();
 
     // Atualiza historicoPedidos da mesa em paralelo com o toast
-    const mesaRef  = doc(db, "mesas", pedidoData.mesaId);
+    const mesaRef = doc(db, "mesas", pedidoData.mesaId);
     const mesaSnap = await getDoc(mesaRef);
-    if (!mesaSnap.exists()) { toast(`Pedido: ${novoStatus}`, "sucesso"); return; }
+    if (!mesaSnap.exists()) {
+      toast(`Pedido: ${novoStatus}`, "sucesso");
+      return;
+    }
 
-    const historico = (mesaSnap.data().historicoPedidos || []).map(p =>
-      p.pedidoId === pedidoId ? { ...p, status: novoStatus } : p
+    const historico = (mesaSnap.data().historicoPedidos || []).map((p) =>
+      p.pedidoId === pedidoId ? { ...p, status: novoStatus } : p,
     );
     await updateDoc(mesaRef, { historicoPedidos: historico });
     toast(`Pedido marcado como: ${novoStatus}`, "sucesso");
@@ -1183,19 +1662,21 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 
     // Remove do historicoPedidos da mesa e desconta o total
     if (mesaId) {
-      const mesaRef  = doc(db, "mesas", mesaId);
+      const mesaRef = doc(db, "mesas", mesaId);
       const mesaSnap = await getDoc(mesaRef);
       if (mesaSnap.exists()) {
-        const mesaData   = mesaSnap.data();
-        const historico  = (mesaData.historicoPedidos || []).filter(p => p.pedidoId !== pedidoId);
-        const novoTotal  = Math.max(0, (mesaData.total || 0) - totalPedido);
+        const mesaData = mesaSnap.data();
+        const historico = (mesaData.historicoPedidos || []).filter(
+          (p) => p.pedidoId !== pedidoId,
+        );
+        const novoTotal = Math.max(0, (mesaData.total || 0) - totalPedido);
         const novoStatus = historico.length === 0 ? "livre" : mesaData.status;
         await updateDoc(mesaRef, {
           historicoPedidos: historico,
-          total:            novoTotal,
-          pedidosCount:     Math.max(0, (mesaData.pedidosCount || 1) - 1),
-          status:           novoStatus,
-          abertaEm:         novoStatus === "livre" ? null : mesaData.abertaEm
+          total: novoTotal,
+          pedidosCount: Math.max(0, (mesaData.pedidosCount || 1) - 1),
+          status: novoStatus,
+          abertaEm: novoStatus === "livre" ? null : mesaData.abertaEm,
         });
       }
     }
@@ -1210,15 +1691,73 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 // ============================================================
 // 6. PÁGINA: RELATÓRIO
 // ============================================================
-let unsubRelatorio = null;  // para limpar listener anterior
-let vendasAtuais   = [];      // cache para impressão do relatório
+let unsubRelatorio = null; // para limpar listener anterior
+let vendasAtuais = []; // cache para impressão do relatório
+
+// ── LOGIN RELATÓRIO ──────────────────────────────────────
+const SENHA_RELATORIO = "086431";
+let _autenticado = false;
+function fazerLogin(s) {
+  if (s === SENHA_RELATORIO) {
+    _autenticado = true;
+    return true;
+  }
+  return false;
+}
+function fazerLogout() {
+  _autenticado = false;
+  window.location.reload();
+}
+function mostrarTelaLogin() {
+  const m = document.getElementById("relatorioMain");
+  if (!m) return;
+  m.innerHTML = `<div class="login-box"><div class="login-icon">🔐</div><h2>Área Restrita</h2><p>Digite a senha para acessar o Relatório.</p><div class="login-campo"><input type="password" id="senhaInput" placeholder="Senha" autocomplete="off"/><button class="btn-primary btn-login" id="btnLogin">Entrar</button></div><div class="login-erro" id="loginErro"></div></div>`;
+  const inp = document.getElementById("senhaInput"),
+    btn = document.getElementById("btnLogin"),
+    err = document.getElementById("loginErro");
+  function t() {
+    if (fazerLogin(inp.value.trim())) {
+      mostrarConteudoRelatorio();
+    } else {
+      err.textContent = "Senha incorreta.";
+      inp.value = "";
+      inp.focus();
+      setTimeout(() => {
+        err.textContent = "";
+      }, 2000);
+    }
+  }
+  btn.addEventListener("click", t);
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") t();
+  });
+  inp.focus();
+}
+function mostrarConteudoRelatorio() {
+  const m = document.getElementById("relatorioMain"),
+    t = document.getElementById("tplRelatorio");
+  if (m && t) {
+    m.innerHTML = "";
+    m.appendChild(t.content.cloneNode(true));
+  }
+  document.getElementById("btnLogout")?.addEventListener("click", fazerLogout);
+  _iniciarConteudoRelatorio();
+}
+function initRelatorio() {
+  iniciarRelogio();
+  if (_autenticado) {
+    mostrarConteudoRelatorio();
+  } else {
+    mostrarTelaLogin();
+  }
+}
 
 function _iniciarConteudoRelatorio() {
   iniciarRelogio();
 
   // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
   const _h = new Date();
-  const hoje = `${_h.getFullYear()}-${String(_h.getMonth()+1).padStart(2,'0')}-${String(_h.getDate()).padStart(2,'0')}`;
+  const hoje = `${_h.getFullYear()}-${String(_h.getMonth() + 1).padStart(2, "0")}-${String(_h.getDate()).padStart(2, "0")}`;
   const inputData = document.getElementById("filtroData");
   inputData.value = hoje;
 
@@ -1238,71 +1777,15 @@ function _iniciarConteudoRelatorio() {
   }
 
   escutarVendas(hoje);
-  window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
-  if (typeof initFaturamento === 'function') _iniciarGraficos();
+  window.addEventListener(
+    "pagehide",
+    () => {
+      if (unsubRelatorio) unsubRelatorio();
+    },
+    { once: true },
+  );
+  if (typeof initFaturamento === "function") initFaturamento();
 }
-
-// ============================================================
-// LOGIN — Relatório protegido por senha
-// ============================================================
-const SENHA_RELATORIO = "086431";
-let _autenticado = false;
-
-function fazerLogin(s) { if (s === SENHA_RELATORIO) { _autenticado = true; return true; } return false; }
-function fazerLogout() { _autenticado = false; window.location.reload(); }
-
-function mostrarTelaLogin() {
-  const m = document.getElementById("relatorioMain");
-  if (!m) return;
-  m.innerHTML = `
-    <div class="login-box">
-      <div class="login-icon">🔐</div>
-      <h2>Área Restrita</h2>
-      <p>Digite a senha para acessar o Relatório.</p>
-      <div class="login-campo">
-        <input type="password" id="senhaInput" placeholder="Senha" autocomplete="off"/>
-        <button class="btn-primary btn-login" id="btnLogin">Entrar</button>
-      </div>
-      <div class="login-erro" id="loginErro"></div>
-    </div>`;
-  const inp = document.getElementById("senhaInput");
-  const btn = document.getElementById("btnLogin");
-  const err = document.getElementById("loginErro");
-  function tentarLogin() {
-    if (fazerLogin(inp.value.trim())) {
-      mostrarConteudoRelatorio();
-    } else {
-      err.textContent = "Senha incorreta.";
-      inp.value = "";
-      inp.focus();
-      setTimeout(() => { err.textContent = ""; }, 2000);
-    }
-  }
-  btn.addEventListener("click", tentarLogin);
-  inp.addEventListener("keydown", e => { if (e.key === "Enter") tentarLogin(); });
-  inp.focus();
-}
-
-function mostrarConteudoRelatorio() {
-  const m = document.getElementById("relatorioMain");
-  const t = document.getElementById("tplRelatorio");
-  if (m && t) {
-    m.innerHTML = "";
-    m.appendChild(t.content.cloneNode(true));
-  }
-  document.getElementById("btnLogout")?.addEventListener("click", fazerLogout);
-  _iniciarConteudoRelatorio();
-}
-
-function initRelatorio() {
-  iniciarRelogio();
-  if (_autenticado) {
-    mostrarConteudoRelatorio();
-  } else {
-    mostrarTelaLogin();
-  }
-}
-
 
 function escutarVendas(dataStr) {
   // Cancela listener anterior se existir
@@ -1314,13 +1797,13 @@ function escutarVendas(dataStr) {
   // Ajusta as datas corretamente para o fuso local
   const [ano, mes, dia] = dataStr.split("-").map(Number);
   const inicio = new Date(ano, mes - 1, dia, 0, 0, 0);
-  const fim    = new Date(ano, mes - 1, dia, 23, 59, 59);
+  const fim = new Date(ano, mes - 1, dia, 23, 59, 59);
 
   const q = query(
     collection(db, "vendas"),
-    where("fechadoEm", ">=",  Timestamp.fromDate(inicio)),
-    where("fechadoEm", "<=",  Timestamp.fromDate(fim)),
-    orderBy("fechadoEm", "desc")
+    where("fechadoEm", ">=", Timestamp.fromDate(inicio)),
+    where("fechadoEm", "<=", Timestamp.fromDate(fim)),
+    orderBy("fechadoEm", "desc"),
   );
 
   // Mostra loading
@@ -1332,29 +1815,33 @@ function escutarVendas(dataStr) {
     </div>`;
 
   // FIX: onSnapshot em vez de getDocs — relatório reativo
-  unsubRelatorio = onSnapshot(q, snap => {
-    const vendas = [];
-    snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
-    vendasAtuais = vendas;
-    renderRelatorio(vendas);
-  }, err => {
-    console.error("[Mikami] Erro ao carregar vendas:", err);
-    toast("Erro ao carregar relatório.", "erro");
-  });
+  unsubRelatorio = onSnapshot(
+    q,
+    (snap) => {
+      const vendas = [];
+      snap.forEach((d) => vendas.push({ id: d.id, ...d.data() }));
+      vendasAtuais = vendas;
+      renderRelatorio(vendas);
+    },
+    (err) => {
+      console.error("[Mikami] Erro ao carregar vendas:", err);
+      toast("Erro ao carregar relatório.", "erro");
+    },
+  );
 }
 
 function renderRelatorio(vendas) {
-  const totalDia  = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
-  const qtdMesas  = vendas.length;
+  const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+  const qtdMesas = vendas.length;
   const ticketMed = qtdMesas > 0 ? totalDia / qtdMesas : 0;
 
-  document.getElementById("resumoTotal").textContent  = fmtMoeda(totalDia);
-  document.getElementById("resumoMesas").textContent  = qtdMesas;
+  document.getElementById("resumoTotal").textContent = fmtMoeda(totalDia);
+  document.getElementById("resumoMesas").textContent = qtdMesas;
   document.getElementById("resumoTicket").textContent = fmtMoeda(ticketMed);
 
   // Breakdown por pagamento
   const porPag = {};
-  vendas.forEach(v => {
+  vendas.forEach((v) => {
     const met = v.formaPagamento || "Outros";
     porPag[met] = (porPag[met] || 0) + (v.total || 0);
   });
@@ -1363,12 +1850,16 @@ function renderRelatorio(vendas) {
   if (Object.keys(porPag).length === 0) {
     breakdown.innerHTML = `<span class="resumo-label">Nenhum pagamento</span>`;
   } else {
-    breakdown.innerHTML = Object.entries(porPag).map(([met, val]) => `
+    breakdown.innerHTML = Object.entries(porPag)
+      .map(
+        ([met, val]) => `
       <div class="pag-linha">
         <span class="pag-metodo">${met}</span>
         <span class="pag-valor">${fmtMoeda(val)}</span>
       </div>
-    `).join("");
+    `,
+      )
+      .join("");
   }
 
   // Lista de vendas
@@ -1383,32 +1874,37 @@ function renderRelatorio(vendas) {
     return;
   }
 
-  container.innerHTML = vendas.map(venda => {
-    const itensAgrupados = [];
-    (venda.itens || []).forEach(item => {
-      const ex = itensAgrupados.find(i => i.nome === item.nome);
-      if (ex) {
-        ex.qty      += item.qty;
-        ex.subtotal += item.preco * item.qty;
-      } else {
-        itensAgrupados.push({
-          nome:     item.nome,
-          qty:      item.qty,
-          preco:    item.preco,
-          subtotal: item.preco * item.qty
-        });
-      }
-    });
+  container.innerHTML = vendas
+    .map((venda) => {
+      const itensAgrupados = [];
+      (venda.itens || []).forEach((item) => {
+        const ex = itensAgrupados.find((i) => i.nome === item.nome);
+        if (ex) {
+          ex.qty += item.qty;
+          ex.subtotal += item.preco * item.qty;
+        } else {
+          itensAgrupados.push({
+            nome: item.nome,
+            qty: item.qty,
+            preco: item.preco,
+            subtotal: item.preco * item.qty,
+          });
+        }
+      });
 
-    const itensHtml = itensAgrupados.map(item => `
+      const itensHtml = itensAgrupados
+        .map(
+          (item) => `
       <div class="venda-item-linha">
         <span class="venda-item-nome">${item.nome}</span>
         <span class="venda-item-qty">${item.qty}x</span>
         <span class="venda-item-val">${fmtMoeda(item.subtotal)}</span>
       </div>
-    `).join("");
+    `,
+        )
+        .join("");
 
-    return `
+      return `
       <div class="venda-card">
         <div class="venda-card-header">
           <span class="venda-mesa">Mesa ${venda.mesaNumero}</span>
@@ -1420,17 +1916,21 @@ function renderRelatorio(vendas) {
         <div class="venda-itens-lista">${itensHtml}</div>
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 
   // Eventos de exclusão de venda
-  document.querySelectorAll(".btn-excluir-venda").forEach(btn => {
+  document.querySelectorAll(".btn-excluir-venda").forEach((btn) => {
     btn.addEventListener("click", () => excluirVenda(btn.dataset.vendaId));
   });
 }
 
 // ── Excluir Venda ─────────────────────────────────────────────
 async function excluirVenda(vendaId) {
-  if (!confirm("Excluir este registro de venda? Esta ação não pode ser desfeita.")) return;
+  if (
+    !confirm("Excluir este registro de venda? Esta ação não pode ser desfeita.")
+  )
+    return;
 
   try {
     await deleteDoc(doc(db, "vendas", vendaId));
@@ -1450,43 +1950,62 @@ function imprimirRelatorio(dataStr, vendas) {
   }
 
   const [ano, mes, dia] = dataStr.split("-").map(Number);
-  const dataFormatada = new Date(ano, mes - 1, dia)
-    .toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const dataFormatada = new Date(ano, mes - 1, dia).toLocaleDateString(
+    "pt-BR",
+    { day: "2-digit", month: "2-digit", year: "numeric" },
+  );
 
-  const totalDia  = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
-  const qtdMesas  = vendas.length;
+  const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+  const qtdMesas = vendas.length;
   const ticketMed = qtdMesas > 0 ? totalDia / qtdMesas : 0;
 
   // Breakdown por pagamento
   const porPag = {};
-  vendas.forEach(v => {
+  vendas.forEach((v) => {
     const met = v.formaPagamento || "Outros";
     porPag[met] = (porPag[met] || 0) + (v.total || 0);
   });
 
-  const pagamentosHtml = Object.entries(porPag).map(([met, val]) => `
+  const pagamentosHtml = Object.entries(porPag)
+    .map(
+      ([met, val]) => `
     <div class="print-relatorio-resumo-linha">
       <span>${met}</span>
       <span>${fmtMoeda(val)}</span>
     </div>
-  `).join("");
+  `,
+    )
+    .join("");
 
-  const vendasHtml = vendas.map((venda, idx) => {
-    const itensAgrupados = [];
-    (venda.itens || []).forEach(item => {
-      const ex = itensAgrupados.find(i => i.nome === item.nome);
-      if (ex) { ex.qty += item.qty; ex.subtotal += item.preco * item.qty; }
-      else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
-    });
+  const vendasHtml = vendas
+    .map((venda, idx) => {
+      const itensAgrupados = [];
+      (venda.itens || []).forEach((item) => {
+        const ex = itensAgrupados.find((i) => i.nome === item.nome);
+        if (ex) {
+          ex.qty += item.qty;
+          ex.subtotal += item.preco * item.qty;
+        } else
+          itensAgrupados.push({
+            nome: item.nome,
+            qty: item.qty,
+            preco: item.preco,
+            subtotal: item.preco * item.qty,
+          });
+      });
 
-    const itensHtml = itensAgrupados.map(item => `
+      const itensHtml = itensAgrupados
+        .map(
+          (item) => `
       <div class="print-item">
         <span>${item.qty}x ${item.nome}</span>
         <span>${fmtMoeda(item.subtotal)}</span>
       </div>
-    `).join("");
+    `,
+        )
+        .join("");
 
-    return `
+      return `
       <div class="print-relatorio-venda">
         <div class="print-relatorio-venda-header">
           <span>Mesa ${venda.mesaNumero}</span>
@@ -1497,7 +2016,8 @@ function imprimirRelatorio(dataStr, vendas) {
         ${itensHtml}
       </div>
     `;
-  }).join("");
+    })
+    .join("");
 
   const printArea = document.getElementById("printArea");
   if (!printArea) {
@@ -1538,28 +2058,34 @@ function imprimirRelatorio(dataStr, vendas) {
   window.print();
 }
 
-
 // ── Pagamento dividido — atualiza saldo restante ──────────────
 function atualizarRestante() {
   const total = estadoMesa.dadosMesa?.total || 0;
   let distribuido = 0;
-  document.querySelectorAll(".div-toggle.active").forEach(btn => {
+  document.querySelectorAll(".div-toggle.active").forEach((btn) => {
     const metodo = btn.dataset.metodo;
-    const input  = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
-    distribuido += parseFloat(input?.value?.replace(",",".") || "0") || 0;
+    const input = document.querySelector(
+      `.div-valor-input[data-metodo="${metodo}"]`,
+    );
+    distribuido += parseFloat(input?.value?.replace(",", ".") || "0") || 0;
   });
   const restante = total - distribuido;
   const el = document.getElementById("divRestante");
   if (el) {
-    el.textContent = restante > 0.009
-      ? `Faltam distribuir: ${fmtMoeda(restante)}`
-      : restante < -0.009
-        ? `Excedeu em: ${fmtMoeda(Math.abs(restante))}`
-        : "✓ Total distribuído";
-    el.style.color = Math.abs(restante) < 0.01 ? "var(--verde)" : "var(--vermelho-soft)";
+    el.textContent =
+      restante > 0.009
+        ? `Faltam distribuir: ${fmtMoeda(restante)}`
+        : restante < -0.009
+          ? `Excedeu em: ${fmtMoeda(Math.abs(restante))}`
+          : "✓ Total distribuído";
+    el.style.color =
+      Math.abs(restante) < 0.01 ? "var(--verde)" : "var(--vermelho-soft)";
   }
   const btnConfirmar = document.getElementById("btnConfirmarFechar");
-  if (btnConfirmar && document.getElementById("tabPagDividido")?.classList.contains("active")) {
+  if (
+    btnConfirmar &&
+    document.getElementById("tabPagDividido")?.classList.contains("active")
+  ) {
     btnConfirmar.disabled = Math.abs(restante) > 0.01;
   }
 }
@@ -1573,31 +2099,38 @@ function initModalPagamento() {
   if (!tabUnico) return;
 
   tabUnico.addEventListener("click", () => {
-    tabUnico.classList.add("active"); tabDivid.classList.remove("active");
-    secUnico.style.display = ""; secDivid.style.display = "none";
+    tabUnico.classList.add("active");
+    tabDivid.classList.remove("active");
+    secUnico.style.display = "";
+    secDivid.style.display = "none";
     const btnConfirmar = document.getElementById("btnConfirmarFechar");
     btnConfirmar.disabled = !document.querySelector(".pagamento-btn.selected");
   });
 
   tabDivid.addEventListener("click", () => {
-    tabDivid.classList.add("active"); tabUnico.classList.remove("active");
-    secDivid.style.display = ""; secUnico.style.display = "none";
+    tabDivid.classList.add("active");
+    tabUnico.classList.remove("active");
+    secDivid.style.display = "";
+    secUnico.style.display = "none";
     atualizarRestante();
   });
 
   // Toggles de método dividido
-  document.querySelectorAll(".div-toggle").forEach(btn => {
+  document.querySelectorAll(".div-toggle").forEach((btn) => {
     btn.addEventListener("click", () => {
       btn.classList.toggle("active");
       const metodo = btn.dataset.metodo;
       const inputRow = document.getElementById(`divRow_${metodo}`);
-      if (inputRow) inputRow.style.display = btn.classList.contains("active") ? "flex" : "none";
+      if (inputRow)
+        inputRow.style.display = btn.classList.contains("active")
+          ? "flex"
+          : "none";
       atualizarRestante();
     });
   });
 
   // Inputs de valor
-  document.querySelectorAll(".div-valor-input").forEach(input => {
+  document.querySelectorAll(".div-valor-input").forEach((input) => {
     input.addEventListener("input", atualizarRestante);
   });
 }
@@ -1609,13 +2142,21 @@ async function abrirModalEditar(pedidoId) {
   if (!pedidoId) return;
   try {
     const snap = await getDoc(doc(db, "pedidos", pedidoId));
-    if (!snap.exists()) { toast("Pedido não encontrado.", "erro"); return; }
+    if (!snap.exists()) {
+      toast("Pedido não encontrado.", "erro");
+      return;
+    }
     pedidoEmEdicao = { id: pedidoId, ...snap.data() };
-    pedidoEmEdicao.itens = pedidoEmEdicao.itens.map(i => ({ ...i })); // cópia
+    pedidoEmEdicao.itens = pedidoEmEdicao.itens.map((i) => ({ ...i })); // cópia
     renderModalEditar();
-    const _modal = document.getElementById("modalEditarPedido") || document.getElementById("modalEditarPedidoCozinha");
+    const _modal =
+      document.getElementById("modalEditarPedido") ||
+      document.getElementById("modalEditarPedidoCozinha");
     if (_modal) _modal.classList.add("open");
-    else { toast("Erro ao abrir edição.", "erro"); return; }
+    else {
+      toast("Erro ao abrir edição.", "erro");
+      return;
+    }
   } catch (err) {
     console.error("[Mikami] Edição:", err);
     toast("Erro ao abrir edição.", "erro");
@@ -1628,18 +2169,25 @@ async function abrirModalEditarCozinha(pedidoId) {
 
 function renderModalEditar() {
   if (!pedidoEmEdicao) return;
-  const container = document.getElementById("editarItensLista") || document.getElementById("editarItensListaCozinha");
+  const container =
+    document.getElementById("editarItensLista") ||
+    document.getElementById("editarItensListaCozinha");
   if (!container) return;
   const itens = pedidoEmEdicao.itens;
-  const titulo = document.getElementById("editarPedidoTitulo") || document.getElementById("editarPedidoTituloCozinha");
-  if (titulo) titulo.textContent = `Editar Pedido — Mesa ${pedidoEmEdicao.mesaNumero}`;
+  const titulo =
+    document.getElementById("editarPedidoTitulo") ||
+    document.getElementById("editarPedidoTituloCozinha");
+  if (titulo)
+    titulo.textContent = `Editar Pedido — Mesa ${pedidoEmEdicao.mesaNumero}`;
 
   if (!itens.length) {
     container.innerHTML = `<p style="color:var(--cinza-texto);text-align:center;padding:1rem">Nenhum item</p>`;
     return;
   }
 
-  container.innerHTML = itens.map((item, idx) => `
+  container.innerHTML = itens
+    .map(
+      (item, idx) => `
     <div class="editar-item-row" data-idx="${idx}">
       <div class="editar-item-nome">${item.nome}</div>
       <div class="editar-item-controles">
@@ -1651,29 +2199,34 @@ function renderModalEditar() {
       </div>
       ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
     </div>
-  `).join("");
+  `,
+    )
+    .join("");
 
   // Total
   const total = itens.reduce((a, i) => a + i.preco * i.qty, 0);
-  const _elTotal = document.getElementById("editarTotal") || document.getElementById("editarTotalCozinha");
+  const _elTotal =
+    document.getElementById("editarTotal") ||
+    document.getElementById("editarTotalCozinha");
   if (_elTotal) _elTotal.textContent = fmtMoeda(total);
 
   // Eventos
-  container.querySelectorAll(".editar-dec").forEach(btn => {
+  container.querySelectorAll(".editar-dec").forEach((btn) => {
     btn.addEventListener("click", () => {
       const idx = parseInt(btn.dataset.idx);
       pedidoEmEdicao.itens[idx].qty--;
-      if (pedidoEmEdicao.itens[idx].qty <= 0) pedidoEmEdicao.itens.splice(idx, 1);
+      if (pedidoEmEdicao.itens[idx].qty <= 0)
+        pedidoEmEdicao.itens.splice(idx, 1);
       renderModalEditar();
     });
   });
-  container.querySelectorAll(".editar-inc").forEach(btn => {
+  container.querySelectorAll(".editar-inc").forEach((btn) => {
     btn.addEventListener("click", () => {
       pedidoEmEdicao.itens[parseInt(btn.dataset.idx)].qty++;
       renderModalEditar();
     });
   });
-  container.querySelectorAll(".editar-remove").forEach(btn => {
+  container.querySelectorAll(".editar-remove").forEach((btn) => {
     btn.addEventListener("click", () => {
       pedidoEmEdicao.itens.splice(parseInt(btn.dataset.idx), 1);
       renderModalEditar();
@@ -1683,46 +2236,58 @@ function renderModalEditar() {
 
 async function salvarEdicaoPedido() {
   if (!pedidoEmEdicao) return;
-  const btnSalvar = document.getElementById("btnSalvarEdicao") || document.getElementById("btnSalvarEdicaoCozinha");
-  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = "Salvando..."; }
+  const btnSalvar =
+    document.getElementById("btnSalvarEdicao") ||
+    document.getElementById("btnSalvarEdicaoCozinha");
+  if (btnSalvar) {
+    btnSalvar.disabled = true;
+    btnSalvar.textContent = "Salvando...";
+  }
 
   try {
     const itensNovos = pedidoEmEdicao.itens;
-    const novoTotal  = itensNovos.reduce((a, i) => a + i.preco * i.qty, 0);
+    const novoTotal = itensNovos.reduce((a, i) => a + i.preco * i.qty, 0);
     const totalAntigo = pedidoEmEdicao.total || 0;
     const diff = novoTotal - totalAntigo;
 
     if (!itensNovos.length) {
       // Se removeu todos os itens, exclui o pedido
-      await excluirPedido(pedidoEmEdicao.id, pedidoEmEdicao.mesaId, totalAntigo);
+      await excluirPedido(
+        pedidoEmEdicao.id,
+        pedidoEmEdicao.mesaId,
+        totalAntigo,
+      );
       fecharModalEditar();
       return;
     }
 
     // Atualiza pedido
     await updateDoc(doc(db, "pedidos", pedidoEmEdicao.id), {
-      itens:     itensNovos,
-      total:     novoTotal,
-      updatedAt: serverTimestamp()
+      itens: itensNovos,
+      total: novoTotal,
+      updatedAt: serverTimestamp(),
     });
 
     // Atualiza mesa: total e historicoPedidos
     if (pedidoEmEdicao.mesaId) {
-      const mesaRef  = doc(db, "mesas", pedidoEmEdicao.mesaId);
+      const mesaRef = doc(db, "mesas", pedidoEmEdicao.mesaId);
       const mesaSnap = await getDoc(mesaRef);
       if (mesaSnap.exists()) {
-        const mesaData  = mesaSnap.data();
-        const historico = (mesaData.historicoPedidos || []).map(p =>
+        const mesaData = mesaSnap.data();
+        const historico = (mesaData.historicoPedidos || []).map((p) =>
           p.pedidoId === pedidoEmEdicao.id
             ? { ...p, itens: itensNovos, total: novoTotal }
-            : p
+            : p,
         );
         // FIX: recalcula total somando todos os pedidos do histórico
         // evita acumular erros de race condition em cima de diff
-        const totalRecalculado = historico.reduce((a, p) => a + (p.total || 0), 0);
+        const totalRecalculado = historico.reduce(
+          (a, p) => a + (p.total || 0),
+          0,
+        );
         await updateDoc(mesaRef, {
           historicoPedidos: historico,
-          total: Math.max(0, totalRecalculado)
+          total: Math.max(0, totalRecalculado),
         });
       }
     }
@@ -1732,44 +2297,47 @@ async function salvarEdicaoPedido() {
   } catch (err) {
     console.error(err);
     toast("Erro ao salvar edição.", "erro");
-    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar"; }
+    if (btnSalvar) {
+      btnSalvar.disabled = false;
+      btnSalvar.textContent = "Salvar";
+    }
   }
 }
 
 function fecharModalEditar() {
   pedidoEmEdicao = null;
-  ["modalEditarPedido","modalEditarPedidoCozinha"].forEach(id => {
+  ["modalEditarPedido", "modalEditarPedidoCozinha"].forEach((id) => {
     document.getElementById(id)?.classList.remove("open");
   });
-  ["btnSalvarEdicao","btnSalvarEdicaoCozinha"].forEach(id => {
+  ["btnSalvarEdicao", "btnSalvarEdicaoCozinha"].forEach((id) => {
     const btn = document.getElementById(id);
-    if (btn) { btn.disabled = false; btn.textContent = "Salvar"; }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Salvar";
+    }
   });
 }
-
 
 // ============================================================
 // 8. PÁGINA: FATURAMENTO
 // ============================================================
-function _iniciarGraficos() { initFaturamento(); }
-
 function initFaturamento() {
   iniciarRelogio();
 
   // Carrega dados dos últimos 12 meses + semana atual
   const agora = new Date();
   const inicioAno = new Date(agora.getFullYear() - 1, agora.getMonth() + 1, 1);
-  inicioAno.setHours(0,0,0,0);
+  inicioAno.setHours(0, 0, 0, 0);
 
   const q = query(
     collection(db, "vendas"),
     where("fechadoEm", ">=", Timestamp.fromDate(inicioAno)),
-    orderBy("fechadoEm", "asc")
+    orderBy("fechadoEm", "asc"),
   );
 
-  onSnapshot(q, snap => {
+  onSnapshot(q, (snap) => {
     const vendas = [];
-    snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
+    snap.forEach((d) => vendas.push({ id: d.id, ...d.data() }));
     renderFaturamento(vendas);
   });
 }
@@ -1783,13 +2351,18 @@ function renderFaturamento(vendas) {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(agora);
     d.setDate(d.getDate() - i);
-    d.setHours(0,0,0,0);
-    const label = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" });
+    d.setHours(0, 0, 0, 0);
+    const label = d.toLocaleDateString("pt-BR", {
+      weekday: "short",
+      day: "2-digit",
+    });
     diasSemana.push(label);
     const total = vendas
-      .filter(v => {
+      .filter((v) => {
         if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+        const vd = v.fechadoEm.toDate
+          ? v.fechadoEm.toDate()
+          : new Date(v.fechadoEm);
         return vd.toDateString() === d.toDateString();
       })
       .reduce((a, v) => a + (v.total || 0), 0);
@@ -1802,12 +2375,16 @@ function renderFaturamento(vendas) {
   for (let i = 29; i >= 0; i--) {
     const d = new Date(agora);
     d.setDate(d.getDate() - i);
-    d.setHours(0,0,0,0);
-    diasMes.push(d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
+    d.setHours(0, 0, 0, 0);
+    diasMes.push(
+      d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }),
+    );
     const total = vendas
-      .filter(v => {
+      .filter((v) => {
         if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+        const vd = v.fechadoEm.toDate
+          ? v.fechadoEm.toDate()
+          : new Date(v.fechadoEm);
         return vd.toDateString() === d.toDateString();
       })
       .reduce((a, v) => a + (v.total || 0), 0);
@@ -1819,12 +2396,18 @@ function renderFaturamento(vendas) {
   const totalAnual = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
-    mesesLabel.push(d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }));
+    mesesLabel.push(
+      d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }),
+    );
     const total = vendas
-      .filter(v => {
+      .filter((v) => {
         if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-        return vd.getFullYear() === d.getFullYear() && vd.getMonth() === d.getMonth();
+        const vd = v.fechadoEm.toDate
+          ? v.fechadoEm.toDate()
+          : new Date(v.fechadoEm);
+        return (
+          vd.getFullYear() === d.getFullYear() && vd.getMonth() === d.getMonth()
+        );
       })
       .reduce((a, v) => a + (v.total || 0), 0);
     totalAnual.push(parseFloat(total.toFixed(2)));
@@ -1832,36 +2415,62 @@ function renderFaturamento(vendas) {
 
   // ── CARDS RESUMO ───────────────────────────────────────
   const totalHoje = vendas
-    .filter(v => {
+    .filter((v) => {
       if (!v.fechadoEm) return false;
-      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+      const vd = v.fechadoEm.toDate
+        ? v.fechadoEm.toDate()
+        : new Date(v.fechadoEm);
       return vd.toDateString() === agora.toDateString();
     })
     .reduce((a, v) => a + (v.total || 0), 0);
 
-  const totalSemanaNum = totalSemana.reduce((a,b) => a+b, 0);
-  const totalMesNum    = totalMes.reduce((a,b) => a+b, 0);
-  const totalAnualNum  = totalAnual.reduce((a,b) => a+b, 0);
+  const totalSemanaNum = totalSemana.reduce((a, b) => a + b, 0);
+  const totalMesNum = totalMes.reduce((a, b) => a + b, 0);
+  const totalAnualNum = totalAnual.reduce((a, b) => a + b, 0);
 
-  document.getElementById("fatHoje").textContent   = fmtMoeda(totalHoje);
+  document.getElementById("fatHoje").textContent = fmtMoeda(totalHoje);
   document.getElementById("fatSemana").textContent = fmtMoeda(totalSemanaNum);
-  document.getElementById("fatMes").textContent    = fmtMoeda(totalMesNum);
-  document.getElementById("fatAnual").textContent  = fmtMoeda(totalAnualNum);
+  document.getElementById("fatMes").textContent = fmtMoeda(totalMesNum);
+  document.getElementById("fatAnual").textContent = fmtMoeda(totalAnualNum);
 
   // ── FORMA DE PAGAMENTO (pizza) ─────────────────────────
   const porPag = {};
-  vendas.forEach(v => {
+  vendas.forEach((v) => {
     const met = (v.formaPagamento || "Outros").split(" (")[0].trim();
     porPag[met] = (porPag[met] || 0) + (v.total || 0);
   });
   const pagLabels = Object.keys(porPag);
-  const pagValues = pagLabels.map(k => parseFloat(porPag[k].toFixed(2)));
+  const pagValues = pagLabels.map((k) => parseFloat(porPag[k].toFixed(2)));
 
   // Renderiza gráficos
-  _renderGrafico("chartSemanal",  "bar",  diasSemana, totalSemana, "Faturamento Diário (7 dias)");
-  _renderGrafico("chartMensal",   "bar",  diasMes,    totalMes,    "Faturamento Diário (30 dias)");
-  _renderGrafico("chartAnual",    "bar",  mesesLabel, totalAnual,  "Faturamento Mensal (12 meses)");
-  _renderGrafico("chartPagamento","doughnut", pagLabels, pagValues, "Por Forma de Pagamento");
+  _renderGrafico(
+    "chartSemanal",
+    "bar",
+    diasSemana,
+    totalSemana,
+    "Faturamento Diário (7 dias)",
+  );
+  _renderGrafico(
+    "chartMensal",
+    "bar",
+    diasMes,
+    totalMes,
+    "Faturamento Diário (30 dias)",
+  );
+  _renderGrafico(
+    "chartAnual",
+    "bar",
+    mesesLabel,
+    totalAnual,
+    "Faturamento Mensal (12 meses)",
+  );
+  _renderGrafico(
+    "chartPagamento",
+    "doughnut",
+    pagLabels,
+    pagValues,
+    "Por Forma de Pagamento",
+  );
 }
 
 const _chartInstances = {};
@@ -1888,15 +2497,19 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
     type: tipo,
     data: {
       labels,
-      datasets: [{
-        label: titulo,
-        data,
-        backgroundColor: isBarra ? "rgba(192,57,43,0.75)" : cores,
-        borderColor:     isBarra ? "rgba(192,57,43,1)"    : cores.map(c => c.replace("0.85","1")),
-        borderWidth: isBarra ? 0 : 2,
-        borderRadius: isBarra ? 6 : 0,
-        hoverBackgroundColor: isBarra ? "rgba(231,76,60,0.9)" : cores,
-      }]
+      datasets: [
+        {
+          label: titulo,
+          data,
+          backgroundColor: isBarra ? "rgba(192,57,43,0.75)" : cores,
+          borderColor: isBarra
+            ? "rgba(192,57,43,1)"
+            : cores.map((c) => c.replace("0.85", "1")),
+          borderWidth: isBarra ? 0 : 2,
+          borderRadius: isBarra ? 6 : 0,
+          hoverBackgroundColor: isBarra ? "rgba(231,76,60,0.9)" : cores,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -1904,34 +2517,44 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
       plugins: {
         legend: {
           display: tipo === "doughnut",
-          labels: { color: "#f0ece6", font: { family: "Inter", size: 12 }, padding: 16 }
+          labels: {
+            color: "#f0ece6",
+            font: { family: "Inter", size: 12 },
+            padding: 16,
+          },
         },
         tooltip: {
           callbacks: {
-            label: ctx => ` ${fmtMoeda(ctx.parsed.y ?? ctx.parsed ?? 0)}`
+            label: (ctx) => ` ${fmtMoeda(ctx.parsed.y ?? ctx.parsed ?? 0)}`,
           },
           backgroundColor: "#1e1e1e",
           titleColor: "#f0ece6",
           bodyColor: "#d4a017",
           borderColor: "#363636",
           borderWidth: 1,
-        }
-      },
-      scales: isBarra ? {
-        x: {
-          ticks: { color: "#888", font: { size: 11, family: "Inter" }, maxRotation: 45 },
-          grid:  { color: "rgba(255,255,255,0.04)" }
         },
-        y: {
-          ticks: {
-            color: "#888",
-            font: { size: 11, family: "Inter" },
-            callback: v => "R$\u00a0" + v.toLocaleString("pt-BR")
-          },
-          grid: { color: "rgba(255,255,255,0.06)" }
-        }
-      } : {}
-    }
+      },
+      scales: isBarra
+        ? {
+            x: {
+              ticks: {
+                color: "#888",
+                font: { size: 11, family: "Inter" },
+                maxRotation: 45,
+              },
+              grid: { color: "rgba(255,255,255,0.04)" },
+            },
+            y: {
+              ticks: {
+                color: "#888",
+                font: { size: 11, family: "Inter" },
+                callback: (v) => "R$\u00a0" + v.toLocaleString("pt-BR"),
+              },
+              grid: { color: "rgba(255,255,255,0.06)" },
+            },
+          }
+        : {},
+    },
   });
 }
 
@@ -1940,8 +2563,8 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
 // ============================================================
 const pagina = document.body.className;
 
-if      (pagina.includes("page-mesas"))    initIndex();
-else if (pagina.includes("page-mesa"))     initMesa();
-else if (pagina.includes("page-cozinha"))  initCozinha();
+if (pagina.includes("page-mesas")) initIndex();
+else if (pagina.includes("page-mesa")) initMesa();
+else if (pagina.includes("page-cozinha")) initCozinha();
 else if (pagina.includes("page-relatorio")) initRelatorio();
 else if (pagina.includes("page-faturamento")) initFaturamento();

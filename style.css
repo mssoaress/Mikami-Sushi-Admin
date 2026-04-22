@@ -127,7 +127,7 @@ body:not(.page-mesa) .header-brand {
   top: var(--header-h); left: 0; right: 0;
   height: var(--stats-h);
   z-index: 90;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; align-items: center;
   background: var(--preto-card);
   border-bottom: 1px solid var(--preto-borda);
   padding: 0 1.5rem;
@@ -148,12 +148,13 @@ body:not(.page-mesa) .header-brand {
   width: 100%; height: 100%;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-template-rows: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
   gap: 1px;
   background: var(--preto-borda);
 }
 
 .mesa-card {
+  min-height: 120px;
   background: var(--preto-card);
   padding: 1.25rem 1.5rem;
   cursor: pointer;
@@ -447,79 +448,6 @@ body.page-faturamento { padding-top: var(--header-h); }
 .toast.erro    { background: var(--vermelho); }
 .toast.info    { background: var(--cinza-medio); }
 
-
-/* ── Badge delivery bonito ──────────────── */
-.mesa-delivery-badge {
-  font-family: var(--font-display);
-  font-size: 0.55rem; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  padding: 0.15rem 0.5rem; border-radius: 20px;
-  background: rgba(41,128,185,0.2);
-  color: #5dade2;
-  border: 1px solid rgba(41,128,185,0.5);
-  white-space: nowrap;
-}
-.mesa-card.mesa-delivery::before         { background: #2980b9 !important; }
-.mesa-card.mesa-delivery.livre::before   { background: #2980b9 !important; }
-.mesa-card.mesa-delivery.ocupada::before { background: #1a6fa8 !important; }
-
-/* ── Botão adicionar mesa ────────────────── */
-.btn-add-mesa {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--vermelho); color: var(--branco);
-  font-size: 1.3rem; font-weight: 700; border: none;
-  cursor: pointer; flex-shrink: 0; margin-left: auto;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 0.18s; line-height: 1;
-}
-.btn-add-mesa:hover { background: var(--vermelho-soft); }
-
-/* ── Coluna entrega desktop ─────────────── */
-.col-entrega {
-  display: none;
-  flex-direction: column; overflow: hidden;
-  border-left: 1px solid var(--preto-borda);
-}
-.entrega-form { flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-.entrega-locais { display: flex; flex-direction: column; gap: 2px; }
-.entrega-local-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.85rem; border-radius: var(--raio); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: var(--cinza-escuro); }
-.entrega-local-item:hover  { background: var(--cinza); border-color: var(--preto-borda); }
-.entrega-local-item.ativo  { background: rgba(41,128,185,0.15); border-color: rgba(41,128,185,0.5); }
-.entrega-local-icone { font-size: 1rem; flex-shrink: 0; }
-.entrega-local-nome  { flex: 1; font-size: 0.82rem; color: var(--branco); font-weight: 500; }
-.entrega-local-taxa  { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--cinza-texto); white-space: nowrap; }
-.entrega-local-item.ativo .entrega-local-taxa { color: #5dade2; }
-.entrega-local-item:first-child .entrega-local-taxa { color: var(--verde); }
-.entrega-resumo { background: var(--cinza-escuro); border: 1px solid var(--preto-borda); border-radius: var(--raio); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
-.entrega-resumo-linha { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--cinza-texto); }
-.entrega-resumo-taxa span:last-child  { color: #5dade2; font-family: var(--font-display); font-weight: 700; }
-.entrega-resumo-total { border-top: 1px solid var(--preto-borda); padding-top: 0.4rem; margin-top: 0.2rem; font-weight: 700; }
-.entrega-resumo-total span:first-child { color: var(--branco); }
-.entrega-resumo-total span:last-child  { color: var(--ouro-light); font-family: var(--font-display); font-size: 1rem; }
-.entrega-footer { flex-shrink: 0; padding: 0.75rem 1rem; border-top: 1px solid var(--preto-borda); background: var(--preto-card); display: flex; flex-direction: column; gap: 0.4rem; }
-.btn-confirmar-entrega { width: 100%; padding: 0.85rem; font-size: 0.88rem; font-weight: 700; border-radius: var(--raio); }
-.entrega-confirmado { text-align: center; font-size: 0.82rem; color: var(--verde); font-weight: 700; min-height: 1rem; }
-
-/* ── Bloco entrega na aba Conta ─────────── */
-.conta-entrega-bloco { background: rgba(41,128,185,0.08); border: 1px solid rgba(41,128,185,0.3); border-radius: var(--raio); padding: 0.65rem 0.75rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.2rem; }
-.conta-entrega-header { font-family: var(--font-display); font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #5dade2; margin-bottom: 0.3rem; }
-
-/* ── Login ───────────────────────────────── */
-.login-box { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 56px); padding: 2rem 1.5rem; gap: 1.25rem; text-align: center; }
-.login-icon { font-size: 3.5rem; }
-.login-box h2 { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--branco); }
-.login-box p  { font-size: 0.88rem; color: var(--cinza-texto); max-width: 300px; }
-.login-campo  { display: flex; gap: 0.5rem; width: 100%; max-width: 340px; }
-.login-campo input { flex: 1; background: var(--cinza); border: 1px solid var(--preto-borda); border-radius: var(--raio); padding: 0.8rem 1rem; color: var(--branco); font-size: 1rem; transition: border-color 0.18s; }
-.login-campo input:focus { border-color: var(--vermelho); outline: none; }
-.login-campo input::placeholder { color: var(--cinza-texto); }
-.btn-login { padding: 0.8rem 1.5rem; background: var(--vermelho); color: var(--branco); border-radius: var(--raio); font-size: 0.88rem; font-weight: 700; white-space: nowrap; transition: background 0.18s; border: none; cursor: pointer; }
-.btn-login:hover { background: var(--vermelho-soft); }
-.login-erro { font-size: 0.82rem; color: var(--vermelho-soft); font-weight: 600; min-height: 1.2rem; }
-.btn-logout { background: var(--cinza); color: var(--cinza-texto); border: 1px solid var(--preto-borda); border-radius: var(--raio); transition: all 0.18s; }
-.btn-logout:hover { color: var(--vermelho-soft); border-color: var(--vermelho-soft); }
-.fat-secao-titulo { font-family: var(--font-display); font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cinza-texto); padding: 1.25rem 1.5rem 0.5rem; border-top: 1px solid var(--preto-borda); margin-top: 0.5rem; }
-
 /* ================================================================
    IMPRESSÃO
    ================================================================ */
@@ -595,11 +523,8 @@ body.page-faturamento { padding-top: var(--header-h); }
   /* ── MESAS: grid scrollável no mobile ── */
   .stats-bar {
     position: fixed;
-    top: 50px;
-    top: calc(50px + env(safe-area-inset-top, 0px));
+    top: 50px; /* header mobile */
     height: 50px;
-    justify-content: center;
-    left: 0; right: 0;
   }
   .stat-item  { padding: 0 0.75rem; }
   .stat-value { font-size: 1.05rem; }
@@ -654,15 +579,14 @@ body.page-faturamento { padding-top: var(--header-h); }
     display: block; /* não grid */
     height: auto;
   }
-  .col-cardapio, .col-pedido, .col-conta, .col-entrega {
-    position: absolute !important; inset: 0;
-    display: none !important;
+  .col-cardapio, .col-pedido, .col-conta {
+    position: absolute; inset: 0;
+    display: none;
     overflow: hidden;
   }
   .col-cardapio.aba-ativa,
   .col-pedido.aba-ativa,
-  .col-conta.aba-ativa,
-  .col-entrega.aba-ativa { display: flex !important; }
+  .col-conta.aba-ativa { display: flex; }
 
   /* ── COZINHA mobile ── */
   .cozinha-filtros {
@@ -714,10 +638,166 @@ body.page-faturamento { padding-top: var(--header-h); }
   .mesa-aba-btn { font-size: 0.58rem; }
   .mesa-numero { font-size: 1.7rem; }
 }
+/* ── Badge delivery ── */
+.mesa-delivery-badge {
+  font-family: var(--font-display);
+  font-size: 0.55rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem; border-radius: 20px;
+  background: rgba(41,128,185,0.2); color: #5dade2;
+  border: 1px solid rgba(41,128,185,0.5); white-space: nowrap;
+}
+.mesa-card.mesa-delivery::before { background: #2980b9 !important; }
+
+/* ── Botão adicionar mesa ── */
+.btn-add-mesa {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--vermelho); color: var(--branco);
+  font-size: 1.3rem; font-weight: 700; border: none;
+  cursor: pointer; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.18s; line-height: 1;
+}
+.btn-add-mesa:hover { background: var(--vermelho-soft); }
+
+/* ── Coluna entrega ──────────────────────────────── */
+.col-entrega { display: none; flex-direction: column; overflow: hidden; border-left: 1px solid var(--preto-borda); }
+.entrega-form { flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+.entrega-locais { display: flex; flex-direction: column; gap: 2px; }
+.entrega-local-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.65rem 0.85rem; border-radius: var(--raio); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: var(--cinza-escuro); }
+.entrega-local-item:hover { background: var(--cinza); border-color: var(--preto-borda); }
+.entrega-local-item.ativo { background: rgba(41,128,185,0.15); border-color: rgba(41,128,185,0.5); }
+.entrega-local-icone { font-size: 1rem; flex-shrink: 0; }
+.entrega-local-nome  { flex: 1; font-size: 0.82rem; color: var(--branco); font-weight: 500; }
+.entrega-local-taxa  { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--cinza-texto); white-space: nowrap; }
+.entrega-local-item.ativo .entrega-local-taxa { color: #5dade2; }
+.entrega-local-item:first-child .entrega-local-taxa { color: var(--verde); }
+.entrega-resumo { background: var(--cinza-escuro); border: 1px solid var(--preto-borda); border-radius: var(--raio); padding: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.entrega-resumo-linha { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--cinza-texto); }
+.entrega-resumo-taxa span:last-child { color: #5dade2; font-family: var(--font-display); font-weight: 700; }
+.entrega-resumo-total { border-top: 1px solid var(--preto-borda); padding-top: 0.4rem; margin-top: 0.2rem; font-weight: 700; }
+.entrega-resumo-total span:first-child { color: var(--branco); }
+.entrega-resumo-total span:last-child  { color: var(--ouro-light); font-family: var(--font-display); font-size: 1rem; }
+.entrega-footer { flex-shrink: 0; padding: 0.75rem 1rem; border-top: 1px solid var(--preto-borda); background: var(--preto-card); display: flex; flex-direction: column; gap: 0.4rem; }
+.btn-confirmar-entrega { width: 100%; padding: 0.85rem; font-size: 0.88rem; font-weight: 700; border-radius: var(--raio); }
+.entrega-confirmado { text-align: center; font-size: 0.82rem; color: var(--verde); font-weight: 700; min-height: 1rem; }
+
+/* Mobile: col-entrega isolada */
 @media (max-width: 768px) {
-  .login-box { min-height: calc(100vh - 110px); }
-  .fat-secao-titulo { padding: 1rem 1rem 0.4rem; }
-  .entrega-local-item { padding: 0.85rem 1rem; }
-  .entrega-local-nome { font-size: 0.9rem; }
-  .btn-add-mesa { width: 36px; height: 36px; }
+  .col-entrega { position: absolute !important; inset: 0; display: none !important; border-left: none; }
+  .col-entrega.aba-ativa { display: flex !important; }
+}
+/* ================================================================
+   LOGIN — Área restrita do relatório
+   ================================================================ */
+.login-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 56px);
+  padding: 2rem 1.5rem;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.login-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.login-box h2 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--branco);
+}
+
+.login-box p {
+  font-size: 0.88rem;
+  color: var(--cinza-texto);
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+.login-campo {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 340px;
+}
+
+.login-campo input {
+  flex: 1;
+  background: var(--cinza);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.8rem 1rem;
+  color: var(--branco);
+  font-size: 1rem;
+  font-family: var(--font-body);
+  transition: border-color 0.18s;
+  letter-spacing: 0.08em;
+}
+
+.login-campo input:focus {
+  border-color: var(--vermelho);
+  outline: none;
+}
+
+.login-campo input::placeholder {
+  color: var(--cinza-texto);
+  letter-spacing: 0;
+}
+
+.btn-login {
+  padding: 0.8rem 1.5rem;
+  background: var(--vermelho);
+  color: var(--branco);
+  border-radius: var(--raio);
+  font-size: 0.88rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+
+.btn-login:hover {
+  background: var(--vermelho-soft);
+}
+
+.login-erro {
+  font-size: 0.82rem;
+  color: var(--vermelho-soft);
+  font-weight: 600;
+  min-height: 1.2rem;
+}
+
+.btn-logout {
+  background: var(--cinza);
+  color: var(--cinza-texto);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  transition: all 0.18s;
+}
+
+.btn-logout:hover {
+  color: var(--vermelho-soft);
+  border-color: var(--vermelho-soft);
+}
+
+@media (max-width: 768px) {
+  .login-box {
+    min-height: calc(100vh - 110px);
+    gap: 1rem;
+  }
+
+  .login-box h2 {
+    font-size: 1.5rem;
+  }
+
+  .login-campo {
+    max-width: 100%;
+  }
 }

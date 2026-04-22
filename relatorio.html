@@ -11,15 +11,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body class="page-relatorio">
-
   <header class="main-header">
     <div class="header-brand">
       <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
       <span class="kanji" style="display:none">御</span>
-      <div class="brand-text">
-        <h1>Mikami Sushi</h1>
-        <p class="brand-sub">Relatório</p>
-      </div>
+      <div class="brand-text"><h1>Mikami Sushi</h1><p class="brand-sub">Relatório</p></div>
     </div>
     <nav class="main-nav">
       <a href="index.html" class="nav-link">Mesas</a>
@@ -32,38 +28,18 @@
   <!-- Login ou conteúdo injetado aqui -->
   <div id="relatorioMain">
     <div class="loading-mesas" style="padding:4rem">
-      <div class="loading-spinner"></div>
-      <p>Carregando...</p>
+      <div class="loading-spinner"></div><p>Carregando...</p>
     </div>
   </div>
 
   <!-- Template do conteúdo (injetado após login) -->
   <template id="tplRelatorio">
-
     <div class="relatorio-resumo">
-      <div class="resumo-card">
-        <span class="resumo-icon">💰</span>
-        <span class="resumo-valor" id="resumoTotal">R$ 0,00</span>
-        <span class="resumo-label">Total do Dia</span>
-      </div>
-      <div class="resumo-card">
-        <span class="resumo-icon">🍽️</span>
-        <span class="resumo-valor" id="resumoMesas">0</span>
-        <span class="resumo-label">Mesas Fechadas</span>
-      </div>
-      <div class="resumo-card">
-        <span class="resumo-icon">🎯</span>
-        <span class="resumo-valor" id="resumoTicket">R$ 0,00</span>
-        <span class="resumo-label">Ticket Médio</span>
-      </div>
-      <div class="resumo-card resumo-pagamentos">
-        <span class="resumo-icon">💳</span>
-        <div class="pagamentos-breakdown" id="pagamentosBreakdown">
-          <span class="resumo-label">Por Pagamento</span>
-        </div>
-      </div>
+      <div class="resumo-card"><span class="resumo-icon">💰</span><span class="resumo-valor" id="resumoTotal">R$ 0,00</span><span class="resumo-label">Total do Dia</span></div>
+      <div class="resumo-card"><span class="resumo-icon">🍽️</span><span class="resumo-valor" id="resumoMesas">0</span><span class="resumo-label">Mesas Fechadas</span></div>
+      <div class="resumo-card"><span class="resumo-icon">🎯</span><span class="resumo-valor" id="resumoTicket">R$ 0,00</span><span class="resumo-label">Ticket Médio</span></div>
+      <div class="resumo-card resumo-pagamentos"><span class="resumo-icon">💳</span><div class="pagamentos-breakdown" id="pagamentosBreakdown"><span class="resumo-label">Por Pagamento</span></div></div>
     </div>
-
     <div class="relatorio-filtros">
       <label>Data:</label>
       <input type="date" id="filtroData" />
@@ -71,55 +47,32 @@
       <button class="btn-imprimir-relatorio btn-sm" id="btnImprimirRelatorio">🖨️ Imprimir</button>
       <button class="btn-logout btn-sm" id="btnLogout">🔒 Sair</button>
     </div>
-
     <main class="relatorio-main">
       <div class="vendas-lista" id="vendasLista">
-        <div class="loading-mesas">
-          <div class="loading-spinner"></div>
-          <p>Carregando histórico...</p>
-        </div>
+        <div class="loading-mesas"><div class="loading-spinner"></div><p>Carregando...</p></div>
       </div>
     </main>
-
-    <div class="fat-secao-titulo">📊 Faturamento</div>
-
     <div class="fat-resumo">
       <div class="fat-card"><span class="fat-icon">📅</span><span class="fat-label">Hoje</span><span class="fat-valor" id="fatHoje">R$ 0,00</span></div>
       <div class="fat-card"><span class="fat-icon">📆</span><span class="fat-label">7 dias</span><span class="fat-valor" id="fatSemana">R$ 0,00</span></div>
       <div class="fat-card"><span class="fat-icon">🗓️</span><span class="fat-label">30 dias</span><span class="fat-valor" id="fatMes">R$ 0,00</span></div>
       <div class="fat-card"><span class="fat-icon">📊</span><span class="fat-label">12 meses</span><span class="fat-valor" id="fatAnual">R$ 0,00</span></div>
     </div>
-
     <div class="fat-main">
       <div class="fat-grid">
-        <div class="fat-chart-box fat-chart-wide">
-          <div class="fat-chart-titulo">📈 Últimos 7 dias</div>
-          <div class="fat-chart-wrap"><canvas id="chartSemanal"></canvas></div>
-        </div>
-        <div class="fat-chart-box">
-          <div class="fat-chart-titulo">💳 Por Pagamento</div>
-          <div class="fat-chart-wrap"><canvas id="chartPagamento"></canvas></div>
-        </div>
-        <div class="fat-chart-box fat-chart-full">
-          <div class="fat-chart-titulo">📅 Últimos 30 dias</div>
-          <div class="fat-chart-wrap fat-chart-tall"><canvas id="chartMensal"></canvas></div>
-        </div>
-        <div class="fat-chart-box fat-chart-full">
-          <div class="fat-chart-titulo">📊 Últimos 12 meses</div>
-          <div class="fat-chart-wrap"><canvas id="chartAnual"></canvas></div>
-        </div>
+        <div class="fat-chart-box fat-chart-wide"><div class="fat-chart-titulo">📈 Últimos 7 dias</div><div class="fat-chart-wrap"><canvas id="chartSemanal"></canvas></div></div>
+        <div class="fat-chart-box"><div class="fat-chart-titulo">💳 Por Pagamento</div><div class="fat-chart-wrap"><canvas id="chartPagamento"></canvas></div></div>
+        <div class="fat-chart-box fat-chart-full"><div class="fat-chart-titulo">📅 Últimos 30 dias</div><div class="fat-chart-wrap fat-chart-tall"><canvas id="chartMensal"></canvas></div></div>
+        <div class="fat-chart-box fat-chart-full"><div class="fat-chart-titulo">📊 Últimos 12 meses</div><div class="fat-chart-wrap"><canvas id="chartAnual"></canvas></div></div>
       </div>
     </div>
-
   </template>
 
-  <!-- BOTTOM NAV (mobile) -->
   <nav class="bottom-nav">
     <a href="index.html" class="bottom-nav-item"><span class="bn-icon">🍽️</span>Mesas</a>
     <a href="cozinha.html" class="bottom-nav-item"><span class="bn-icon">👨‍🍳</span>Cozinha</a>
     <a href="relatorio.html" class="bottom-nav-item active"><span class="bn-icon">📋</span>Relatório</a>
   </nav>
-
   <div id="printArea" class="print-area"></div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
