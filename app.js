@@ -1010,7 +1010,7 @@ async function fecharMesa() {
     // FIX: recalcula o total somando historicoPedidos (fonte da verdade)
     // Evita usar mesa.total que pode estar errado por race condition
     const historico = mesa.historicoPedidos || [];
-    const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0);
+    const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0) + (estadoMesa.dadosMesa?.entrega?.taxa || 0);
 
     // Salva venda no histórico
     await addDoc(collection(db, "vendas"), {
@@ -1563,7 +1563,7 @@ function imprimirRelatorio(dataStr, vendas) {
 
 // ── Pagamento dividido — atualiza saldo restante ──────────────
 function atualizarRestante() {
-  const total = estadoMesa.dadosMesa?.total || 0;
+  const total = (estadoMesa.dadosMesa?.total || 0) + (estadoMesa.entrega?.taxa || 0);
   let distribuido = 0;
   document.querySelectorAll(".div-toggle.active").forEach(btn => {
     const metodo = btn.dataset.metodo;
