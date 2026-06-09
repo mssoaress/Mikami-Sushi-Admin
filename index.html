@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Mikami Sushi — Mesas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/x-icon" href="img/logo123.jpg">
 </head>
+
 <body class="page-mesas">
 
   <header class="main-header">
     <div class="header-brand">
-      <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
       <span class="kanji" style="display:none">御</span>
       <div class="brand-text">
         <h1>Mikami Sushi</h1>
@@ -57,7 +63,9 @@
           <button class="pagamento-btn" id="btnAddRestaurante">🍽️ Restaurante</button>
           <button class="pagamento-btn" id="btnAddDelivery">🛵 Delivery</button>
         </div>
-        <div id="addMesaStatus" style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem"></div>
+        <div id="addMesaStatus"
+          style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem">
+        </div>
         <div class="modal-acoes">
           <button class="btn-secondary" id="btnCancelarAddMesa">Cancelar</button>
         </div>
@@ -82,4 +90,5 @@
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
 </body>
+
 </html>
