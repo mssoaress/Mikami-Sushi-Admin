@@ -1495,16 +1495,46 @@ function _iniciarConteudoRelatorio() {
 
   // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
   const _h = new Date();
-  const hoje = `${_h.getFullYear()}-${String(_h.getMonth() + 1).padStart(2, '0')}-${String(_h.getDate()).padStart(2, '0')}`;
+  const _dataStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const hoje = _dataStr(_h);
   const inputData = document.getElementById("filtroData");
   inputData.value = hoje;
 
+  // Função auxiliar: define data no input e dispara escuta
+  function _setData(str) {
+    inputData.value = str;
+    escutarVendas(str);
+  }
+
   // FIX: usa onSnapshot para atualização em tempo real
   inputData.addEventListener("change", () => escutarVendas(inputData.value));
-  document.getElementById("btnHoje").addEventListener("click", () => {
-    inputData.value = hoje;
-    escutarVendas(hoje);
-  });
+
+  // ── Botões de filtro rápido ──────────────────────────────────
+  document.getElementById("btnHoje").addEventListener("click", () => _setData(hoje));
+
+  const btnOntem = document.getElementById("btnOntem");
+  if (btnOntem) {
+    btnOntem.addEventListener("click", () => {
+      const d = new Date(_h); d.setDate(d.getDate() - 1);
+      _setData(_dataStr(d));
+    });
+  }
+
+  const btnAnteOntem = document.getElementById("btnAnteOntem");
+  if (btnAnteOntem) {
+    btnAnteOntem.addEventListener("click", () => {
+      const d = new Date(_h); d.setDate(d.getDate() - 2);
+      _setData(_dataStr(d));
+    });
+  }
+
+  const btn7dias = document.getElementById("btn7dias");
+  if (btn7dias) {
+    btn7dias.addEventListener("click", () => {
+      const d = new Date(_h); d.setDate(d.getDate() - 6);
+      _setData(_dataStr(d));
+    });
+  }
 
   // Botão imprimir relatório
   const btnImprimir = document.getElementById("btnImprimirRelatorio");
@@ -1515,6 +1545,10 @@ function _iniciarConteudoRelatorio() {
   }
 
   escutarVendas(hoje);
+
+  // FIX: chama renderFaturamento (gráficos históricos) que estava órfão
+  initFaturamento();
+
   window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
 }
 
@@ -1640,6 +1674,89 @@ function renderRelatorio(vendas) {
   document.querySelectorAll(".btn-excluir-venda").forEach(btn => {
     btn.addEventListener("click", () => excluirVenda(btn.dataset.vendaId));
   });
+
+  // ── Gráfico: itens mais pedidos no dia ───────────────────────
+  _renderGraficoItensDia(vendas);
+}
+
+// ── Gráfico de itens mais pedidos (dia selecionado) ───────────
+function _renderGraficoItensDia(vendas) {
+  // Garante container existe (injetado dinamicamente via template)
+  let wrap = document.getElementById("chartItensDiaWrap");
+  if (!wrap) {
+    const relMain = document.getElementById("relatorioMain");
+    if (!relMain) return;
+    const div = document.createElement("div");
+    div.id = "chartItensDiaWrap";
+    div.className = "chart-itens-dia-wrap";
+    div.innerHTML = `
+      <div class="chart-itens-dia-titulo">🍣 Itens mais pedidos no dia</div>
+      <div class="chart-itens-dia-inner">
+        <div class="chart-itens-dia-chart-wrap"><canvas id="chartItensDia"></canvas></div>
+        <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
+      </div>
+    `;
+    relMain.appendChild(div);
+    wrap = div;
+  }
+
+  // Agrega itens de todas as vendas do dia
+  const contagemItens = {};
+  vendas.forEach(v => {
+    (v.itens || []).forEach(item => {
+      const nome = item.nome || "?";
+      contagemItens[nome] = (contagemItens[nome] || 0) + (item.qty || 1);
+    });
+  });
+
+  const sorted = Object.entries(contagemItens)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+
+  if (!sorted.length) {
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+
+  const labels = sorted.map(([n]) => n);
+  const values = sorted.map(([, q]) => q);
+  const total = values.reduce((a, b) => a + b, 0);
+
+  // Cores degradê do vermelho ao amarelo
+  const cores = labels.map((_, i) => {
+    const t = labels.length <= 1 ? 0 : i / (labels.length - 1);
+    const r = Math.round(192 + (212 - 192) * t);
+    const g = Math.round(57 + (160 - 57) * t);
+    const b = Math.round(43 + (23 - 43) * t);
+    return `rgba(${r},${g},${b},0.85)`;
+  });
+
+  _renderGrafico("chartItensDia", "bar", labels, values, "Qtd pedida");
+
+  // Substitui a cor padrão do gráfico de barras pelas cores por item
+  if (_chartInstances["chartItensDia"]) {
+    _chartInstances["chartItensDia"].data.datasets[0].backgroundColor = cores;
+    _chartInstances["chartItensDia"].data.datasets[0].borderColor = cores.map(c => c.replace("0.85", "1"));
+    _chartInstances["chartItensDia"].update();
+  }
+
+  // Lista numérica abaixo do gráfico
+  const lista = document.getElementById("chartItensDiaLista");
+  if (lista) {
+    lista.innerHTML = sorted.map(([nome, qty], i) => {
+      const pct = total > 0 ? Math.round((qty / total) * 100) : 0;
+      return `
+        <div class="cid-linha">
+          <span class="cid-pos">${i + 1}</span>
+          <span class="cid-nome">${nome}</span>
+          <div class="cid-bar-wrap"><div class="cid-bar" style="width:${pct}%;background:${cores[i]}"></div></div>
+          <span class="cid-qty">${qty}x</span>
+          <span class="cid-pct">${pct}%</span>
+        </div>
+      `;
+    }).join("");
+  }
 }
 
 // ── Excluir Venda ─────────────────────────────────────────────
