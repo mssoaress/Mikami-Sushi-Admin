@@ -1,14 +1,14 @@
 // ============================================================
 // app.js — Lógica completa do sistema Mikami Sushi
 // ============================================================
-// Organização por blocos:
-//   1. CARDÁPIO (seed de produtos)
+// Organização:
+//   1. CARDÁPIO
 //   2. UTILITÁRIOS
 //   3. PÁGINA: INDEX (mesas)
 //   4. PÁGINA: MESA (pedidos)
 //   5. PÁGINA: COZINHA
-//   6. PÁGINA: RELATÓRIO
-//   7. INIT (detecta página e inicializa)
+//   6. PÁGINA: RELATÓRIO + FATURAMENTO
+//   7. INIT
 // ============================================================
 
 import {
@@ -20,7 +20,7 @@ import {
 } from "./firebase.js";
 
 // ============================================================
-// 1. CARDÁPIO — PRODUTOS PRÉ-CARREGADOS
+// 1. CARDÁPIO
 // ============================================================
 const CARDAPIO = [
   // COMBOS
@@ -29,7 +29,6 @@ const CARDAPIO = [
   { nome: "Combo 10 Hot Skin + 10 Uramaki + 10 Hosomaki Kani", categoria: "Combos", preco: 43.00, ativo: true },
   { nome: "Combo 20 Hot Roll Sortidas", categoria: "Combos", preco: 32.00, ativo: true },
   { nome: "Combo 2 Joe + 2 Niguiri + 5 Uramaki + 5 Hosomaki + 6 Hot Roll", categoria: "Combos", preco: 46.00, ativo: true },
-
   // INDIVIDUAIS
   { nome: "Uramaki de Salmão", categoria: "Individuais", preco: 16.00, ativo: true },
   { nome: "Hot Roll de Salmão", categoria: "Individuais", preco: 16.00, ativo: true },
@@ -42,7 +41,6 @@ const CARDAPIO = [
   { nome: "Hot Dog Salmão", categoria: "Individuais", preco: 30.00, ativo: true },
   { nome: "Hot Dog Salmão e Camarão", categoria: "Individuais", preco: 35.00, ativo: true },
   { nome: "Sunomono", categoria: "Individuais", preco: 10.00, ativo: true },
-
   // ESPECIAIS
   { nome: "Uramaki Kani com Camarão", categoria: "Especiais", preco: 27.00, ativo: true },
   { nome: "Uramaki Salmão Geleia", categoria: "Especiais", preco: 27.00, ativo: true },
@@ -51,22 +49,18 @@ const CARDAPIO = [
   { nome: "Joe (3 un.)", categoria: "Especiais", preco: 18.00, ativo: true },
   { nome: "Niguiri (3 un.)", categoria: "Especiais", preco: 15.00, ativo: true },
   { nome: "Mikami Supremo 500g", categoria: "Especiais", preco: 45.00, ativo: true },
-
   // TEMAKIS
   { nome: "Temaki Copo Salmão", categoria: "Temakis", preco: 28.00, ativo: true },
   { nome: "Temaki de Salmão", categoria: "Temakis", preco: 25.00, ativo: true },
   { nome: "Temaki de Kani", categoria: "Temakis", preco: 22.00, ativo: true },
   { nome: "Temaki de Skin", categoria: "Temakis", preco: 21.00, ativo: true },
   { nome: "Temaki de Camarão", categoria: "Temakis", preco: 30.00, ativo: true },
-
   // YAKISOBA
   { nome: "Yakisoba Individual", categoria: "Yakisoba", preco: 20.00, ativo: true },
   { nome: "Yakisoba 2 Pessoas", categoria: "Yakisoba", preco: 30.00, ativo: true },
-
   // DOCES
   { nome: "Harumaki Banana com Nutella", categoria: "Doces", preco: 20.00, ativo: true },
   { nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta", categoria: "Doces", preco: 22.00, ativo: true },
-
   // BEBIDAS
   { nome: "Coca Zero Lata 220ml", categoria: "Bebidas", preco: 4.50, ativo: true },
   { nome: "Coca Lata 350ml", categoria: "Bebidas", preco: 6.00, ativo: true },
@@ -122,7 +116,8 @@ function toast(msg, tipo = "info") {
   el.className = `toast ${tipo}`;
   el.textContent = msg;
   container.appendChild(el);
-  setTimeout(() => el.remove(), 3200);
+  requestAnimationFrame(() => el.classList.add("visible"));
+  setTimeout(() => { el.classList.remove("visible"); setTimeout(() => el.remove(), 250); }, 3000);
 }
 
 function iniciarRelogio() {
@@ -137,8 +132,34 @@ function iniciarRelogio() {
   setInterval(atualizar, 1000);
 }
 
-// ── SEED: chave de versão no localStorage ────────────────────
-// Só roda seeds se nunca rodou neste dispositivo ou versão mudou
+// Modal de confirmação genérico (substitui confirm() nativo)
+function _confirmarAcao(mensagem) {
+  return new Promise(resolve => {
+    let overlay = document.getElementById("_modalConfirm");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "_modalConfirm";
+      overlay.className = "modal-overlay";
+      overlay.innerHTML = `
+        <div class="modal-box" style="max-width:380px;border-radius:var(--raio-lg)">
+          <p id="_modalConfirmMsg" style="font-size:0.9rem;color:var(--branco);margin-bottom:1.25rem;line-height:1.5"></p>
+          <div class="modal-acoes">
+            <button class="btn-secondary" id="_modalConfirmNao">Cancelar</button>
+            <button class="btn-primary" id="_modalConfirmSim">Confirmar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+    document.getElementById("_modalConfirmMsg").textContent = mensagem;
+    overlay.classList.add("open");
+    const fechar = (res) => { overlay.classList.remove("open"); resolve(res); };
+    document.getElementById("_modalConfirmSim").onclick = () => fechar(true);
+    document.getElementById("_modalConfirmNao").onclick = () => fechar(false);
+    overlay.onclick = (e) => { if (e.target === overlay) fechar(false); };
+  });
+}
+
+// Seed
 const SEED_VERSION = `mikami_seed_v${CARDAPIO.length}_m${TOTAL_MESAS}`;
 
 async function garantirProdutos() {
@@ -155,7 +176,6 @@ async function garantirProdutos() {
       return existentes.has(id) ? Promise.resolve() : setDoc(doc(db, "produtos", id), p);
     }));
     localStorage.setItem(SEED_VERSION + "_prod", "ok");
-    console.log("[Mikami] Cardápio carregado.");
   } catch (err) { console.error("[Mikami] Seed produtos:", err); }
 }
 
@@ -179,12 +199,8 @@ async function garantirMesas() {
   } catch (err) { console.error("[Mikami] Seed mesas:", err); }
 }
 
-// ============================================================
-// 3. PÁGINA: INDEX — MESAS
-// ============================================================
-
 async function migrarDelivery() {
-  ["mikami_delivery_v5", "mikami_delivery_v6", "mikami_delivery_v7", "mikami_delivery_v8"].forEach(k => localStorage.removeItem(k));
+  ["mikami_delivery_v5","mikami_delivery_v6","mikami_delivery_v7","mikami_delivery_v8"].forEach(k => localStorage.removeItem(k));
   if (localStorage.getItem("mikami_delivery_v9") === "ok") return;
   try {
     const snap = await getDocs(collection(db, "mesas"));
@@ -192,9 +208,12 @@ async function migrarDelivery() {
       .map(d => updateDoc(d.ref, { tipo: "delivery", entrega: d.data().entrega || { local: "", taxa: 0 } }));
     await Promise.all(ups);
     localStorage.setItem("mikami_delivery_v9", "ok");
-    console.log("[Mikami] Mesas delivery migradas (v9).");
   } catch (e) { console.error(e); }
 }
+
+// ============================================================
+// 3. PÁGINA: INDEX — MESAS
+// ============================================================
 
 function initModalAddMesa() {
   const btn = document.getElementById("btnAddMesa");
@@ -204,9 +223,15 @@ function initModalAddMesa() {
     document.getElementById("addMesaStatus").textContent = "";
     document.getElementById("addMesaStatus").style.color = "var(--cinza-texto)";
   });
-  document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () => document.getElementById("modalAddMesa").classList.remove("open"));
+  document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () =>
+    document.getElementById("modalAddMesa").classList.remove("open"));
   document.getElementById("btnAddRestaurante")?.addEventListener("click", () => adicionarMesa("restaurante"));
   document.getElementById("btnAddDelivery")?.addEventListener("click", () => adicionarMesa("delivery"));
+
+  // Fecha ao clicar no overlay
+  document.getElementById("modalAddMesa")?.addEventListener("click", e => {
+    if (e.target === e.currentTarget) e.currentTarget.classList.remove("open");
+  });
 }
 
 async function adicionarMesa(tipo) {
@@ -229,8 +254,6 @@ async function adicionarMesa(tipo) {
 function initIndex() {
   iniciarRelogio();
 
-  // UI carrega IMEDIATAMENTE — seeds rodam em paralelo no background
-  // OTIMIZAÇÃO: debounce de 80ms — agrupa múltiplos snapshots simultâneos
   let _debounceTimer = null;
   const _unsubMesas = onSnapshot(collection(db, "mesas"), snap => {
     clearTimeout(_debounceTimer);
@@ -242,17 +265,13 @@ function initIndex() {
       renderStats(mesas);
     }, 80);
   });
-  // Cancela listener ao sair da página
   window.addEventListener("pagehide", () => { _unsubMesas(); clearTimeout(_debounceTimer); }, { once: true });
 
   escutarFaturamentoDia();
-
-  // Seeds em background, sem bloquear UI
   Promise.all([garantirProdutos(), garantirMesas(), migrarDelivery()]).catch(console.error);
   initModalAddMesa();
 }
 
-// Cache para diff de mesas — evita redesenhar cards que não mudaram
 const _mesaHash = new Map();
 
 function _hashMesa(m) {
@@ -260,7 +279,9 @@ function _hashMesa(m) {
 }
 
 function _htmlCard(mesa, statusLabel) {
-  const totalBase = mesa.historicoPedidos?.length ? mesa.historicoPedidos.reduce((a, p) => a + (p.total || 0), 0) : (mesa.total || 0);
+  const totalBase = mesa.historicoPedidos?.length
+    ? mesa.historicoPedidos.reduce((a, p) => a + (p.total || 0), 0)
+    : (mesa.total || 0);
   const isDelivery = mesa.tipo === "delivery";
   const taxaEntrega = mesa.entrega?.taxa || 0;
   const totalExibir = totalBase + taxaEntrega;
@@ -290,7 +311,6 @@ function renderMesas(mesas) {
   if (!grid) return;
   const statusLabel = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
 
-  // Primeira vez: renderiza tudo de uma vez com fragment (rápido)
   if (!grid.querySelector(".mesa-card")) {
     grid.innerHTML = mesas.map(m => _htmlCard(m, statusLabel)).join("");
     mesas.forEach(m => _mesaHash.set(m.id, _hashMesa(m)));
@@ -300,37 +320,32 @@ function renderMesas(mesas) {
     return;
   }
 
-  // Atualizações seguintes: diff — só redesenha o card que mudou
   mesas.forEach(mesa => {
     const novoHash = _hashMesa(mesa);
-    if (_mesaHash.get(mesa.id) === novoHash) return; // sem mudança, pula
+    if (_mesaHash.get(mesa.id) === novoHash) return;
     _mesaHash.set(mesa.id, novoHash);
-
     const antigo = grid.querySelector(`[data-mesa-id="${mesa.id}"]`);
     const tmp = document.createElement("div");
     tmp.innerHTML = _htmlCard(mesa, statusLabel);
     const novo = tmp.firstElementChild;
     novo.addEventListener("click", () => { window.location.href = `mesa.html?mesa=${novo.dataset.mesaNum}`; });
-
     if (antigo) grid.replaceChild(novo, antigo);
     else grid.appendChild(novo);
   });
 }
 
-
 function renderStats(mesas) {
-  document.getElementById("statLivres").textContent = mesas.filter(m => m.status === "livre").length;
-  document.getElementById("statOcupadas").textContent = mesas.filter(m => m.status === "ocupada").length;
-  document.getElementById("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
+  const el = id => document.getElementById(id);
+  if (el("statLivres")) el("statLivres").textContent = mesas.filter(m => m.status === "livre").length;
+  if (el("statOcupadas")) el("statOcupadas").textContent = mesas.filter(m => m.status === "ocupada").length;
+  if (el("statAguardando")) el("statAguardando").textContent = mesas.filter(m => m.status === "aguardando").length;
 }
 
 function escutarFaturamentoDia() {
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   const inicioHoje = Timestamp.fromDate(hoje);
-
   const q = query(collection(db, "vendas"), where("fechadoEm", ">=", inicioHoje));
-
   onSnapshot(q, snap => {
     let total = 0;
     snap.forEach(d => { total += d.data().total || 0; });
@@ -366,14 +381,7 @@ const estadoMesa = {
 };
 
 const ADICIONAIS = [
-  "Camarão",
-  "Kani",
-  "Cream Cheese",
-  "Joe",
-  "Croquete",
-  "Hot Roll",
-  "Uramaki",
-  "Hossomaki",
+  "Camarão", "Kani", "Cream Cheese", "Joe", "Croquete", "Hot Roll", "Uramaki", "Hossomaki",
 ];
 
 async function initMesa() {
@@ -386,7 +394,7 @@ async function initMesa() {
   document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
-  // Tenta usar cache do sessionStorage para cardápio (evita leitura repetida)
+  // Cache do sessionStorage para cardápio
   try {
     const cacheKey = `mikami_produtos_${SEED_VERSION}`;
     const cached = sessionStorage.getItem(cacheKey);
@@ -408,7 +416,6 @@ async function initMesa() {
   renderAdicionais();
   _initDrawerAdicionais();
 
-  // Escuta a mesa em tempo real
   onSnapshot(doc(db, "mesas", estadoMesa.mesaId), snap => {
     if (!snap.exists()) return;
     estadoMesa.dadosMesa = snap.data();
@@ -417,13 +424,11 @@ async function initMesa() {
     _configurarAbaEntrega(snap.data());
   });
 
-  // Eventos
   document.getElementById("buscaProduto").addEventListener("input", e => {
     estadoMesa.buscaTermo = e.target.value.toLowerCase();
     renderProdutos();
   });
 
-  // Atalho: "/" foca a busca (útil no desktop)
   document.addEventListener("keydown", e => {
     if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
       e.preventDefault();
@@ -447,11 +452,17 @@ async function initMesa() {
     });
   });
 
-  // Modal editar pedido
   document.getElementById("btnCancelarEdicao")?.addEventListener("click", fecharModalEditar);
   document.getElementById("btnSalvarEdicao")?.addEventListener("click", salvarEdicaoPedido);
 
-  // Modal pagamento dividido
+  // Fechar modal ao clicar no overlay
+  document.getElementById("modalFecharMesa")?.addEventListener("click", e => {
+    if (e.target === e.currentTarget) fecharModal();
+  });
+  document.getElementById("modalEditarPedido")?.addEventListener("click", e => {
+    if (e.target === e.currentTarget) fecharModalEditar();
+  });
+
   initModalPagamento();
 }
 
@@ -460,8 +471,7 @@ function renderCategorias() {
   const cats = ["Todos", ...new Set(estadoMesa.produtos.map(p => p.categoria))];
   const container = document.getElementById("categoriasTabs");
   container.innerHTML = cats.map(c => `
-    <button class="cat-btn ${c === estadoMesa.categoriaAtiva ? "active" : ""}"
-            data-cat="${c}">${c}</button>
+    <button class="cat-btn ${c === estadoMesa.categoriaAtiva ? "active" : ""}" data-cat="${c}">${c}</button>
   `).join("");
 
   container.querySelectorAll(".cat-btn").forEach(btn => {
@@ -476,14 +486,8 @@ function renderCategorias() {
 
 function renderProdutos() {
   let lista = estadoMesa.produtos.filter(p => p.ativo !== false);
-
-  if (estadoMesa.categoriaAtiva !== "Todos") {
-    lista = lista.filter(p => p.categoria === estadoMesa.categoriaAtiva);
-  }
-
-  if (estadoMesa.buscaTermo) {
-    lista = lista.filter(p => p.nome.toLowerCase().includes(estadoMesa.buscaTermo));
-  }
+  if (estadoMesa.categoriaAtiva !== "Todos") lista = lista.filter(p => p.categoria === estadoMesa.categoriaAtiva);
+  if (estadoMesa.buscaTermo) lista = lista.filter(p => p.nome.toLowerCase().includes(estadoMesa.buscaTermo));
 
   const container = document.getElementById("produtosLista");
 
@@ -504,16 +508,10 @@ function renderProdutos() {
   `).join("");
 
   container.querySelectorAll(".produto-add-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      adicionarAoPedido(btn.dataset.id);
-    });
+    btn.addEventListener("click", e => { e.stopPropagation(); adicionarAoPedido(btn.dataset.id); });
   });
-
   container.querySelectorAll(".produto-card").forEach(card => {
-    card.addEventListener("click", () => {
-      adicionarAoPedido(card.dataset.id);
-    });
+    card.addEventListener("click", () => adicionarAoPedido(card.dataset.id));
   });
 }
 
@@ -521,20 +519,12 @@ function renderProdutos() {
 function adicionarAoPedido(prodId) {
   const prod = estadoMesa.produtos.find(p => p.id === prodId);
   if (!prod) return;
-
   const existente = estadoMesa.pedidoAtual.find(i => i.prodId === prodId && !i.isAdicional);
   if (existente) {
     existente.qty++;
   } else {
-    estadoMesa.pedidoAtual.push({
-      prodId,
-      nome: prod.nome,
-      preco: prod.preco,
-      qty: 1,
-      obs: ""
-    });
+    estadoMesa.pedidoAtual.push({ prodId, nome: prod.nome, preco: prod.preco, qty: 1, obs: "" });
   }
-
   renderPedidoAtual();
   toast(`${prod.nome} adicionado`, "sucesso");
 }
@@ -542,7 +532,6 @@ function adicionarAoPedido(prodId) {
 function renderPedidoAtual() {
   const container = document.getElementById("pedidoItens");
   const itens = estadoMesa.pedidoAtual;
-
   const totalPedido = itens.reduce((acc, i) => acc + i.preco * i.qty, 0);
 
   document.getElementById("pedidoCount").textContent = `${itens.length} item(ns)`;
@@ -569,15 +558,9 @@ function renderPedidoAtual() {
         <button class="qty-btn" data-idx="${idx}" data-acao="dec">−</button>
         <span class="qty-value">${item.qty}</span>
         <button class="qty-btn" data-idx="${idx}" data-acao="inc">+</button>
-        <span style="font-size:0.68rem;color:var(--cinza-texto);margin-left:0.3rem">
-          ${fmtMoeda(item.preco)} un.
-        </span>
+        <span style="font-size:0.68rem;color:var(--cinza-texto);margin-left:0.3rem">${fmtMoeda(item.preco)} un.</span>
       </div>
-      <textarea
-        class="obs-input"
-        placeholder="Observação (ex: sem cream cheese)"
-        data-idx="${idx}"
-      >${item.obs}</textarea>
+      <textarea class="obs-input" placeholder="Observação (ex: sem cream cheese)" data-idx="${idx}">${item.obs}</textarea>
     </div>
   `).join("");
 
@@ -588,9 +571,7 @@ function renderPedidoAtual() {
         estadoMesa.pedidoAtual[idx].qty++;
       } else {
         estadoMesa.pedidoAtual[idx].qty--;
-        if (estadoMesa.pedidoAtual[idx].qty <= 0) {
-          estadoMesa.pedidoAtual.splice(idx, 1);
-        }
+        if (estadoMesa.pedidoAtual[idx].qty <= 0) estadoMesa.pedidoAtual.splice(idx, 1);
       }
       renderPedidoAtual();
     });
@@ -606,9 +587,7 @@ function renderPedidoAtual() {
   container.querySelectorAll(".obs-input").forEach(input => {
     input.addEventListener("input", () => {
       const idx = parseInt(input.dataset.idx);
-      if (estadoMesa.pedidoAtual[idx]) {
-        estadoMesa.pedidoAtual[idx].obs = input.value;
-      }
+      if (estadoMesa.pedidoAtual[idx]) estadoMesa.pedidoAtual[idx].obs = input.value;
     });
   });
 }
@@ -623,9 +602,7 @@ function renderAdicionais() {
       <span class="adicional-nome">${nome}</span>
       <div class="adicional-valor-row" id="adValorRow_${idx}" style="display:none">
         <span class="adicional-cifrao">R$</span>
-        <input class="adicional-valor-input" id="adValor_${idx}"
-               type="number" min="0" step="0.5" placeholder="0,00"
-               inputmode="decimal" autocomplete="off" />
+        <input class="adicional-valor-input" id="adValor_${idx}" type="number" min="0" step="0.5" placeholder="0,00" inputmode="decimal" autocomplete="off" />
         <button class="adicional-ok-btn" data-idx="${idx}" title="Confirmar">✓</button>
         <button class="adicional-cancel-btn" data-idx="${idx}" title="Cancelar">✕</button>
       </div>
@@ -634,35 +611,23 @@ function renderAdicionais() {
   `).join("") + `
     <div class="adicional-custom">
       <div class="adicional-custom-titulo">Outro adicional</div>
-      <input class="adicional-custom-nome" id="adNomeCustom" type="text"
-             placeholder="Nome" maxlength="40" autocomplete="off" inputmode="text" />
+      <input class="adicional-custom-nome" id="adNomeCustom" type="text" placeholder="Nome" maxlength="40" autocomplete="off" inputmode="text" />
       <div class="adicional-custom-row">
         <span class="adicional-cifrao">R$</span>
-        <input class="adicional-custom-valor" id="adValorCustom" type="number"
-               min="0" step="0.5" placeholder="0,00" inputmode="decimal" />
+        <input class="adicional-custom-valor" id="adValorCustom" type="number" min="0" step="0.5" placeholder="0,00" inputmode="decimal" />
         <button class="adicional-custom-btn btn-primary" id="btnAdicionarCustom">✓</button>
       </div>
     </div>`;
 
-  // Botão + abre o input inline
   container.querySelectorAll(".adicional-add-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const idx = btn.dataset.idx;
-      _abrirInputAdicional(idx);
-    });
+    btn.addEventListener("click", () => _abrirInputAdicional(btn.dataset.idx));
   });
-
-  // Botão ✓ confirma
   container.querySelectorAll(".adicional-ok-btn").forEach(btn => {
     btn.addEventListener("click", () => _confirmarAdicionalInline(btn.dataset.idx));
   });
-
-  // Botão ✕ cancela
   container.querySelectorAll(".adicional-cancel-btn").forEach(btn => {
     btn.addEventListener("click", () => _fecharInputAdicional(btn.dataset.idx));
   });
-
-  // Enter no input confirma
   container.querySelectorAll(".adicional-valor-input").forEach(input => {
     input.addEventListener("keydown", e => {
       if (e.key === "Enter") _confirmarAdicionalInline(input.id.replace("adValor_", ""));
@@ -670,7 +635,6 @@ function renderAdicionais() {
     });
   });
 
-  // Outro adicional
   document.getElementById("btnAdicionarCustom")?.addEventListener("click", _confirmarAdicionalCustom);
   document.getElementById("adValorCustom")?.addEventListener("keydown", e => {
     if (e.key === "Enter") _confirmarAdicionalCustom();
@@ -678,10 +642,8 @@ function renderAdicionais() {
 }
 
 function _abrirInputAdicional(idx) {
-  // Fecha qualquer outro aberto
   document.querySelectorAll(".adicional-valor-row").forEach(r => r.style.display = "none");
   document.querySelectorAll(".adicional-add-btn").forEach(b => b.style.display = "");
-  // Abre este
   const row = document.getElementById(`adValorRow_${idx}`);
   const btn = document.getElementById(`adBtn_${idx}`);
   const input = document.getElementById(`adValor_${idx}`);
@@ -752,26 +714,17 @@ function _initDrawerAdicionais() {
 async function confirmarPedido() {
   const itens = estadoMesa.pedidoAtual;
   if (!itens.length) return;
-
   const btn = document.getElementById("btnConfirmarPedido");
   btn.disabled = true;
   btn.textContent = "Enviando...";
 
   try {
     const totalPedido = itens.reduce((acc, i) => acc + i.preco * i.qty, 0);
-
-    // Salva pedido na coleção "pedidos"
     const pedidoData = {
       mesaNumero: estadoMesa.numero,
       mesaId: estadoMesa.mesaId,
       mesaTipo: estadoMesa.dadosMesa?.tipo || "restaurante",
-      itens: itens.map(i => ({
-        prodId: i.prodId,
-        nome: i.nome,
-        preco: i.preco,
-        qty: i.qty,
-        obs: i.obs || ""
-      })),
+      itens: itens.map(i => ({ prodId: i.prodId, nome: i.nome, preco: i.preco, qty: i.qty, obs: i.obs || "" })),
       total: totalPedido,
       status: "Novo",
       createdAt: serverTimestamp(),
@@ -780,7 +733,6 @@ async function confirmarPedido() {
 
     const pedidoRef = await addDoc(collection(db, "pedidos"), pedidoData);
 
-    // Atualiza a mesa usando increment (sem race condition)
     const mesaRef = doc(db, "mesas", estadoMesa.mesaId);
     const mesaSnap = await getDoc(mesaRef);
     const mesaData = mesaSnap.data();
@@ -796,8 +748,8 @@ async function confirmarPedido() {
     await updateDoc(mesaRef, {
       status: "ocupada",
       abertaEm: mesaData.abertaEm || serverTimestamp(),
-      total: increment(totalPedido),   // FIX: sem race condition
-      pedidosCount: increment(1),             // FIX: sem race condition
+      total: increment(totalPedido),
+      pedidosCount: increment(1),
       historicoPedidos: novoHistorico
     });
 
@@ -813,9 +765,7 @@ async function confirmarPedido() {
   }
 }
 
-// ── Conta da mesa ─────────────────────────────────────────
-
-// ── ENTREGA ──────────────────────────────────────────────
+// ── Entrega ───────────────────────────────────────────────
 function _configurarAbaEntrega(mesa) {
   if (mesa.tipo !== "delivery") return;
   document.querySelectorAll(".mesa-aba-delivery").forEach(b => b.style.display = "");
@@ -847,7 +797,7 @@ function _renderLocaisEntrega(sel) {
       estadoMesa.entrega = { local: nome, taxa };
       _renderLocaisEntrega(nome);
       _atualizarResumoEntrega();
-      updateDoc(doc(db, "mesas", estadoMesa.mesaId), { entrega: { local: nome, taxa } }).catch(() => { });
+      updateDoc(doc(db, "mesas", estadoMesa.mesaId), { entrega: { local: nome, taxa } }).catch(() => {});
       const btn = document.getElementById("btnConfirmarEntrega");
       if (btn) btn.style.display = "";
       const conf = document.getElementById("entregaConfirmado");
@@ -892,27 +842,23 @@ async function _confirmarEntrega() {
 function atualizarHeaderMesa() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa) return;
-
   const statusMap = { livre: "Livre", ocupada: "Ocupada", aguardando: "Aguardando Pagto." };
   const badge = document.getElementById("mesaStatusBadge");
-  badge.textContent = statusMap[mesa.status] || mesa.status;
-  badge.className = `mesa-status-badge ${mesa.status}`;
+  if (badge) { badge.textContent = statusMap[mesa.status] || mesa.status; badge.className = `mesa-status-badge ${mesa.status}`; }
+  const abEl = document.getElementById("mesaAbertura");
+  if (abEl) abEl.textContent = mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
 
-  document.getElementById("mesaAbertura").textContent =
-    mesa.abertaEm ? `Aberta às ${fmtHora(mesa.abertaEm)}` : "Mesa livre";
-
-  // FIX: usa historicoPedidos como fonte da verdade para o total exibido
   const totalHistorico = (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0);
   const total = totalHistorico || mesa.total || 0;
-  document.getElementById("contaTotalBadge").textContent = fmtMoeda(total);
-  document.getElementById("contaTotalFinal").textContent = fmtMoeda(total);
-  document.getElementById("modalTotalCobrar")?.textContent && (document.getElementById("modalTotalCobrar").textContent = fmtMoeda(total));
+  const el = id => document.getElementById(id);
+  if (el("contaTotalBadge")) el("contaTotalBadge").textContent = fmtMoeda(total);
+  if (el("contaTotalFinal")) el("contaTotalFinal").textContent = fmtMoeda(total);
+  if (el("modalTotalCobrar")) el("modalTotalCobrar").textContent = fmtMoeda(total);
 }
 
 function renderConta() {
   const mesa = estadoMesa.dadosMesa;
   if (!mesa) return;
-
   const container = document.getElementById("contaHistorico");
   const historico = mesa.historicoPedidos || [];
 
@@ -922,10 +868,8 @@ function renderConta() {
   }
 
   const badgeClass = {
-    "Novo": "badge-novo",
-    "Em preparo": "badge-preparo",
-    "Pronto": "badge-pronto",
-    "Entregue": "badge-entregue"
+    "Novo": "badge-novo", "Em preparo": "badge-preparo",
+    "Pronto": "badge-pronto", "Entregue": "badge-entregue"
   };
 
   container.innerHTML = historico.map((pedido, idx) => {
@@ -946,9 +890,7 @@ function renderConta() {
       <div class="conta-pedido-grupo">
         <div class="conta-pedido-header">
           <span class="conta-pedido-seq">Pedido #${idx + 1}</span>
-          <span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">
-            ${pedido.status || "Novo"}
-          </span>
+          <span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${pedido.status || "Novo"}</span>
           <span class="conta-pedido-hora">${hora}</span>
           ${pedido.status !== "Entregue" ? `<button class="btn-editar-pedido-conta" data-pedido-id="${pedido.pedidoId}" title="Editar pedido">✏️</button>` : ""}
         </div>
@@ -962,46 +904,27 @@ function renderConta() {
     `;
   }).join("");
 
-  // Rola para o final automaticamente
   container.scrollTop = container.scrollHeight;
 
-  // Eventos editar pedido
   container.querySelectorAll(".btn-editar-pedido-conta").forEach(btn => {
     btn.addEventListener("click", () => abrirModalEditar(btn.dataset.pedidoId));
   });
 }
 
 // ── Impressão ─────────────────────────────────────────────
-
-// FIX: imprime todos os pedidos não-entregues, não só o último
 function imprimirCozinha() {
   const mesa = estadoMesa.dadosMesa;
-  if (!mesa || !mesa.historicoPedidos?.length) {
-    toast("Nenhum pedido para imprimir.", "erro");
-    return;
-  }
+  if (!mesa || !mesa.historicoPedidos?.length) { toast("Nenhum pedido para imprimir.", "erro"); return; }
 
-  // Pega todos os pedidos com status Novo ou Em preparo
-  const pedidosParaImprimir = mesa.historicoPedidos.filter(
-    p => p.status === "Novo" || p.status === "Em preparo"
-  );
-
-  // Se não houver pedidos nesse estado, usa o último
-  const alvo = pedidosParaImprimir.length > 0
-    ? pedidosParaImprimir
-    : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
+  const pedidosParaImprimir = mesa.historicoPedidos.filter(p => p.status === "Novo" || p.status === "Em preparo");
+  const alvo = pedidosParaImprimir.length > 0 ? pedidosParaImprimir : [mesa.historicoPedidos[mesa.historicoPedidos.length - 1]];
 
   const pedidosHtml = alvo.map((pedido, idx) => {
     const itensHtml = (pedido.itens || []).map(item => `
-      <div class="print-item">
-        <span>${item.qty}x ${item.nome}</span>
-      </div>
+      <div class="print-item"><span>${item.qty}x ${item.nome}</span></div>
       ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
     `).join("");
-    return `
-      <div class="print-section-title">PEDIDO ${idx + 1}</div>
-      ${itensHtml}
-    `;
+    return `<div class="print-section-title">PEDIDO ${idx + 1}</div>${itensHtml}`;
   }).join("");
 
   document.getElementById("printArea").innerHTML = `
@@ -1015,41 +938,24 @@ function imprimirCozinha() {
     ${pedidosHtml}
     <div class="print-footer">Impresso em ${new Date().toLocaleTimeString("pt-BR")}</div>
   `;
-
   window.print();
 }
 
 function imprimirConta() {
   const mesa = estadoMesa.dadosMesa;
-  if (!mesa || !mesa.historicoPedidos?.length) {
-    toast("Nenhum item na conta.", "erro");
-    return;
-  }
+  if (!mesa || !mesa.historicoPedidos?.length) { toast("Nenhum item na conta.", "erro"); return; }
 
   const todosItens = [];
   (mesa.historicoPedidos || []).forEach(pedido => {
     (pedido.itens || []).forEach(item => {
       const exist = todosItens.find(i => i.nome === item.nome && !item.obs && !i.obs);
-      if (exist) {
-        exist.qty += item.qty;
-        exist.subtotal += item.preco * item.qty;
-      } else {
-        todosItens.push({
-          nome: item.nome,
-          qty: item.qty,
-          preco: item.preco,
-          subtotal: item.preco * item.qty,
-          obs: item.obs
-        });
-      }
+      if (exist) { exist.qty += item.qty; exist.subtotal += item.preco * item.qty; }
+      else todosItens.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty, obs: item.obs });
     });
   });
 
   const itensHtml = todosItens.map(item => `
-    <div class="print-item">
-      <span>${item.qty}x ${item.nome}</span>
-      <span>${fmtMoeda(item.subtotal)}</span>
-    </div>
+    <div class="print-item"><span>${item.qty}x ${item.nome}</span><span>${fmtMoeda(item.subtotal)}</span></div>
     ${item.obs ? `<div class="print-item-obs">→ ${item.obs}</div>` : ""}
   `).join("");
 
@@ -1065,30 +971,23 @@ function imprimirConta() {
     ${itensHtml}
     <div class="print-total">
       <span>TOTAL</span>
-      <span>${fmtMoeda(
-    (mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0) +
-    (estadoMesa.entrega?.taxa || 0)
-  )}</span>
+      <span>${fmtMoeda((mesa.historicoPedidos || []).reduce((a, p) => a + (p.total || 0), 0) + (estadoMesa.entrega?.taxa || 0))}</span>
     </div>
-    <div class="print-footer">
-      Obrigado pela visita!<br>Mikami Sushi
-    </div>
+    <div class="print-footer">Obrigado pela visita!<br>Mikami Sushi</div>
   `;
-
   window.print();
 }
 
 // ── Fechar mesa ───────────────────────────────────────────
 function abrirModalFechar() {
   const mesa = estadoMesa.dadosMesa;
-  if (!mesa || mesa.status === "livre") {
-    toast("Mesa já está livre.", "info");
-    return;
-  }
-  if ((mesa.total || 0) <= 0) {
-    toast("Conta zerada. Nada a fechar.", "info");
-    return;
-  }
+  if (!mesa || mesa.status === "livre") { toast("Mesa já está livre.", "info"); return; }
+  const historico = mesa.historicoPedidos || [];
+  const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0) + (estadoMesa.entrega?.taxa || 0);
+  if (totalReal <= 0) { toast("Conta zerada. Nada a fechar.", "info"); return; }
+  // FIX: atualiza o display do modal com o total real
+  const el = document.getElementById("modalTotalCobrar");
+  if (el) el.textContent = fmtMoeda(totalReal);
   document.getElementById("modalFecharMesa").classList.add("open");
 }
 
@@ -1096,7 +995,6 @@ function fecharModal() {
   document.getElementById("modalFecharMesa").classList.remove("open");
   document.querySelectorAll(".pagamento-btn").forEach(b => b.classList.remove("selected"));
   document.getElementById("btnConfirmarFechar").disabled = true;
-  // Reset divisão
   const tabUnico = document.getElementById("tabPagUnico");
   const tabDivid = document.getElementById("tabPagDividido");
   if (tabUnico) { tabUnico.classList.add("active"); tabDivid.classList.remove("active"); }
@@ -1112,13 +1010,11 @@ async function fecharMesa() {
   const btnFechar = document.getElementById("btnConfirmarFechar");
   if (btnFechar.disabled) return;
 
-  // Detecta modo: único ou dividido
   const isDividido = document.getElementById("tabPagDividido")?.classList.contains("active");
   let formaPagamento = "";
   let pagamentos = [];
 
   if (isDividido) {
-    // Coleta valores digitados
     document.querySelectorAll(".div-toggle.active").forEach(btn => {
       const metodo = btn.dataset.metodo;
       const input = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
@@ -1131,7 +1027,6 @@ async function fecharMesa() {
     const metodoBtn = document.querySelector(".pagamento-btn.selected");
     if (!metodoBtn) return;
     formaPagamento = metodoBtn.dataset.metodo;
-    pagamentos = [{ metodo: formaPagamento, valor: estadoMesa.dadosMesa?.total || 0 }];
   }
 
   btnFechar.disabled = true;
@@ -1139,39 +1034,27 @@ async function fecharMesa() {
 
   try {
     const mesa = estadoMesa.dadosMesa;
-
-    // FIX: recalcula o total somando historicoPedidos (fonte da verdade)
-    // Evita usar mesa.total que pode estar errado por race condition
     const historico = mesa.historicoPedidos || [];
+    // FIX: sempre recalcula o total a partir do histórico (não usa mesa.total)
     const totalReal = historico.reduce((acc, p) => acc + (p.total || 0), 0) + (estadoMesa.dadosMesa?.entrega?.taxa || 0);
 
-    // Salva venda no histórico
+    if (!isDividido) pagamentos = [{ metodo: formaPagamento, valor: totalReal }];
+
     await addDoc(collection(db, "vendas"), {
       mesaNumero: estadoMesa.numero,
       mesaId: estadoMesa.mesaId,
       itens: historico.flatMap(p => p.itens || []),
       total: totalReal,
-      formaPagamento: formaPagamento,
-      pagamentos: pagamentos,
+      formaPagamento,
+      pagamentos,
       fechadoEm: serverTimestamp()
     });
 
-    // Marca pedidos da mesa como Entregue no Firestore
-    const pedidosSnap = await getDocs(
-      query(collection(db, "pedidos"), where("mesaId", "==", estadoMesa.mesaId))
-    );
-    const marcacoes = pedidosSnap.docs.map(d =>
-      updateDoc(d.ref, { status: "Entregue", updatedAt: serverTimestamp() })
-    );
-    await Promise.all(marcacoes);
+    const pedidosSnap = await getDocs(query(collection(db, "pedidos"), where("mesaId", "==", estadoMesa.mesaId)));
+    await Promise.all(pedidosSnap.docs.map(d => updateDoc(d.ref, { status: "Entregue", updatedAt: serverTimestamp() })));
 
-    // Reseta a mesa
     await updateDoc(doc(db, "mesas", estadoMesa.mesaId), {
-      status: "livre",
-      abertaEm: null,
-      total: 0,
-      pedidosCount: 0,
-      historicoPedidos: []
+      status: "livre", abertaEm: null, total: 0, pedidosCount: 0, historicoPedidos: []
     });
 
     fecharModal();
@@ -1185,13 +1068,198 @@ async function fecharMesa() {
   }
 }
 
+// ── Pagamento dividido ────────────────────────────────────
+function atualizarRestante() {
+  const mesa = estadoMesa.dadosMesa;
+  const historico = mesa?.historicoPedidos || [];
+  // FIX: usa totalReal consistente com fecharMesa()
+  const total = historico.reduce((acc, p) => acc + (p.total || 0), 0) + (estadoMesa.entrega?.taxa || 0);
+  let distribuido = 0;
+  document.querySelectorAll(".div-toggle.active").forEach(btn => {
+    const metodo = btn.dataset.metodo;
+    const input = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
+    distribuido += parseFloat(input?.value?.replace(",", ".") || "0") || 0;
+  });
+  const restante = total - distribuido;
+  const el = document.getElementById("divRestante");
+  if (el) {
+    el.textContent = restante > 0.009
+      ? `Faltam distribuir: ${fmtMoeda(restante)}`
+      : restante < -0.009 ? `Excedeu em: ${fmtMoeda(Math.abs(restante))}` : "✓ Total distribuído";
+    el.style.color = Math.abs(restante) < 0.01 ? "var(--verde)" : "var(--vermelho-soft)";
+  }
+  const btnConfirmar = document.getElementById("btnConfirmarFechar");
+  if (btnConfirmar && document.getElementById("tabPagDividido")?.classList.contains("active")) {
+    btnConfirmar.disabled = Math.abs(restante) > 0.01;
+  }
+}
+
+function initModalPagamento() {
+  const tabUnico = document.getElementById("tabPagUnico");
+  const tabDivid = document.getElementById("tabPagDividido");
+  const secUnico = document.getElementById("secPagUnico");
+  const secDivid = document.getElementById("secPagDividido");
+  if (!tabUnico) return;
+
+  tabUnico.addEventListener("click", () => {
+    tabUnico.classList.add("active"); tabDivid.classList.remove("active");
+    secUnico.style.display = ""; secDivid.style.display = "none";
+    const btnConfirmar = document.getElementById("btnConfirmarFechar");
+    btnConfirmar.disabled = !document.querySelector(".pagamento-btn.selected");
+  });
+
+  tabDivid.addEventListener("click", () => {
+    tabDivid.classList.add("active"); tabUnico.classList.remove("active");
+    secDivid.style.display = ""; secUnico.style.display = "none";
+    atualizarRestante();
+  });
+
+  document.querySelectorAll(".div-toggle").forEach(btn => {
+    btn.addEventListener("click", () => {
+      btn.classList.toggle("active");
+      const metodo = btn.dataset.metodo;
+      const inputRow = document.getElementById(`divRow_${metodo}`);
+      if (inputRow) inputRow.style.display = btn.classList.contains("active") ? "flex" : "none";
+      atualizarRestante();
+    });
+  });
+
+  document.querySelectorAll(".div-valor-input").forEach(input => {
+    input.addEventListener("input", atualizarRestante);
+  });
+}
+
+// ── Modal Editar Pedido ───────────────────────────────────
+let pedidoEmEdicao = null;
+
+async function abrirModalEditar(pedidoId) {
+  if (!pedidoId) return;
+  try {
+    const snap = await getDoc(doc(db, "pedidos", pedidoId));
+    if (!snap.exists()) { toast("Pedido não encontrado.", "erro"); return; }
+    pedidoEmEdicao = { id: pedidoId, ...snap.data() };
+    pedidoEmEdicao.itens = pedidoEmEdicao.itens.map(i => ({ ...i }));
+    renderModalEditar();
+    // FIX: detecta a página para abrir o modal correto
+    const isPaginaMesa = document.body.classList.contains("page-mesa");
+    const modalId = isPaginaMesa ? "modalEditarPedido" : "modalEditarPedidoCozinha";
+    const _modal = document.getElementById(modalId);
+    if (_modal) _modal.classList.add("open");
+    else { toast("Erro ao abrir edição.", "erro"); return; }
+  } catch (err) {
+    console.error("[Mikami] Edição:", err);
+    toast("Erro ao abrir edição.", "erro");
+  }
+}
+
+async function abrirModalEditarCozinha(pedidoId) {
+  await abrirModalEditar(pedidoId);
+}
+
+function renderModalEditar() {
+  if (!pedidoEmEdicao) return;
+  const isPaginaMesa = document.body.classList.contains("page-mesa");
+  const container = document.getElementById(isPaginaMesa ? "editarItensLista" : "editarItensListaCozinha");
+  if (!container) return;
+  const itens = pedidoEmEdicao.itens;
+  const titulo = document.getElementById(isPaginaMesa ? "editarPedidoTitulo" : "editarPedidoTituloCozinha");
+  if (titulo) titulo.textContent = `Editar Pedido — Mesa ${pedidoEmEdicao.mesaNumero}`;
+
+  if (!itens.length) {
+    container.innerHTML = `<p style="color:var(--cinza-texto);text-align:center;padding:1rem">Nenhum item</p>`;
+    return;
+  }
+
+  container.innerHTML = itens.map((item, idx) => `
+    <div class="editar-item-row" data-idx="${idx}">
+      <div class="editar-item-nome">${item.nome}</div>
+      <div class="editar-item-controles">
+        <button class="qty-btn editar-dec" data-idx="${idx}">−</button>
+        <span class="qty-value">${item.qty}</span>
+        <button class="qty-btn editar-inc" data-idx="${idx}">+</button>
+        <span class="editar-item-preco">${fmtMoeda(item.preco * item.qty)}</span>
+        <button class="remove-item-btn editar-remove" data-idx="${idx}">✕</button>
+      </div>
+      ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
+    </div>
+  `).join("");
+
+  const total = itens.reduce((a, i) => a + i.preco * i.qty, 0);
+  const _elTotal = document.getElementById(isPaginaMesa ? "editarTotal" : "editarTotalCozinha");
+  if (_elTotal) _elTotal.textContent = fmtMoeda(total);
+
+  container.querySelectorAll(".editar-dec").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const idx = parseInt(btn.dataset.idx);
+      pedidoEmEdicao.itens[idx].qty--;
+      if (pedidoEmEdicao.itens[idx].qty <= 0) pedidoEmEdicao.itens.splice(idx, 1);
+      renderModalEditar();
+    });
+  });
+  container.querySelectorAll(".editar-inc").forEach(btn => {
+    btn.addEventListener("click", () => { pedidoEmEdicao.itens[parseInt(btn.dataset.idx)].qty++; renderModalEditar(); });
+  });
+  container.querySelectorAll(".editar-remove").forEach(btn => {
+    btn.addEventListener("click", () => { pedidoEmEdicao.itens.splice(parseInt(btn.dataset.idx), 1); renderModalEditar(); });
+  });
+}
+
+async function salvarEdicaoPedido() {
+  if (!pedidoEmEdicao) return;
+  const isPaginaMesa = document.body.classList.contains("page-mesa");
+  const btnSalvar = document.getElementById(isPaginaMesa ? "btnSalvarEdicao" : "btnSalvarEdicaoCozinha");
+  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = "Salvando..."; }
+
+  try {
+    const itensNovos = pedidoEmEdicao.itens;
+    const novoTotal = itensNovos.reduce((a, i) => a + i.preco * i.qty, 0);
+    const totalAntigo = pedidoEmEdicao.total || 0;
+
+    if (!itensNovos.length) {
+      await excluirPedido(pedidoEmEdicao.id, pedidoEmEdicao.mesaId, totalAntigo);
+      fecharModalEditar();
+      return;
+    }
+
+    await updateDoc(doc(db, "pedidos", pedidoEmEdicao.id), { itens: itensNovos, total: novoTotal, updatedAt: serverTimestamp() });
+
+    if (pedidoEmEdicao.mesaId) {
+      const mesaRef = doc(db, "mesas", pedidoEmEdicao.mesaId);
+      const mesaSnap = await getDoc(mesaRef);
+      if (mesaSnap.exists()) {
+        const mesaData = mesaSnap.data();
+        const historico = (mesaData.historicoPedidos || []).map(p =>
+          p.pedidoId === pedidoEmEdicao.id ? { ...p, itens: itensNovos, total: novoTotal } : p
+        );
+        const totalRecalculado = historico.reduce((a, p) => a + (p.total || 0), 0);
+        await updateDoc(mesaRef, { historicoPedidos: historico, total: Math.max(0, totalRecalculado) });
+      }
+    }
+
+    toast("Pedido atualizado!", "sucesso");
+    fecharModalEditar();
+  } catch (err) {
+    console.error(err);
+    toast("Erro ao salvar edição.", "erro");
+    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar"; }
+  }
+}
+
+function fecharModalEditar() {
+  pedidoEmEdicao = null;
+  ["modalEditarPedido", "modalEditarPedidoCozinha"].forEach(id => document.getElementById(id)?.classList.remove("open"));
+  ["btnSalvarEdicao", "btnSalvarEdicaoCozinha"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) { btn.disabled = false; btn.textContent = "Salvar"; }
+  });
+}
+
 // ============================================================
 // 5. PÁGINA: COZINHA
 // ============================================================
 let filtroAtivo = "todos";
-let pedidosCached = [];  // FIX: cache local para re-renderizar no filtro
+let pedidosCached = [];
 
-// ── Som de notificação (cozinha) ─────────────────────────
 function _bip() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1206,27 +1274,29 @@ function _bip() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.4);
-  } catch (e) { /* silencia se AudioContext não disponível */ }
+  } catch (e) {}
 }
 let _idsConhecidos = new Set();
 
 function initCozinha() {
   iniciarRelogio();
-  // Bind modal editar na cozinha
   document.getElementById("btnCancelarEdicaoCozinha")?.addEventListener("click", fecharModalEditar);
   document.getElementById("btnSalvarEdicaoCozinha")?.addEventListener("click", salvarEdicaoPedido);
 
-  // FIX: filtro re-renderiza com dados em cache, sem precisar de novo snapshot
+  // Fecha modal cozinha ao clicar no overlay
+  document.getElementById("modalEditarPedidoCozinha")?.addEventListener("click", e => {
+    if (e.target === e.currentTarget) fecharModalEditar();
+  });
+
   document.querySelectorAll(".filtro-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       filtroAtivo = btn.dataset.filtro;
       document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
-      renderCozinha(pedidosCached);  // usa cache
+      renderCozinha(pedidosCached);
     });
   });
 
-  // FIX: filtra apenas pedidos de hoje
   const _inicioCozinha = new Date();
   _inicioCozinha.setHours(0, 0, 0, 0);
   const q = query(
@@ -1235,18 +1305,14 @@ function initCozinha() {
     orderBy("createdAt", "desc")
   );
 
-  // OTIMIZAÇÃO: throttle 200ms — evita re-render em rajadas de pedidos
   let _throttleCozinha = null;
   const _unsubCoz = onSnapshot(q, snap => {
     const dados = [];
     snap.forEach(d => dados.push({ id: d.id, ...d.data() }));
 
-    // Bip para cada pedido "Novo" que apareceu pela primeira vez
     let temNovo = false;
     dados.forEach(p => {
-      if (p.status === "Novo" && !_idsConhecidos.has(p.id)) {
-        temNovo = true;
-      }
+      if (p.status === "Novo" && !_idsConhecidos.has(p.id)) temNovo = true;
       _idsConhecidos.add(p.id);
     });
     if (temNovo) _bip();
@@ -1263,7 +1329,6 @@ function initCozinha() {
   });
   window.addEventListener("pagehide", () => { _unsubCoz(); clearTimeout(_throttleCozinha); }, { once: true });
 
-  // Atualiza tempos a cada 30s
   setInterval(() => {
     document.querySelectorAll(".pedido-card-tempo[data-ts]").forEach(el => {
       const ts = parseInt(el.dataset.ts);
@@ -1274,11 +1339,8 @@ function initCozinha() {
 
 function renderCozinha(pedidos) {
   const grid = document.getElementById("pedidosGrid");
-
   let filtrados = pedidos;
-  if (filtroAtivo !== "todos") {
-    filtrados = pedidos.filter(p => p.status === filtroAtivo);
-  }
+  if (filtroAtivo !== "todos") filtrados = pedidos.filter(p => p.status === filtroAtivo);
 
   if (!filtrados.length) {
     grid.innerHTML = `
@@ -1289,23 +1351,11 @@ function renderCozinha(pedidos) {
     return;
   }
 
-  const statusClass = {
-    "Novo": "status-novo",
-    "Em preparo": "status-preparo",
-    "Pronto": "status-pronto",
-    "Entregue": "status-entregue"
-  };
-
-  const badgeClass = {
-    "Novo": "badge-novo",
-    "Em preparo": "badge-preparo",
-    "Pronto": "badge-pronto",
-    "Entregue": "badge-entregue"
-  };
+  const statusClass = { "Novo": "status-novo", "Em preparo": "status-preparo", "Pronto": "status-pronto", "Entregue": "status-entregue" };
+  const badgeClass = { "Novo": "badge-novo", "Em preparo": "badge-preparo", "Pronto": "badge-pronto", "Entregue": "badge-entregue" };
 
   grid.innerHTML = filtrados.map(pedido => {
     const tsMs = pedido.createdAt?.toMillis ? pedido.createdAt.toMillis() : null;
-
     const itensHtml = (pedido.itens || []).map(item => `
       <div class="pedido-card-item">
         <span class="pedido-card-item-qty">${item.qty}x</span>
@@ -1338,9 +1388,7 @@ function renderCozinha(pedidos) {
           </div>
           <div class="pedido-card-meta">
             <span class="pedido-card-hora">${pedido.createdAt ? fmtHora(pedido.createdAt) : "—"}</span>
-            <span class="pedido-card-tempo" data-ts="${tsMs || ""}">
-              ${tsMs ? fmtTempo({ toDate: () => new Date(tsMs) }) : ""}
-            </span>
+            <span class="pedido-card-tempo" data-ts="${tsMs || ""}">${tsMs ? fmtTempo({ toDate: () => new Date(tsMs) }) : ""}</span>
           </div>
         </div>
         <div class="pedido-card-itens">${itensHtml}</div>
@@ -1353,17 +1401,11 @@ function renderCozinha(pedidos) {
   }).join("");
 
   grid.querySelectorAll("[data-id][data-status]").forEach(btn => {
-    btn.addEventListener("click", () =>
-      atualizarStatusPedido(btn.dataset.id, btn.dataset.status)
-    );
+    btn.addEventListener("click", () => atualizarStatusPedido(btn.dataset.id, btn.dataset.status));
   });
-
   grid.querySelectorAll(".btn-excluir-pedido").forEach(btn => {
-    btn.addEventListener("click", () =>
-      excluirPedido(btn.dataset.excluirId, btn.dataset.mesaId, parseFloat(btn.dataset.total))
-    );
+    btn.addEventListener("click", () => excluirPedido(btn.dataset.excluirId, btn.dataset.mesaId, parseFloat(btn.dataset.total)));
   });
-
   grid.querySelectorAll(".btn-editar-cozinha").forEach(btn => {
     btn.addEventListener("click", () => abrirModalEditarCozinha(btn.dataset.pedidoId));
   });
@@ -1371,71 +1413,29 @@ function renderCozinha(pedidos) {
 
 async function atualizarStatusPedido(pedidoId, novoStatus) {
   try {
-    // Sequencial: primeiro atualiza, depois lê — evita race condition
-    await updateDoc(doc(db, "pedidos", pedidoId), {
-      status: novoStatus,
-      updatedAt: serverTimestamp()
-    });
-
+    await updateDoc(doc(db, "pedidos", pedidoId), { status: novoStatus, updatedAt: serverTimestamp() });
     const pedidoSnap = await getDoc(doc(db, "pedidos", pedidoId));
     if (!pedidoSnap.exists()) return;
     const pedidoData = pedidoSnap.data();
-
     const mesaRef = doc(db, "mesas", pedidoData.mesaId);
     const mesaSnap = await getDoc(mesaRef);
     if (!mesaSnap.exists()) { toast(`Pedido: ${novoStatus}`, "sucesso"); return; }
-
     const historico = (mesaSnap.data().historicoPedidos || []).map(p =>
       p.pedidoId === pedidoId ? { ...p, status: novoStatus } : p
     );
     await updateDoc(mesaRef, { historicoPedidos: historico });
-    toast(`Pedido marcado como: ${novoStatus}`, "sucesso");
+    toast(`Pedido: ${novoStatus}`, "sucesso");
   } catch (err) {
     console.error("[Mikami] Erro ao atualizar pedido:", err);
     toast("Erro ao atualizar pedido.", "erro");
   }
 }
 
-// ── Modal de confirmação (substitui confirm() nativo) ─────
-function _confirmarAcao(mensagem) {
-  return new Promise(resolve => {
-    let overlay = document.getElementById("_modalConfirm");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "_modalConfirm";
-      overlay.className = "modal-overlay";
-      overlay.innerHTML = `
-        <div class="modal-box" style="max-width:380px;border-radius:var(--raio-lg)">
-          <p id="_modalConfirmMsg" style="font-size:0.9rem;color:var(--branco);margin-bottom:1.25rem;line-height:1.5"></p>
-          <div class="modal-acoes">
-            <button class="btn-secondary" id="_modalConfirmNao">Cancelar</button>
-            <button class="btn-primary" id="_modalConfirmSim">Confirmar</button>
-          </div>
-        </div>`;
-      document.body.appendChild(overlay);
-    }
-    document.getElementById("_modalConfirmMsg").textContent = mensagem;
-    overlay.classList.add("open");
-    const fechar = (res) => {
-      overlay.classList.remove("open");
-      resolve(res);
-    };
-    document.getElementById("_modalConfirmSim").onclick = () => fechar(true);
-    document.getElementById("_modalConfirmNao").onclick = () => fechar(false);
-    overlay.onclick = (e) => { if (e.target === overlay) fechar(false); };
-  });
-}
-
-
 async function excluirPedido(pedidoId, mesaId, totalPedido) {
   const confirmado = await _confirmarAcao("Excluir este pedido? Esta ação não pode ser desfeita.");
   if (!confirmado) return;
-
   try {
-    // Remove da coleção pedidos
     await deleteDoc(doc(db, "pedidos", pedidoId));
-
-    // Remove do historicoPedidos da mesa e desconta o total
     if (mesaId) {
       const mesaRef = doc(db, "mesas", mesaId);
       const mesaSnap = await getDoc(mesaRef);
@@ -1453,7 +1453,6 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
         });
       }
     }
-
     toast("Pedido excluído.", "sucesso");
   } catch (err) {
     console.error("[Mikami] Erro ao excluir pedido:", err);
@@ -1464,102 +1463,83 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 // ============================================================
 // 6. PÁGINA: RELATÓRIO
 // ============================================================
-let unsubRelatorio = null;  // para limpar listener anterior
-let vendasAtuais = [];      // cache para impressão do relatório
+let unsubRelatorio = null;
+let vendasAtuais = [];
 
-// ── LOGIN RELATÓRIO ──────────────────────────────────────
-// Senha ofuscada (não é segurança real, mas impede leitura trivial no bundle)
 const _SR = atob("MDg2NDMx");
 let _autenticado = false;
 function fazerLogin(s) { if (s === _SR) { _autenticado = true; return true; } return false; }
 function fazerLogout() { _autenticado = false; window.location.reload(); }
+
 function mostrarTelaLogin() {
   const m = document.getElementById("relatorioMain"); if (!m) return;
-  m.innerHTML = `<div class="login-box"><div class="login-icon">🔐</div><h2>Área Restrita</h2><p>Digite a senha para acessar o Relatório.</p><div class="login-campo"><input type="password" id="senhaInput" placeholder="Senha" autocomplete="off"/><button class="btn-primary btn-login" id="btnLogin">Entrar</button></div><div class="login-erro" id="loginErro"></div></div>`;
+  m.innerHTML = `
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h2>Área Restrita</h2>
+      <p>Digite a senha para acessar o Relatório.</p>
+      <div class="login-campo">
+        <input type="password" id="senhaInput" placeholder="Senha" autocomplete="off" />
+        <button class="btn-primary btn-login" id="btnLogin">Entrar</button>
+      </div>
+      <div class="login-erro" id="loginErro"></div>
+    </div>`;
   const inp = document.getElementById("senhaInput"), btn = document.getElementById("btnLogin"), err = document.getElementById("loginErro");
-  function t() { if (fazerLogin(inp.value.trim())) { mostrarConteudoRelatorio(); } else { err.textContent = "Senha incorreta."; inp.value = ""; inp.focus(); setTimeout(() => { err.textContent = ""; }, 2000); } }
-  btn.addEventListener("click", t); inp.addEventListener("keydown", e => { if (e.key === "Enter") t(); }); inp.focus();
+  function t() {
+    if (fazerLogin(inp.value.trim())) { mostrarConteudoRelatorio(); }
+    else { err.textContent = "Senha incorreta."; inp.value = ""; inp.focus(); setTimeout(() => { err.textContent = ""; }, 2000); }
+  }
+  btn.addEventListener("click", t);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") t(); });
+  inp.focus();
 }
+
 function mostrarConteudoRelatorio() {
   const m = document.getElementById("relatorioMain"), t = document.getElementById("tplRelatorio");
   if (m && t) { m.innerHTML = ""; m.appendChild(t.content.cloneNode(true)); }
   document.getElementById("btnLogout")?.addEventListener("click", fazerLogout);
   _iniciarConteudoRelatorio();
 }
+
+// FIX: initRelatorio agora chama corretamente as funções de login/conteúdo
 function initRelatorio() {
   iniciarRelogio();
   if (_autenticado) { mostrarConteudoRelatorio(); } else { mostrarTelaLogin(); }
 }
-function _iniciarConteudoRelatorio() {
-  iniciarRelogio();
 
-  // FIX: usa data local, não UTC (evita bug de fuso horário no Brasil)
+function _iniciarConteudoRelatorio() {
   const _h = new Date();
-  const _dataStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const _dataStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   const hoje = _dataStr(_h);
   const inputData = document.getElementById("filtroData");
+  if (!inputData) return;
   inputData.value = hoje;
 
-  // Função auxiliar: define data no input e dispara escuta
-  function _setData(str) {
-    inputData.value = str;
-    escutarVendas(str);
-  }
+  function _setData(str) { inputData.value = str; escutarVendas(str); }
 
-  // FIX: usa onSnapshot para atualização em tempo real
   inputData.addEventListener("change", () => escutarVendas(inputData.value));
-
-  // ── Botões de filtro rápido ──────────────────────────────────
-  document.getElementById("btnHoje").addEventListener("click", () => _setData(hoje));
-
-  const btnOntem = document.getElementById("btnOntem");
-  if (btnOntem) {
-    btnOntem.addEventListener("click", () => {
-      const d = new Date(_h); d.setDate(d.getDate() - 1);
-      _setData(_dataStr(d));
-    });
-  }
-
-  const btnAnteOntem = document.getElementById("btnAnteOntem");
-  if (btnAnteOntem) {
-    btnAnteOntem.addEventListener("click", () => {
-      const d = new Date(_h); d.setDate(d.getDate() - 2);
-      _setData(_dataStr(d));
-    });
-  }
-
-  const btn7dias = document.getElementById("btn7dias");
-  if (btn7dias) {
-    btn7dias.addEventListener("click", () => {
-      const d = new Date(_h); d.setDate(d.getDate() - 6);
-      _setData(_dataStr(d));
-    });
-  }
-
-  // Botão imprimir relatório
-  const btnImprimir = document.getElementById("btnImprimirRelatorio");
-  if (btnImprimir) {
-    btnImprimir.addEventListener("click", () => {
-      imprimirRelatorio(inputData.value, vendasAtuais);
-    });
-  }
+  document.getElementById("btnHoje")?.addEventListener("click", () => _setData(hoje));
+  document.getElementById("btnOntem")?.addEventListener("click", () => {
+    const d = new Date(_h); d.setDate(d.getDate() - 1); _setData(_dataStr(d));
+  });
+  document.getElementById("btnAnteOntem")?.addEventListener("click", () => {
+    const d = new Date(_h); d.setDate(d.getDate() - 2); _setData(_dataStr(d));
+  });
+  document.getElementById("btn7dias")?.addEventListener("click", () => {
+    const d = new Date(_h); d.setDate(d.getDate() - 6); _setData(_dataStr(d));
+  });
+  document.getElementById("btnImprimirRelatorio")?.addEventListener("click", () => {
+    imprimirRelatorio(inputData.value, vendasAtuais);
+  });
 
   escutarVendas(hoje);
-
-  // FIX: chama renderFaturamento (gráficos históricos) que estava órfão
   initFaturamento();
-
-  window.addEventListener('pagehide', () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
+  window.addEventListener("pagehide", () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
 }
 
 function escutarVendas(dataStr) {
-  // Cancela listener anterior se existir
-  if (unsubRelatorio) {
-    unsubRelatorio();
-    unsubRelatorio = null;
-  }
+  if (unsubRelatorio) { unsubRelatorio(); unsubRelatorio = null; }
 
-  // Ajusta as datas corretamente para o fuso local
   const [ano, mes, dia] = dataStr.split("-").map(Number);
   const inicio = new Date(ano, mes - 1, dia, 0, 0, 0);
   const fim = new Date(ano, mes - 1, dia, 23, 59, 59);
@@ -1571,15 +1551,9 @@ function escutarVendas(dataStr) {
     orderBy("fechadoEm", "desc")
   );
 
-  // Mostra loading
   const container = document.getElementById("vendasLista");
-  container.innerHTML = `
-    <div class="loading-mesas">
-      <div class="loading-spinner"></div>
-      <p>Carregando...</p>
-    </div>`;
+  if (container) container.innerHTML = `<div class="loading-mesas"><div class="loading-spinner"></div><p>Carregando...</p></div>`;
 
-  // FIX: onSnapshot em vez de getDocs — relatório reativo
   unsubRelatorio = onSnapshot(q, snap => {
     const vendas = [];
     snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
@@ -1596,31 +1570,26 @@ function renderRelatorio(vendas) {
   const qtdMesas = vendas.length;
   const ticketMed = qtdMesas > 0 ? totalDia / qtdMesas : 0;
 
-  document.getElementById("resumoTotal").textContent = fmtMoeda(totalDia);
-  document.getElementById("resumoMesas").textContent = qtdMesas;
-  document.getElementById("resumoTicket").textContent = fmtMoeda(ticketMed);
+  const el = id => document.getElementById(id);
+  if (el("resumoTotal")) el("resumoTotal").textContent = fmtMoeda(totalDia);
+  if (el("resumoMesas")) el("resumoMesas").textContent = qtdMesas;
+  if (el("resumoTicket")) el("resumoTicket").textContent = fmtMoeda(ticketMed);
 
-  // Breakdown por pagamento
   const porPag = {};
-  vendas.forEach(v => {
-    const met = v.formaPagamento || "Outros";
-    porPag[met] = (porPag[met] || 0) + (v.total || 0);
-  });
-
-  const breakdown = document.getElementById("pagamentosBreakdown");
-  if (Object.keys(porPag).length === 0) {
-    breakdown.innerHTML = `<span class="resumo-label">Nenhum pagamento</span>`;
-  } else {
-    breakdown.innerHTML = Object.entries(porPag).map(([met, val]) => `
-      <div class="pag-linha">
-        <span class="pag-metodo">${met}</span>
-        <span class="pag-valor">${fmtMoeda(val)}</span>
-      </div>
-    `).join("");
+  vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
+  const breakdown = el("pagamentosBreakdown");
+  if (breakdown) {
+    breakdown.innerHTML = Object.keys(porPag).length === 0
+      ? `<span class="resumo-label">Nenhum pagamento</span>`
+      : Object.entries(porPag).map(([met, val]) => `
+        <div class="pag-linha">
+          <span class="pag-metodo">${met}</span>
+          <span class="pag-valor">${fmtMoeda(val)}</span>
+        </div>`).join("");
   }
 
-  // Lista de vendas
-  const container = document.getElementById("vendasLista");
+  const container = el("vendasLista");
+  if (!container) return;
 
   if (!vendas.length) {
     container.innerHTML = `
@@ -1628,6 +1597,7 @@ function renderRelatorio(vendas) {
         <span style="font-size:2rem">📋</span>
         <p>Nenhuma venda registrada nessa data.</p>
       </div>`;
+    _renderGraficoItensDia([]);
     return;
   }
 
@@ -1635,17 +1605,8 @@ function renderRelatorio(vendas) {
     const itensAgrupados = [];
     (venda.itens || []).forEach(item => {
       const ex = itensAgrupados.find(i => i.nome === item.nome);
-      if (ex) {
-        ex.qty += item.qty;
-        ex.subtotal += item.preco * item.qty;
-      } else {
-        itensAgrupados.push({
-          nome: item.nome,
-          qty: item.qty,
-          preco: item.preco,
-          subtotal: item.preco * item.qty
-        });
-      }
+      if (ex) { ex.qty += item.qty; ex.subtotal += item.preco * item.qty; }
+      else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
     });
 
     const itensHtml = itensAgrupados.map(item => `
@@ -1670,37 +1631,19 @@ function renderRelatorio(vendas) {
     `;
   }).join("");
 
-  // Eventos de exclusão de venda
   document.querySelectorAll(".btn-excluir-venda").forEach(btn => {
     btn.addEventListener("click", () => excluirVenda(btn.dataset.vendaId));
   });
 
-  // ── Gráfico: itens mais pedidos no dia ───────────────────────
+  // FIX: gráfico de produtos agora renderiza no container do template, sem criar elemento dinamicamente
   _renderGraficoItensDia(vendas);
 }
 
-// ── Gráfico de itens mais pedidos (dia selecionado) ───────────
+// ── Gráfico de produtos mais vendidos ────────────────────
 function _renderGraficoItensDia(vendas) {
-  // Garante container existe (injetado dinamicamente via template)
-  let wrap = document.getElementById("chartItensDiaWrap");
-  if (!wrap) {
-    const relMain = document.getElementById("relatorioMain");
-    if (!relMain) return;
-    const div = document.createElement("div");
-    div.id = "chartItensDiaWrap";
-    div.className = "chart-itens-dia-wrap";
-    div.innerHTML = `
-      <div class="chart-itens-dia-titulo">🍣 Itens mais pedidos no dia</div>
-      <div class="chart-itens-dia-inner">
-        <div class="chart-itens-dia-chart-wrap"><canvas id="chartItensDia"></canvas></div>
-        <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
-      </div>
-    `;
-    relMain.appendChild(div);
-    wrap = div;
-  }
+  const wrap = document.getElementById("chartItensDiaWrap");
+  if (!wrap) return;
 
-  // Agrega itens de todas as vendas do dia
   const contagemItens = {};
   vendas.forEach(v => {
     (v.itens || []).forEach(item => {
@@ -1709,21 +1652,16 @@ function _renderGraficoItensDia(vendas) {
     });
   });
 
-  const sorted = Object.entries(contagemItens)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10);
+  const sorted = Object.entries(contagemItens).sort((a, b) => b[1] - a[1]).slice(0, 10);
 
-  if (!sorted.length) {
-    wrap.style.display = "none";
-    return;
-  }
+  if (!sorted.length) { wrap.style.display = "none"; return; }
   wrap.style.display = "";
 
   const labels = sorted.map(([n]) => n);
   const values = sorted.map(([, q]) => q);
   const total = values.reduce((a, b) => a + b, 0);
 
-  // Cores degradê do vermelho ao amarelo
+  // Cores degradê vermelho → ouro
   const cores = labels.map((_, i) => {
     const t = labels.length <= 1 ? 0 : i / (labels.length - 1);
     const r = Math.round(192 + (212 - 192) * t);
@@ -1734,14 +1672,12 @@ function _renderGraficoItensDia(vendas) {
 
   _renderGrafico("chartItensDia", "bar", labels, values, "Qtd pedida");
 
-  // Substitui a cor padrão do gráfico de barras pelas cores por item
   if (_chartInstances["chartItensDia"]) {
     _chartInstances["chartItensDia"].data.datasets[0].backgroundColor = cores;
     _chartInstances["chartItensDia"].data.datasets[0].borderColor = cores.map(c => c.replace("0.85", "1"));
     _chartInstances["chartItensDia"].update();
   }
 
-  // Lista numérica abaixo do gráfico
   const lista = document.getElementById("chartItensDiaLista");
   if (lista) {
     lista.innerHTML = sorted.map(([nome, qty], i) => {
@@ -1759,65 +1695,45 @@ function _renderGraficoItensDia(vendas) {
   }
 }
 
-// ── Excluir Venda ─────────────────────────────────────────────
 async function excluirVenda(vendaId) {
   const confirmado = await _confirmarAcao("Excluir este registro de venda? Esta ação não pode ser desfeita.");
   if (!confirmado) return;
-
   try {
     await deleteDoc(doc(db, "vendas", vendaId));
     toast("Registro excluído.", "sucesso");
-    // O onSnapshot do relatório atualiza automaticamente
   } catch (err) {
     console.error("[Mikami] Erro ao excluir venda:", err);
     toast("Erro ao excluir registro.", "erro");
   }
 }
 
-// ── Imprimir Relatório ────────────────────────────────────────
 function imprimirRelatorio(dataStr, vendas) {
-  if (!vendas || !vendas.length) {
-    toast("Nenhuma venda para imprimir.", "info");
-    return;
-  }
+  if (!vendas || !vendas.length) { toast("Nenhuma venda para imprimir.", "info"); return; }
 
   const [ano, mes, dia] = dataStr.split("-").map(Number);
-  const dataFormatada = new Date(ano, mes - 1, dia)
-    .toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const dataFormatada = new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
   const qtdMesas = vendas.length;
   const ticketMed = qtdMesas > 0 ? totalDia / qtdMesas : 0;
 
-  // Breakdown por pagamento
   const porPag = {};
-  vendas.forEach(v => {
-    const met = v.formaPagamento || "Outros";
-    porPag[met] = (porPag[met] || 0) + (v.total || 0);
-  });
+  vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
 
   const pagamentosHtml = Object.entries(porPag).map(([met, val]) => `
-    <div class="print-relatorio-resumo-linha">
-      <span>${met}</span>
-      <span>${fmtMoeda(val)}</span>
-    </div>
+    <div class="print-relatorio-resumo-linha"><span>${met}</span><span>${fmtMoeda(val)}</span></div>
   `).join("");
 
-  const vendasHtml = vendas.map((venda, idx) => {
+  const vendasHtml = vendas.map(venda => {
     const itensAgrupados = [];
     (venda.itens || []).forEach(item => {
       const ex = itensAgrupados.find(i => i.nome === item.nome);
       if (ex) { ex.qty += item.qty; ex.subtotal += item.preco * item.qty; }
       else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
     });
-
     const itensHtml = itensAgrupados.map(item => `
-      <div class="print-item">
-        <span>${item.qty}x ${item.nome}</span>
-        <span>${fmtMoeda(item.subtotal)}</span>
-      </div>
+      <div class="print-item"><span>${item.qty}x ${item.nome}</span><span>${fmtMoeda(item.subtotal)}</span></div>
     `).join("");
-
     return `
       <div class="print-relatorio-venda">
         <div class="print-relatorio-venda-header">
@@ -1832,261 +1748,28 @@ function imprimirRelatorio(dataStr, vendas) {
   }).join("");
 
   const printArea = document.getElementById("printArea");
-  if (!printArea) {
-    toast("Área de impressão não encontrada.", "erro");
-    return;
-  }
+  if (!printArea) { toast("Área de impressão não encontrada.", "erro"); return; }
 
   printArea.innerHTML = `
     <div class="print-relatorio-titulo">MIKAMI SUSHI</div>
     <div class="print-relatorio-data">Relatório do Dia — ${dataFormatada}</div>
     <div class="print-relatorio-data">Impresso em ${new Date().toLocaleString("pt-BR")}</div>
-
     <div class="print-relatorio-resumo">
-      <div class="print-relatorio-resumo-linha">
-        <span>Total do dia</span>
-        <span><strong>${fmtMoeda(totalDia)}</strong></span>
-      </div>
-      <div class="print-relatorio-resumo-linha">
-        <span>Mesas fechadas</span>
-        <span>${qtdMesas}</span>
-      </div>
-      <div class="print-relatorio-resumo-linha">
-        <span>Ticket médio</span>
-        <span>${fmtMoeda(ticketMed)}</span>
-      </div>
+      <div class="print-relatorio-resumo-linha"><span>Total do dia</span><span><strong>${fmtMoeda(totalDia)}</strong></span></div>
+      <div class="print-relatorio-resumo-linha"><span>Mesas fechadas</span><span>${qtdMesas}</span></div>
+      <div class="print-relatorio-resumo-linha"><span>Ticket médio</span><span>${fmtMoeda(ticketMed)}</span></div>
       <hr style="border:none;border-top:1px dashed #000;margin:4px 0"/>
       ${pagamentosHtml}
     </div>
-
     <div class="print-section-title">Detalhe por Mesa</div>
     ${vendasHtml}
-
-    <div class="print-footer">
-      Mikami Sushi — Sistema de Gestão
-    </div>
+    <div class="print-footer">Mikami Sushi — Sistema de Gestão</div>
   `;
-
   window.print();
 }
 
-
-// ── Pagamento dividido — atualiza saldo restante ──────────────
-function atualizarRestante() {
-  const total = (estadoMesa.dadosMesa?.total || 0) + (estadoMesa.entrega?.taxa || 0);
-  let distribuido = 0;
-  document.querySelectorAll(".div-toggle.active").forEach(btn => {
-    const metodo = btn.dataset.metodo;
-    const input = document.querySelector(`.div-valor-input[data-metodo="${metodo}"]`);
-    distribuido += parseFloat(input?.value?.replace(",", ".") || "0") || 0;
-  });
-  const restante = total - distribuido;
-  const el = document.getElementById("divRestante");
-  if (el) {
-    el.textContent = restante > 0.009
-      ? `Faltam distribuir: ${fmtMoeda(restante)}`
-      : restante < -0.009
-        ? `Excedeu em: ${fmtMoeda(Math.abs(restante))}`
-        : "✓ Total distribuído";
-    el.style.color = Math.abs(restante) < 0.01 ? "var(--verde)" : "var(--vermelho-soft)";
-  }
-  const btnConfirmar = document.getElementById("btnConfirmarFechar");
-  if (btnConfirmar && document.getElementById("tabPagDividido")?.classList.contains("active")) {
-    btnConfirmar.disabled = Math.abs(restante) > 0.01;
-  }
-}
-
-// ── Inicializar lógica do modal de pagamento dividido ─────────
-function initModalPagamento() {
-  const tabUnico = document.getElementById("tabPagUnico");
-  const tabDivid = document.getElementById("tabPagDividido");
-  const secUnico = document.getElementById("secPagUnico");
-  const secDivid = document.getElementById("secPagDividido");
-  if (!tabUnico) return;
-
-  tabUnico.addEventListener("click", () => {
-    tabUnico.classList.add("active"); tabDivid.classList.remove("active");
-    secUnico.style.display = ""; secDivid.style.display = "none";
-    const btnConfirmar = document.getElementById("btnConfirmarFechar");
-    btnConfirmar.disabled = !document.querySelector(".pagamento-btn.selected");
-  });
-
-  tabDivid.addEventListener("click", () => {
-    tabDivid.classList.add("active"); tabUnico.classList.remove("active");
-    secDivid.style.display = ""; secUnico.style.display = "none";
-    atualizarRestante();
-  });
-
-  // Toggles de método dividido
-  document.querySelectorAll(".div-toggle").forEach(btn => {
-    btn.addEventListener("click", () => {
-      btn.classList.toggle("active");
-      const metodo = btn.dataset.metodo;
-      const inputRow = document.getElementById(`divRow_${metodo}`);
-      if (inputRow) inputRow.style.display = btn.classList.contains("active") ? "flex" : "none";
-      atualizarRestante();
-    });
-  });
-
-  // Inputs de valor
-  document.querySelectorAll(".div-valor-input").forEach(input => {
-    input.addEventListener("input", atualizarRestante);
-  });
-}
-
-// ── Modal Editar Pedido (mesa.html) ───────────────────────────
-let pedidoEmEdicao = null;
-
-async function abrirModalEditar(pedidoId) {
-  if (!pedidoId) return;
-  try {
-    const snap = await getDoc(doc(db, "pedidos", pedidoId));
-    if (!snap.exists()) { toast("Pedido não encontrado.", "erro"); return; }
-    pedidoEmEdicao = { id: pedidoId, ...snap.data() };
-    pedidoEmEdicao.itens = pedidoEmEdicao.itens.map(i => ({ ...i })); // cópia
-    renderModalEditar();
-    const _modal = document.getElementById("modalEditarPedido") || document.getElementById("modalEditarPedidoCozinha");
-    if (_modal) _modal.classList.add("open");
-    else { toast("Erro ao abrir edição.", "erro"); return; }
-  } catch (err) {
-    console.error("[Mikami] Edição:", err);
-    toast("Erro ao abrir edição.", "erro");
-  }
-}
-
-async function abrirModalEditarCozinha(pedidoId) {
-  await abrirModalEditar(pedidoId);
-}
-
-function renderModalEditar() {
-  if (!pedidoEmEdicao) return;
-  const container = document.getElementById("editarItensLista") || document.getElementById("editarItensListaCozinha");
-  if (!container) return;
-  const itens = pedidoEmEdicao.itens;
-  const titulo = document.getElementById("editarPedidoTitulo") || document.getElementById("editarPedidoTituloCozinha");
-  if (titulo) titulo.textContent = `Editar Pedido — Mesa ${pedidoEmEdicao.mesaNumero}`;
-
-  if (!itens.length) {
-    container.innerHTML = `<p style="color:var(--cinza-texto);text-align:center;padding:1rem">Nenhum item</p>`;
-    return;
-  }
-
-  container.innerHTML = itens.map((item, idx) => `
-    <div class="editar-item-row" data-idx="${idx}">
-      <div class="editar-item-nome">${item.nome}</div>
-      <div class="editar-item-controles">
-        <button class="qty-btn editar-dec" data-idx="${idx}">−</button>
-        <span class="qty-value">${item.qty}</span>
-        <button class="qty-btn editar-inc" data-idx="${idx}">+</button>
-        <span class="editar-item-preco">${fmtMoeda(item.preco * item.qty)}</span>
-        <button class="remove-item-btn editar-remove" data-idx="${idx}">✕</button>
-      </div>
-      ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
-    </div>
-  `).join("");
-
-  // Total
-  const total = itens.reduce((a, i) => a + i.preco * i.qty, 0);
-  const _elTotal = document.getElementById("editarTotal") || document.getElementById("editarTotalCozinha");
-  if (_elTotal) _elTotal.textContent = fmtMoeda(total);
-
-  // Eventos
-  container.querySelectorAll(".editar-dec").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const idx = parseInt(btn.dataset.idx);
-      pedidoEmEdicao.itens[idx].qty--;
-      if (pedidoEmEdicao.itens[idx].qty <= 0) pedidoEmEdicao.itens.splice(idx, 1);
-      renderModalEditar();
-    });
-  });
-  container.querySelectorAll(".editar-inc").forEach(btn => {
-    btn.addEventListener("click", () => {
-      pedidoEmEdicao.itens[parseInt(btn.dataset.idx)].qty++;
-      renderModalEditar();
-    });
-  });
-  container.querySelectorAll(".editar-remove").forEach(btn => {
-    btn.addEventListener("click", () => {
-      pedidoEmEdicao.itens.splice(parseInt(btn.dataset.idx), 1);
-      renderModalEditar();
-    });
-  });
-}
-
-async function salvarEdicaoPedido() {
-  if (!pedidoEmEdicao) return;
-  const btnSalvar = document.getElementById("btnSalvarEdicao") || document.getElementById("btnSalvarEdicaoCozinha");
-  if (btnSalvar) { btnSalvar.disabled = true; btnSalvar.textContent = "Salvando..."; }
-
-  try {
-    const itensNovos = pedidoEmEdicao.itens;
-    const novoTotal = itensNovos.reduce((a, i) => a + i.preco * i.qty, 0);
-    const totalAntigo = pedidoEmEdicao.total || 0;
-    const diff = novoTotal - totalAntigo;
-
-    if (!itensNovos.length) {
-      // Se removeu todos os itens, exclui o pedido
-      await excluirPedido(pedidoEmEdicao.id, pedidoEmEdicao.mesaId, totalAntigo);
-      fecharModalEditar();
-      return;
-    }
-
-    // Atualiza pedido
-    await updateDoc(doc(db, "pedidos", pedidoEmEdicao.id), {
-      itens: itensNovos,
-      total: novoTotal,
-      updatedAt: serverTimestamp()
-    });
-
-    // Atualiza mesa: total e historicoPedidos
-    if (pedidoEmEdicao.mesaId) {
-      const mesaRef = doc(db, "mesas", pedidoEmEdicao.mesaId);
-      const mesaSnap = await getDoc(mesaRef);
-      if (mesaSnap.exists()) {
-        const mesaData = mesaSnap.data();
-        const historico = (mesaData.historicoPedidos || []).map(p =>
-          p.pedidoId === pedidoEmEdicao.id
-            ? { ...p, itens: itensNovos, total: novoTotal }
-            : p
-        );
-        // FIX: recalcula total somando todos os pedidos do histórico
-        // evita acumular erros de race condition em cima de diff
-        const totalRecalculado = historico.reduce((a, p) => a + (p.total || 0), 0);
-        await updateDoc(mesaRef, {
-          historicoPedidos: historico,
-          total: Math.max(0, totalRecalculado)
-        });
-      }
-    }
-
-    toast("Pedido atualizado!", "sucesso");
-    fecharModalEditar();
-  } catch (err) {
-    console.error(err);
-    toast("Erro ao salvar edição.", "erro");
-    if (btnSalvar) { btnSalvar.disabled = false; btnSalvar.textContent = "Salvar"; }
-  }
-}
-
-function fecharModalEditar() {
-  pedidoEmEdicao = null;
-  ["modalEditarPedido", "modalEditarPedidoCozinha"].forEach(id => {
-    document.getElementById(id)?.classList.remove("open");
-  });
-  ["btnSalvarEdicao", "btnSalvarEdicaoCozinha"].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) { btn.disabled = false; btn.textContent = "Salvar"; }
-  });
-}
-
-
-// ============================================================
-// 8. PÁGINA: FATURAMENTO
-// ============================================================
+// ── Faturamento histórico ──────────────────────────────────
 function initFaturamento() {
-  iniciarRelogio();
-
-  // Carrega dados dos últimos 12 meses + semana atual
   const agora = new Date();
   const inicioAno = new Date(agora.getFullYear() - 1, agora.getMonth() + 1, 1);
   inicioAno.setHours(0, 0, 0, 0);
@@ -2107,87 +1790,56 @@ function initFaturamento() {
 function renderFaturamento(vendas) {
   const agora = new Date();
 
-  // ── SEMANAL: últimos 7 dias ─────────────────────────────
-  const diasSemana = [];
-  const totalSemana = [];
+  const diasSemana = [], totalSemana = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date(agora);
-    d.setDate(d.getDate() - i);
-    d.setHours(0, 0, 0, 0);
-    const label = d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" });
-    diasSemana.push(label);
-    const total = vendas
-      .filter(v => {
-        if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-        return vd.toDateString() === d.toDateString();
-      })
-      .reduce((a, v) => a + (v.total || 0), 0);
-    totalSemana.push(parseFloat(total.toFixed(2)));
+    const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+    diasSemana.push(d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" }));
+    totalSemana.push(parseFloat(vendas.filter(v => {
+      if (!v.fechadoEm) return false;
+      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+      return vd.toDateString() === d.toDateString();
+    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
   }
 
-  // ── MENSAL: últimos 30 dias, agrupado por dia ───────────
-  const diasMes = [];
-  const totalMes = [];
+  const diasMes = [], totalMes = [];
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(agora);
-    d.setDate(d.getDate() - i);
-    d.setHours(0, 0, 0, 0);
+    const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
     diasMes.push(d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
-    const total = vendas
-      .filter(v => {
-        if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-        return vd.toDateString() === d.toDateString();
-      })
-      .reduce((a, v) => a + (v.total || 0), 0);
-    totalMes.push(parseFloat(total.toFixed(2)));
+    totalMes.push(parseFloat(vendas.filter(v => {
+      if (!v.fechadoEm) return false;
+      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+      return vd.toDateString() === d.toDateString();
+    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
   }
 
-  // ── ANUAL: últimos 12 meses ─────────────────────────────
-  const mesesLabel = [];
-  const totalAnual = [];
+  const mesesLabel = [], totalAnual = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
     mesesLabel.push(d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }));
-    const total = vendas
-      .filter(v => {
-        if (!v.fechadoEm) return false;
-        const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-        return vd.getFullYear() === d.getFullYear() && vd.getMonth() === d.getMonth();
-      })
-      .reduce((a, v) => a + (v.total || 0), 0);
-    totalAnual.push(parseFloat(total.toFixed(2)));
-  }
-
-  // ── CARDS RESUMO ───────────────────────────────────────
-  const totalHoje = vendas
-    .filter(v => {
+    totalAnual.push(parseFloat(vendas.filter(v => {
       if (!v.fechadoEm) return false;
       const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-      return vd.toDateString() === agora.toDateString();
-    })
-    .reduce((a, v) => a + (v.total || 0), 0);
+      return vd.getFullYear() === d.getFullYear() && vd.getMonth() === d.getMonth();
+    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
+  }
 
-  const totalSemanaNum = totalSemana.reduce((a, b) => a + b, 0);
-  const totalMesNum = totalMes.reduce((a, b) => a + b, 0);
-  const totalAnualNum = totalAnual.reduce((a, b) => a + b, 0);
+  const totalHoje = vendas.filter(v => {
+    if (!v.fechadoEm) return false;
+    const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+    return vd.toDateString() === agora.toDateString();
+  }).reduce((a, v) => a + (v.total || 0), 0);
 
-  document.getElementById("fatHoje").textContent = fmtMoeda(totalHoje);
-  document.getElementById("fatSemana").textContent = fmtMoeda(totalSemanaNum);
-  document.getElementById("fatMes").textContent = fmtMoeda(totalMesNum);
-  document.getElementById("fatAnual").textContent = fmtMoeda(totalAnualNum);
+  const el = id => document.getElementById(id);
+  if (el("fatHoje")) el("fatHoje").textContent = fmtMoeda(totalHoje);
+  if (el("fatSemana")) el("fatSemana").textContent = fmtMoeda(totalSemana.reduce((a, b) => a + b, 0));
+  if (el("fatMes")) el("fatMes").textContent = fmtMoeda(totalMes.reduce((a, b) => a + b, 0));
+  if (el("fatAnual")) el("fatAnual").textContent = fmtMoeda(totalAnual.reduce((a, b) => a + b, 0));
 
-  // ── FORMA DE PAGAMENTO (pizza) ─────────────────────────
   const porPag = {};
-  vendas.forEach(v => {
-    const met = (v.formaPagamento || "Outros").split(" (")[0].trim();
-    porPag[met] = (porPag[met] || 0) + (v.total || 0);
-  });
+  vendas.forEach(v => { const met = (v.formaPagamento || "Outros").split(" (")[0].trim(); porPag[met] = (porPag[met] || 0) + (v.total || 0); });
   const pagLabels = Object.keys(porPag);
   const pagValues = pagLabels.map(k => parseFloat(porPag[k].toFixed(2)));
 
-  // Renderiza gráficos
   _renderGrafico("chartSemanal", "bar", diasSemana, totalSemana, "Faturamento Diário (7 dias)");
   _renderGrafico("chartMensal", "bar", diasMes, totalMes, "Faturamento Diário (30 dias)");
   _renderGrafico("chartAnual", "bar", mesesLabel, totalAnual, "Faturamento Mensal (12 meses)");
@@ -2198,20 +1850,12 @@ const _chartInstances = {};
 function _renderGrafico(canvasId, tipo, labels, data, titulo) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-
-  // Destrói instância anterior
-  if (_chartInstances[canvasId]) {
-    _chartInstances[canvasId].destroy();
-  }
+  if (_chartInstances[canvasId]) { _chartInstances[canvasId].destroy(); }
 
   const cores = [
-    "rgba(192,57,43,0.85)",
-    "rgba(212,160,23,0.85)",
-    "rgba(39,174,96,0.85)",
-    "rgba(41,128,185,0.85)",
-    "rgba(142,68,173,0.85)",
+    "rgba(192,57,43,0.85)", "rgba(212,160,23,0.85)", "rgba(39,174,96,0.85)",
+    "rgba(41,128,185,0.85)", "rgba(142,68,173,0.85)",
   ];
-
   const isBarra = tipo === "bar";
 
   _chartInstances[canvasId] = new Chart(canvas, {
@@ -2237,14 +1881,9 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
           labels: { color: "#f0ece6", font: { family: "Inter", size: 12 }, padding: 16 }
         },
         tooltip: {
-          callbacks: {
-            label: ctx => ` ${fmtMoeda(ctx.parsed.y ?? ctx.parsed ?? 0)}`
-          },
-          backgroundColor: "#1e1e1e",
-          titleColor: "#f0ece6",
-          bodyColor: "#d4a017",
-          borderColor: "#363636",
-          borderWidth: 1,
+          callbacks: { label: ctx => ` ${fmtMoeda(ctx.parsed.y ?? ctx.parsed ?? 0)}` },
+          backgroundColor: "#1e1e1e", titleColor: "#f0ece6",
+          bodyColor: "#d4a017", borderColor: "#363636", borderWidth: 1,
         }
       },
       scales: isBarra ? {
@@ -2253,11 +1892,7 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
           grid: { color: "rgba(255,255,255,0.04)" }
         },
         y: {
-          ticks: {
-            color: "#888",
-            font: { size: 11, family: "Inter" },
-            callback: v => "R$\u00a0" + v.toLocaleString("pt-BR")
-          },
+          ticks: { color: "#888", font: { size: 11, family: "Inter" }, callback: v => "R$\u00a0" + v.toLocaleString("pt-BR") },
           grid: { color: "rgba(255,255,255,0.06)" }
         }
       } : {}
@@ -2266,11 +1901,11 @@ function _renderGrafico(canvasId, tipo, labels, data, titulo) {
 }
 
 // ============================================================
-// 7. INIT — Detecta página e inicializa o módulo correto
+// 7. INIT — Detecta página e inicializa
 // ============================================================
 const pagina = document.body.className;
 
 if (pagina.includes("page-mesas")) initIndex();
 else if (pagina.includes("page-mesa")) initMesa();
 else if (pagina.includes("page-cozinha")) initCozinha();
-else if (pagina.includes("page-relatorio")) initRelatorio();
+else if (pagina.includes("page-relatorio")) initRelatorio();  // FIX: estava faltando

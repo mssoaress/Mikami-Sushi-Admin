@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Mikami Sushi — Relatório</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
-
 <body class="page-relatorio">
+
   <header class="main-header">
     <div class="header-brand">
       <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo"
@@ -33,7 +33,6 @@
     <div class="header-clock" id="headerClock"></div>
   </header>
 
-  <!-- Login ou conteúdo injetado aqui -->
   <div id="relatorioMain">
     <div class="loading-mesas" style="padding:4rem">
       <div class="loading-spinner"></div>
@@ -41,19 +40,32 @@
     </div>
   </div>
 
-  <!-- Template do conteúdo (injetado após login) -->
+  <!-- Template injetado após login -->
   <template id="tplRelatorio">
     <div class="relatorio-resumo">
-      <div class="resumo-card"><span class="resumo-icon">💰</span><span class="resumo-valor" id="resumoTotal">R$
-          0,00</span><span class="resumo-label">Total do Dia</span></div>
-      <div class="resumo-card"><span class="resumo-icon">🍽️</span><span class="resumo-valor"
-          id="resumoMesas">0</span><span class="resumo-label">Mesas Fechadas</span></div>
-      <div class="resumo-card"><span class="resumo-icon">🎯</span><span class="resumo-valor" id="resumoTicket">R$
-          0,00</span><span class="resumo-label">Ticket Médio</span></div>
-      <div class="resumo-card resumo-pagamentos"><span class="resumo-icon">💳</span>
-        <div class="pagamentos-breakdown" id="pagamentosBreakdown"><span class="resumo-label">Por Pagamento</span></div>
+      <div class="resumo-card">
+        <span class="resumo-icon">💰</span>
+        <span class="resumo-valor" id="resumoTotal">R$ 0,00</span>
+        <span class="resumo-label">Total do Dia</span>
+      </div>
+      <div class="resumo-card">
+        <span class="resumo-icon">🍽️</span>
+        <span class="resumo-valor" id="resumoMesas">0</span>
+        <span class="resumo-label">Mesas Fechadas</span>
+      </div>
+      <div class="resumo-card">
+        <span class="resumo-icon">🎯</span>
+        <span class="resumo-valor" id="resumoTicket">R$ 0,00</span>
+        <span class="resumo-label">Ticket Médio</span>
+      </div>
+      <div class="resumo-card resumo-pagamentos">
+        <span class="resumo-icon">💳</span>
+        <div class="pagamentos-breakdown" id="pagamentosBreakdown">
+          <span class="resumo-label">Por Pagamento</span>
+        </div>
       </div>
     </div>
+
     <div class="relatorio-filtros">
       <label>Data:</label>
       <input type="date" id="filtroData" />
@@ -64,6 +76,7 @@
       <button class="btn-imprimir-relatorio btn-sm" id="btnImprimirRelatorio">🖨️ Imprimir</button>
       <button class="btn-logout btn-sm" id="btnLogout">🔒 Sair</button>
     </div>
+
     <main class="relatorio-main">
       <div class="vendas-lista" id="vendasLista">
         <div class="loading-mesas">
@@ -71,17 +84,43 @@
           <p>Carregando...</p>
         </div>
       </div>
+
+      <!-- Gráfico de produtos mais vendidos — integrado no fluxo natural -->
+      <div class="chart-itens-dia-wrap" id="chartItensDiaWrap" style="display:none">
+        <div class="chart-itens-dia-titulo">🍣 Produtos mais vendidos no dia</div>
+        <div class="chart-itens-dia-inner">
+          <div class="chart-itens-dia-chart-wrap">
+            <canvas id="chartItensDia"></canvas>
+          </div>
+          <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
+        </div>
+      </div>
     </main>
+
+    <!-- Cards de faturamento histórico -->
     <div class="fat-resumo">
-      <div class="fat-card"><span class="fat-icon">📅</span><span class="fat-label">Hoje</span><span class="fat-valor"
-          id="fatHoje">R$ 0,00</span></div>
-      <div class="fat-card"><span class="fat-icon">📆</span><span class="fat-label">7 dias</span><span class="fat-valor"
-          id="fatSemana">R$ 0,00</span></div>
-      <div class="fat-card"><span class="fat-icon">🗓️</span><span class="fat-label">30 dias</span><span
-          class="fat-valor" id="fatMes">R$ 0,00</span></div>
-      <div class="fat-card"><span class="fat-icon">📊</span><span class="fat-label">12 meses</span><span
-          class="fat-valor" id="fatAnual">R$ 0,00</span></div>
+      <div class="fat-card">
+        <span class="fat-icon">📅</span>
+        <span class="fat-label">Hoje</span>
+        <span class="fat-valor" id="fatHoje">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">📆</span>
+        <span class="fat-label">7 dias</span>
+        <span class="fat-valor" id="fatSemana">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">🗓️</span>
+        <span class="fat-label">30 dias</span>
+        <span class="fat-valor" id="fatMes">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">📊</span>
+        <span class="fat-label">12 meses</span>
+        <span class="fat-valor" id="fatAnual">R$ 0,00</span>
+      </div>
     </div>
+
     <div class="fat-main">
       <div class="fat-grid">
         <div class="fat-chart-box fat-chart-wide">
@@ -109,9 +148,9 @@
     <a href="cozinha.html" class="bottom-nav-item"><span class="bn-icon">👨‍🍳</span>Cozinha</a>
     <a href="relatorio.html" class="bottom-nav-item active"><span class="bn-icon">📋</span>Relatório</a>
   </nav>
+
   <div id="printArea" class="print-area"></div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
 </body>
-
 </html>

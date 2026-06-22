@@ -1,18 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Mikami Sushi — Mesas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body class="page-mesas">
 
   <header class="main-header">
@@ -50,21 +49,23 @@
         <span class="stat-label">Aguardando</span>
       </div>
       <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-value stat-value-ouro" id="statTotalDia">R$ 0,00</span>
+        <span class="stat-label">Faturamento hoje</span>
+      </div>
+      <div class="stat-divider"></div>
       <button class="btn-add-mesa" id="btnAddMesa" title="Adicionar mesa">＋</button>
     </div>
 
-    <!-- Modal adicionar mesa -->
     <div class="modal-overlay" id="modalAddMesa">
       <div class="modal-box" style="max-width:320px">
-        <h3>➕ Adicionar Mesa</h3>
+        <h3>Adicionar Mesa</h3>
         <p>Selecione o tipo:</p>
         <div class="pagamento-opcoes" style="margin-top:0.75rem">
           <button class="pagamento-btn" id="btnAddRestaurante">🍽️ Restaurante</button>
           <button class="pagamento-btn" id="btnAddDelivery">🛵 Delivery</button>
         </div>
-        <div id="addMesaStatus"
-          style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem">
-        </div>
+        <div id="addMesaStatus" style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem"></div>
         <div class="modal-acoes">
           <button class="btn-secondary" id="btnCancelarAddMesa">Cancelar</button>
         </div>
@@ -79,7 +80,6 @@
     </div>
   </main>
 
-  <!-- BOTTOM NAV (mobile) -->
   <nav class="bottom-nav">
     <a href="index.html" class="bottom-nav-item active"><span class="bn-icon">🍽️</span>Mesas</a>
     <a href="cozinha.html" class="bottom-nav-item"><span class="bn-icon">👨‍🍳</span>Cozinha</a>
@@ -89,5 +89,4 @@
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app.js"></script>
 </body>
-
 </html>
