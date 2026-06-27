@@ -16,7 +16,7 @@ import {
   collection, doc,
   getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy,
-  serverTimestamp, Timestamp, increment
+  serverTimestamp, Timestamp, increment, runTransaction
 } from "./firebase.js";
 
 // ============================================================
@@ -77,6 +77,16 @@ const TOTAL_MESAS = 12;
 // ============================================================
 // 2. UTILITÁRIOS
 // ============================================================
+
+// Escape de HTML — evita XSS ao injetar dados do Firestore via innerHTML
+function esc(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function fmtMoeda(v) {
   return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -216,19 +226,22 @@ async function migrarDelivery() {
 // ============================================================
 
 function initModalAddMesa() {
-  const btn = document.getElementById("btnAddMesa");
-  if (!btn) return;
-  btn.addEventListener("click", () => {
+  const abrirModal = () => {
     document.getElementById("modalAddMesa").classList.add("open");
     document.getElementById("addMesaStatus").textContent = "";
     document.getElementById("addMesaStatus").style.color = "var(--cinza-texto)";
-  });
+  };
+
+  // Botão desktop (dentro da stats-bar)
+  document.getElementById("btnAddMesa")?.addEventListener("click", abrirModal);
+  // FAB mobile (fora da stats-bar, fixo no canto)
+  document.getElementById("btnAddMesaFab")?.addEventListener("click", abrirModal);
+
   document.getElementById("btnCancelarAddMesa")?.addEventListener("click", () =>
     document.getElementById("modalAddMesa").classList.remove("open"));
   document.getElementById("btnAddRestaurante")?.addEventListener("click", () => adicionarMesa("restaurante"));
   document.getElementById("btnAddDelivery")?.addEventListener("click", () => adicionarMesa("delivery"));
 
-  // Fecha ao clicar no overlay
   document.getElementById("modalAddMesa")?.addEventListener("click", e => {
     if (e.target === e.currentTarget) e.currentTarget.classList.remove("open");
   });
@@ -239,7 +252,7 @@ async function adicionarMesa(tipo) {
   if (status) { status.style.color = "var(--cinza-texto)"; status.textContent = "Criando mesa..."; }
   try {
     const snap = await getDocs(collection(db, "mesas"));
-    const prox = Math.max(...snap.docs.map(d => d.data().numero || 0), 0) + 1;
+    const prox = snap.docs.reduce((max, d) => Math.max(max, d.data().numero || 0), 0) + 1;
     await setDoc(doc(db, "mesas", `mesa_${prox}`), {
       numero: prox, tipo, status: "livre", abertaEm: null,
       total: 0, pedidosCount: 0, historicoPedidos: [], entrega: { local: "", taxa: 0 }
@@ -299,7 +312,7 @@ function _htmlCard(mesa, statusLabel) {
         <div class="mesa-meta">
           ${mesa.abertaEm ? `<span>Aberta: ${fmtHora(mesa.abertaEm)}</span>` : `<span>${isDelivery ? "Delivery livre" : "Mesa livre"}</span>`}
           ${mesa.pedidosCount ? `<span>${mesa.pedidosCount} pedido(s)</span>` : ""}
-          ${isDelivery && mesa.entrega?.local ? `<span>📍 ${mesa.entrega.local}</span>` : ""}
+          ${isDelivery && mesa.entrega?.local ? `<span>📍 ${esc(mesa.entrega.local)}</span>` : ""}
         </div>
       </div>
     </div>
@@ -471,7 +484,7 @@ function renderCategorias() {
   const cats = ["Todos", ...new Set(estadoMesa.produtos.map(p => p.categoria))];
   const container = document.getElementById("categoriasTabs");
   container.innerHTML = cats.map(c => `
-    <button class="cat-btn ${c === estadoMesa.categoriaAtiva ? "active" : ""}" data-cat="${c}">${c}</button>
+    <button class="cat-btn ${c === estadoMesa.categoriaAtiva ? "active" : ""}" data-cat="${esc(c)}">${esc(c)}</button>
   `).join("");
 
   container.querySelectorAll(".cat-btn").forEach(btn => {
@@ -497,13 +510,13 @@ function renderProdutos() {
   }
 
   container.innerHTML = lista.map(p => `
-    <div class="produto-card" data-id="${p.id}">
+    <div class="produto-card" data-id="${esc(p.id)}">
       <div class="produto-info">
-        <span class="produto-nome">${p.nome}</span>
-        <span class="produto-cat-tag">${p.categoria}</span>
+        <span class="produto-nome">${esc(p.nome)}</span>
+        <span class="produto-cat-tag">${esc(p.categoria)}</span>
       </div>
       <span class="produto-preco">${fmtMoeda(p.preco)}</span>
-      <button class="produto-add-btn" data-id="${p.id}" title="Adicionar ao pedido">+</button>
+      <button class="produto-add-btn" data-id="${esc(p.id)}" title="Adicionar ao pedido">+</button>
     </div>
   `).join("");
 
@@ -538,6 +551,13 @@ function renderPedidoAtual() {
   document.getElementById("pedidoTotal").textContent = fmtMoeda(totalPedido);
   document.getElementById("btnConfirmarPedido").disabled = itens.length === 0;
 
+  // Atualiza badge da aba mobile
+  const badge = document.getElementById("pedidoBadge");
+  if (badge) {
+    badge.textContent = itens.length > 0 ? ` ${itens.length}` : "";
+    badge.style.display = itens.length > 0 ? "" : "none";
+  }
+
   if (!itens.length) {
     container.innerHTML = `
       <div class="pedido-vazio">
@@ -550,7 +570,7 @@ function renderPedidoAtual() {
   container.innerHTML = itens.map((item, idx) => `
     <div class="pedido-item" data-idx="${idx}">
       <div class="pedido-item-header">
-        <span class="pedido-item-nome">${item.nome}</span>
+        <span class="pedido-item-nome">${esc(item.nome)}</span>
         <span class="pedido-item-subtotal">${fmtMoeda(item.preco * item.qty)}</span>
         <button class="remove-item-btn" data-idx="${idx}" title="Remover item">✕</button>
       </div>
@@ -560,7 +580,7 @@ function renderPedidoAtual() {
         <button class="qty-btn" data-idx="${idx}" data-acao="inc">+</button>
         <span style="font-size:0.68rem;color:var(--cinza-texto);margin-left:0.3rem">${fmtMoeda(item.preco)} un.</span>
       </div>
-      <textarea class="obs-input" placeholder="Observação (ex: sem cream cheese)" data-idx="${idx}">${item.obs}</textarea>
+      <textarea class="obs-input" placeholder="Observação (ex: sem cream cheese)" data-idx="${idx}">${esc(item.obs)}</textarea>
     </div>
   `).join("");
 
@@ -731,26 +751,31 @@ async function confirmarPedido() {
       updatedAt: serverTimestamp()
     };
 
-    const pedidoRef = await addDoc(collection(db, "pedidos"), pedidoData);
-
+    // Usa runTransaction para evitar race condition quando dois dispositivos
+    // confirmam pedidos simultaneamente na mesma mesa
     const mesaRef = doc(db, "mesas", estadoMesa.mesaId);
-    const mesaSnap = await getDoc(mesaRef);
-    const mesaData = mesaSnap.data();
 
-    const novoHistorico = [...(mesaData.historicoPedidos || []), {
-      pedidoId: pedidoRef.id,
-      itens: pedidoData.itens,
-      total: totalPedido,
-      status: "Novo",
-      criadoEm: new Date().toISOString()
-    }];
-
-    await updateDoc(mesaRef, {
-      status: "ocupada",
-      abertaEm: mesaData.abertaEm || serverTimestamp(),
-      total: increment(totalPedido),
-      pedidosCount: increment(1),
-      historicoPedidos: novoHistorico
+    let pedidoRef;
+    await runTransaction(db, async tx => {
+      const mesaSnap = await tx.get(mesaRef);
+      const mesaData = mesaSnap.data() || {};
+      // Cria o pedido fora da transação (addDoc não suportado dentro), mas o histórico é atômico
+      pedidoRef = doc(collection(db, "pedidos")); // cria ref com ID gerado
+      const novoHistorico = [...(mesaData.historicoPedidos || []), {
+        pedidoId: pedidoRef.id,
+        itens: pedidoData.itens,
+        total: totalPedido,
+        status: "Novo",
+        criadoEm: new Date().toISOString()
+      }];
+      tx.set(pedidoRef, pedidoData);
+      tx.update(mesaRef, {
+        status: "ocupada",
+        abertaEm: mesaData.abertaEm || serverTimestamp(),
+        total: (mesaData.total || 0) + totalPedido,
+        pedidosCount: (mesaData.pedidosCount || 0) + 1,
+        historicoPedidos: novoHistorico
+      });
     });
 
     estadoMesa.pedidoAtual = [];
@@ -875,11 +900,11 @@ function renderConta() {
   container.innerHTML = historico.map((pedido, idx) => {
     const itemsHtml = (pedido.itens || []).map(item => `
       <div class="conta-item-linha">
-        <span class="conta-item-nome">${item.nome}</span>
+        <span class="conta-item-nome">${esc(item.nome)}</span>
         <span class="conta-item-qty">${item.qty}x</span>
         <span class="conta-item-val">${fmtMoeda(item.preco * item.qty)}</span>
       </div>
-      ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
+      ${item.obs ? `<div class="conta-item-obs">↳ ${esc(item.obs)}</div>` : ""}
     `).join("");
 
     const hora = pedido.criadoEm
@@ -1172,7 +1197,7 @@ function renderModalEditar() {
 
   container.innerHTML = itens.map((item, idx) => `
     <div class="editar-item-row" data-idx="${idx}">
-      <div class="editar-item-nome">${item.nome}</div>
+      <div class="editar-item-nome">${esc(item.nome)}</div>
       <div class="editar-item-controles">
         <button class="qty-btn editar-dec" data-idx="${idx}">−</button>
         <span class="qty-value">${item.qty}</span>
@@ -1180,7 +1205,7 @@ function renderModalEditar() {
         <span class="editar-item-preco">${fmtMoeda(item.preco * item.qty)}</span>
         <button class="remove-item-btn editar-remove" data-idx="${idx}">✕</button>
       </div>
-      ${item.obs ? `<div class="conta-item-obs">↳ ${item.obs}</div>` : ""}
+      ${item.obs ? `<div class="conta-item-obs">↳ ${esc(item.obs)}</div>` : ""}
     </div>
   `).join("");
 
@@ -1277,6 +1302,7 @@ function _bip() {
   } catch (e) {}
 }
 let _idsConhecidos = new Set();
+let _primeiraLeituraCozinha = true;
 
 function initCozinha() {
   iniciarRelogio();
@@ -1312,9 +1338,10 @@ function initCozinha() {
 
     let temNovo = false;
     dados.forEach(p => {
-      if (p.status === "Novo" && !_idsConhecidos.has(p.id)) temNovo = true;
+      if (!_primeiraLeituraCozinha && p.status === "Novo" && !_idsConhecidos.has(p.id)) temNovo = true;
       _idsConhecidos.add(p.id);
     });
+    _primeiraLeituraCozinha = false;
     if (temNovo) _bip();
 
     if (_throttleCozinha) return;
@@ -1327,9 +1354,9 @@ function initCozinha() {
       if (el) el.textContent = `${ativos.length} pedido(s) ativo(s)`;
     }, 200);
   });
-  window.addEventListener("pagehide", () => { _unsubCoz(); clearTimeout(_throttleCozinha); }, { once: true });
+  window.addEventListener("pagehide", () => { _unsubCoz(); clearTimeout(_throttleCozinha); clearInterval(_intervalTempo); }, { once: true });
 
-  setInterval(() => {
+  const _intervalTempo = setInterval(() => {
     document.querySelectorAll(".pedido-card-tempo[data-ts]").forEach(el => {
       const ts = parseInt(el.dataset.ts);
       if (ts) el.textContent = fmtTempo({ toDate: () => new Date(ts) });
@@ -1358,9 +1385,9 @@ function renderCozinha(pedidos) {
     const tsMs = pedido.createdAt?.toMillis ? pedido.createdAt.toMillis() : null;
     const itensHtml = (pedido.itens || []).map(item => `
       <div class="pedido-card-item">
-        <span class="pedido-card-item-qty">${item.qty}x</span>
-        <span class="pedido-card-item-nome">${item.nome}</span>
-        ${item.obs ? `<span class="pedido-card-item-obs">→ ${item.obs}</span>` : ""}
+        <span class="pedido-card-item-qty">${Number(item.qty)}x</span>
+        <span class="pedido-card-item-nome">${esc(item.nome)}</span>
+        ${item.obs ? `<span class="pedido-card-item-obs">→ ${esc(item.obs)}</span>` : ""}
       </div>
     `).join("");
 
@@ -1383,8 +1410,8 @@ function renderCozinha(pedidos) {
       <div class="pedido-card ${statusClass[pedido.status] || "status-novo"}" data-pedido-id="${pedido.id}">
         <div class="pedido-card-header">
           <div>
-            <div class="pedido-card-mesa">${pedido.mesaTipo === "delivery" ? "🛵 Delivery " + pedido.mesaNumero : "Mesa " + pedido.mesaNumero}</div>
-            <div><span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${pedido.status || "Novo"}</span></div>
+            <div class="pedido-card-mesa">${pedido.mesaTipo === "delivery" ? "🛵 Delivery " + Number(pedido.mesaNumero) : "Mesa " + Number(pedido.mesaNumero)}</div>
+            <div><span class="status-badge ${badgeClass[pedido.status] || "badge-novo"}">${esc(pedido.status || "Novo")}</span></div>
           </div>
           <div class="pedido-card-meta">
             <span class="pedido-card-hora">${pedido.createdAt ? fmtHora(pedido.createdAt) : "—"}</span>
@@ -1442,7 +1469,8 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
       if (mesaSnap.exists()) {
         const mesaData = mesaSnap.data();
         const historico = (mesaData.historicoPedidos || []).filter(p => p.pedidoId !== pedidoId);
-        const novoTotal = Math.max(0, (mesaData.total || 0) - totalPedido);
+        // Recalcula total a partir do histórico para evitar dessincronia
+        const novoTotal = historico.reduce((a, p) => a + (p.total || 0), 0);
         const novoStatus = historico.length === 0 ? "livre" : mesaData.status;
         await updateDoc(mesaRef, {
           historicoPedidos: historico,
@@ -1466,9 +1494,35 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 let unsubRelatorio = null;
 let vendasAtuais = [];
 
-const _SR = atob("MDg2NDMx");
+// ── Autenticação do relatório ─────────────────────────────
+// SEGURANÇA: A senha NÃO é armazenada no client-side.
+// Configure o hash SHA-256 da senha como atributo data-hash
+// no <html> ou em uma <meta name="report-hash"> do relatorio.html.
+// Exemplo de geração (Node.js):
+//   require('crypto').createHash('sha256').update('suasenha').digest('hex')
+// Adicione no relatorio.html:
+//   <meta name="report-hash" content="SEU_HASH_SHA256_AQUI">
+
 let _autenticado = false;
-function fazerLogin(s) { if (s === _SR) { _autenticado = true; return true; } return false; }
+
+async function _hashSenha(senha) {
+  const encoded = new TextEncoder().encode(senha);
+  const buf = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function fazerLogin(senha) {
+  const metaEl = document.querySelector('meta[name="report-hash"]');
+  const hashEsperado = metaEl?.content?.trim();
+  if (!hashEsperado) {
+    console.error("[Mikami] report-hash não configurado no relatorio.html");
+    return false;
+  }
+  const hashDigitado = await _hashSenha(senha);
+  if (hashDigitado === hashEsperado) { _autenticado = true; return true; }
+  return false;
+}
+
 function fazerLogout() { _autenticado = false; window.location.reload(); }
 
 function mostrarTelaLogin() {
@@ -1485,8 +1539,8 @@ function mostrarTelaLogin() {
       <div class="login-erro" id="loginErro"></div>
     </div>`;
   const inp = document.getElementById("senhaInput"), btn = document.getElementById("btnLogin"), err = document.getElementById("loginErro");
-  function t() {
-    if (fazerLogin(inp.value.trim())) { mostrarConteudoRelatorio(); }
+  async function t() {
+    if (await fazerLogin(inp.value.trim())) { mostrarConteudoRelatorio(); }
     else { err.textContent = "Senha incorreta."; inp.value = ""; inp.focus(); setTimeout(() => { err.textContent = ""; }, 2000); }
   }
   btn.addEventListener("click", t);
@@ -1583,7 +1637,7 @@ function renderRelatorio(vendas) {
       ? `<span class="resumo-label">Nenhum pagamento</span>`
       : Object.entries(porPag).map(([met, val]) => `
         <div class="pag-linha">
-          <span class="pag-metodo">${met}</span>
+          <span class="pag-metodo">${esc(met)}</span>
           <span class="pag-valor">${fmtMoeda(val)}</span>
         </div>`).join("");
   }
@@ -1609,10 +1663,10 @@ function renderRelatorio(vendas) {
       else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
     });
 
-    const itensHtml = itensAgrupados.map(item => `
+      const itensHtml = itensAgrupados.map(item => `
       <div class="venda-item-linha">
-        <span class="venda-item-nome">${item.nome}</span>
-        <span class="venda-item-qty">${item.qty}x</span>
+        <span class="venda-item-nome">${esc(item.nome)}</span>
+        <span class="venda-item-qty">${Number(item.qty)}x</span>
         <span class="venda-item-val">${fmtMoeda(item.subtotal)}</span>
       </div>
     `).join("");
@@ -1620,9 +1674,9 @@ function renderRelatorio(vendas) {
     return `
       <div class="venda-card">
         <div class="venda-card-header">
-          <span class="venda-mesa">Mesa ${venda.mesaNumero}</span>
+          <span class="venda-mesa">Mesa ${esc(String(venda.mesaNumero))}</span>
           <span class="venda-hora">${fmtDataHora(venda.fechadoEm)}</span>
-          <span class="venda-pagamento">${venda.formaPagamento || "—"}</span>
+          <span class="venda-pagamento">${esc(venda.formaPagamento || "—")}</span>
           <span class="venda-total-valor">${fmtMoeda(venda.total || 0)}</span>
           <button class="btn-excluir-venda" data-venda-id="${venda.id}" title="Excluir registro">🗑 Excluir</button>
         </div>
@@ -1790,44 +1844,40 @@ function initFaturamento() {
 function renderFaturamento(vendas) {
   const agora = new Date();
 
+  // Pré-agrupa vendas por dateString para evitar O(n²)
+  const porData = new Map();
+  const porMes  = new Map();
+  vendas.forEach(v => {
+    if (!v.fechadoEm) return;
+    const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+    const dataKey = vd.toDateString();
+    const mesKey  = `${vd.getFullYear()}-${vd.getMonth()}`;
+    porData.set(dataKey, (porData.get(dataKey) || 0) + (v.total || 0));
+    porMes.set(mesKey,  (porMes.get(mesKey)  || 0) + (v.total || 0));
+  });
+
   const diasSemana = [], totalSemana = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
     diasSemana.push(d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" }));
-    totalSemana.push(parseFloat(vendas.filter(v => {
-      if (!v.fechadoEm) return false;
-      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-      return vd.toDateString() === d.toDateString();
-    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
+    totalSemana.push(parseFloat((porData.get(d.toDateString()) || 0).toFixed(2)));
   }
 
   const diasMes = [], totalMes = [];
   for (let i = 29; i >= 0; i--) {
     const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
     diasMes.push(d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
-    totalMes.push(parseFloat(vendas.filter(v => {
-      if (!v.fechadoEm) return false;
-      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-      return vd.toDateString() === d.toDateString();
-    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
+    totalMes.push(parseFloat((porData.get(d.toDateString()) || 0).toFixed(2)));
   }
 
   const mesesLabel = [], totalAnual = [];
   for (let i = 11; i >= 0; i--) {
     const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
     mesesLabel.push(d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }));
-    totalAnual.push(parseFloat(vendas.filter(v => {
-      if (!v.fechadoEm) return false;
-      const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-      return vd.getFullYear() === d.getFullYear() && vd.getMonth() === d.getMonth();
-    }).reduce((a, v) => a + (v.total || 0), 0).toFixed(2)));
+    totalAnual.push(parseFloat((porMes.get(`${d.getFullYear()}-${d.getMonth()}`) || 0).toFixed(2)));
   }
 
-  const totalHoje = vendas.filter(v => {
-    if (!v.fechadoEm) return false;
-    const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
-    return vd.toDateString() === agora.toDateString();
-  }).reduce((a, v) => a + (v.total || 0), 0);
+  const totalHoje = porData.get(agora.toDateString()) || 0;
 
   const el = id => document.getElementById(id);
   if (el("fatHoje")) el("fatHoje").textContent = fmtMoeda(totalHoje);

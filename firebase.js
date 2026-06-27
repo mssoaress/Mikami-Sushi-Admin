@@ -20,7 +20,8 @@ import {
   orderBy,
   serverTimestamp,
   Timestamp,
-  increment
+  increment,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -51,5 +52,6 @@ export {
   orderBy,
   serverTimestamp,
   Timestamp,
-  increment
+  increment,
+  runTransaction
 };

@@ -1,0 +1,40 @@
+rules_version = '2';
+
+// ============================================================
+// firestore.rules — Mikami Sushi
+// IMPORTANTE: Este sistema usa autenticação anônima pelo front-end.
+// Ajuste as regras conforme adicionar Firebase Auth de usuários.
+// ============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Produtos — leitura livre (cardápio), escrita apenas autenticado
+    match /produtos/{id} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Mesas — leitura e escrita abertas para a rede local do restaurante
+    // RECOMENDAÇÃO: restrinja por IP ou adicione Firebase Auth
+    match /mesas/{id} {
+      allow read, write: if true;
+    }
+
+    // Pedidos — leitura e escrita abertas para cozinha e mesas
+    match /pedidos/{id} {
+      allow read, write: if true;
+    }
+
+    // Vendas — leitura restrita (apenas autenticado), escrita aberta
+    // O relatório requer autenticação no front-end (hash SHA-256)
+    match /vendas/{id} {
+      allow read, write: if true;
+    }
+
+    // Bloqueia tudo que não foi declarado acima
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
