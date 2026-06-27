@@ -33,42 +33,42 @@
     <div class="header-clock" id="headerClock"></div>
   </header>
 
+  <!-- Stats bar fora do main para não conflitar com overflow do mesas-main -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value" id="statLivres">0</span>
+      <span class="stat-label">Livres</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statOcupadas">0</span>
+      <span class="stat-label">Ocupadas</span>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="statAguardando">0</span>
+      <span class="stat-label">Aguardando</span>
+    </div>
+    <div class="stat-divider"></div>
+    <button class="btn-add-mesa" id="btnAddMesa" title="Adicionar mesa">＋</button>
+  </div>
+
+  <div class="modal-overlay" id="modalAddMesa">
+    <div class="modal-box" style="max-width:320px">
+      <h3>Adicionar Mesa</h3>
+      <p>Selecione o tipo:</p>
+      <div class="pagamento-opcoes" style="margin-top:0.75rem">
+        <button class="pagamento-btn" id="btnAddRestaurante">🍽️ Restaurante</button>
+        <button class="pagamento-btn" id="btnAddDelivery">🛵 Delivery</button>
+      </div>
+      <div id="addMesaStatus" style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem"></div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarAddMesa">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <main class="mesas-main">
-    <div class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-value" id="statLivres">0</span>
-        <span class="stat-label">Livres</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value" id="statOcupadas">0</span>
-        <span class="stat-label">Ocupadas</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-value" id="statAguardando">0</span>
-        <span class="stat-label">Aguardando</span>
-      </div>
-      <div class="stat-divider"></div>
-      <!-- desktop: botão fica aqui na stats-bar -->
-      <button class="btn-add-mesa" id="btnAddMesa" title="Adicionar mesa">＋</button>
-    </div>
-
-    <div class="modal-overlay" id="modalAddMesa">
-      <div class="modal-box" style="max-width:320px">
-        <h3>Adicionar Mesa</h3>
-        <p>Selecione o tipo:</p>
-        <div class="pagamento-opcoes" style="margin-top:0.75rem">
-          <button class="pagamento-btn" id="btnAddRestaurante">🍽️ Restaurante</button>
-          <button class="pagamento-btn" id="btnAddDelivery">🛵 Delivery</button>
-        </div>
-        <div id="addMesaStatus" style="text-align:center;font-size:0.8rem;color:var(--cinza-texto);margin-top:0.75rem;min-height:1.2rem"></div>
-        <div class="modal-acoes">
-          <button class="btn-secondary" id="btnCancelarAddMesa">Cancelar</button>
-        </div>
-      </div>
-    </div>
-
     <div class="mesas-grid" id="mesasGrid">
       <div class="loading-mesas">
         <div class="loading-spinner"></div>
@@ -77,13 +77,13 @@
     </div>
   </main>
 
-  <!-- FAB mobile: botão + fora da stats-bar, fixo no canto -->
+  <!-- FAB mobile -->
   <button class="btn-add-mesa btn-add-mesa-fab" id="btnAddMesaFab" title="Adicionar mesa" aria-label="Adicionar mesa">＋</button>
 
   <nav class="bottom-nav">
-    <a href="index.html" class="bottom-nav-item active"><span class="bn-icon">🍽️</span>Mesas</a>
-    <a href="cozinha.html" class="bottom-nav-item"><span class="bn-icon">👨‍🍳</span>Cozinha</a>
-    <a href="relatorio.html" class="bottom-nav-item"><span class="bn-icon">📋</span>Relatório</a>
+    <a href="index.html" class="bottom-nav-item active">Mesas</a>
+    <a href="cozinha.html" class="bottom-nav-item">Cozinha</a>
+    <a href="relatorio.html" class="bottom-nav-item">Relatório</a>
   </nav>
 
   <script type="module" src="firebase.js"></script>

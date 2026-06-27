@@ -216,7 +216,7 @@ body.page-relatorio .header-brand {
 }
 
 /* ================================================================
-   BOTTOM NAV
+   BOTTOM NAV — botões pill sem ícone, estilo minimalista
    ================================================================ */
 .bottom-nav {
   display: none;
@@ -224,46 +224,49 @@ body.page-relatorio .header-brand {
   bottom: 0; left: 0; right: 0;
   height: calc(var(--bottom-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
   z-index: 200;
   background: rgba(8,8,8,0.98);
   border-top: var(--linha-ouro);
   flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
 
 .bottom-nav-item {
   flex: 1;
+  max-width: 120px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.14rem;
-  padding: 0.3rem 0;
+  padding: 0.48rem 0.5rem;
   color: var(--cinza-texto);
   font-family: var(--font-display);
-  font-size: 0.53rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  transition: color var(--t-fast);
+  transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
-  position: relative;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  min-height: 36px;
 }
 
-.bottom-nav-item.active { color: var(--ouro-claro); }
+.bottom-nav-item:hover { color: var(--branco); }
 
-.bottom-nav-item.active::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 25%; right: 25%;
-  height: 2px;
-  background: var(--ouro);
-  border-radius: 0 0 3px 3px;
+.bottom-nav-item.active {
+  color: var(--ouro-claro);
+  background: var(--ouro-bg);
+  border-color: var(--ouro-borda);
 }
 
-.bn-icon { font-size: 1.2rem; line-height: 1; }
+.bn-icon { display: none; }
 
 /* ================================================================
    BACK BTN
@@ -2308,6 +2311,7 @@ body.page-relatorio { padding-top: var(--header-h); }
 @media (max-width: 768px) {
   :root {
     --mob-header:   50px;
+    --mob-stats:    54px;
     --mob-abas:     48px;  /* só página mesa */
     --mob-filtros:  46px;  /* só página cozinha */
     --mob-bottom:   calc(var(--bottom-h) + var(--safe-bottom));
@@ -2402,15 +2406,16 @@ body.page-relatorio { padding-top: var(--header-h); }
      PÁGINA MESAS
      ================================================================ */
 
-  /* Stats bar — fixed, respeitando safe area lateral */
+  /* Stats bar — fixed abaixo do header */
   .stats-bar {
     top: var(--mob-header);
-    height: auto;
-    min-height: 56px;
-    padding: 0.52rem max(1rem, env(safe-area-inset-right)) 0.52rem max(1rem, env(safe-area-inset-left));
+    height: var(--mob-stats);
+    min-height: var(--mob-stats);
+    padding: 0 max(0.9rem, env(safe-area-inset-right)) 0 max(0.9rem, env(safe-area-inset-left));
     flex-wrap: nowrap;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0;
+    overflow-x: hidden;
   }
 
   /* FAB mobile visível */
@@ -2442,8 +2447,7 @@ body.page-relatorio { padding-top: var(--header-h); }
 
   .mesas-main {
     position: fixed;
-    /* stats-bar agora tem altura auto — usa variável dinâmica */
-    top: calc(var(--mob-header) + 56px);
+    top: calc(var(--mob-header) + var(--mob-stats));
     left: 0; right: 0;
     bottom: var(--mob-bottom);
     overflow-y: auto;
