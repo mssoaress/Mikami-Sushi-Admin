@@ -1862,13 +1862,27 @@ body.page-relatorio { padding-top: var(--header-h); }
   padding: 0.88rem 0.95rem;
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
-  transition: border-color var(--t-fast);
+  gap: 0.3rem;
+  transition: border-color var(--t-fast), transform var(--t-fast);
 }
 
-.resumo-card:hover { border-color: var(--ouro-borda); }
+.resumo-card:hover { border-color: var(--ouro-borda); transform: translateY(-1px); }
 
-.resumo-icon { font-size: 1rem; }
+.resumo-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.resumo-icon-badge-r { background: var(--vermelho-bg); }
+.resumo-icon-badge-v { background: var(--verde-bg); }
+.resumo-icon-badge-o { background: var(--ouro-bg); }
+.resumo-icon-badge-a { background: var(--azul-bg); }
 
 .resumo-valor {
   font-family: var(--font-display);
@@ -1887,45 +1901,183 @@ body.page-relatorio { padding-top: var(--header-h); }
   font-weight: 600;
 }
 
-.resumo-pagamentos { min-width: 174px; }
+.pagamentos-detalhe-wrap {
+  margin: 0 0 1.6rem;
+  background: var(--preto-card);
+  border: 1px solid var(--preto-borda);
+  border-left: 2px solid var(--azul-borda);
+  border-radius: var(--raio-lg);
+  padding: 1.2rem 1.4rem;
+  max-width: 960px;
+}
 
-.pagamentos-breakdown { display: flex; flex-direction: column; gap: 0.18rem; margin-top: 0.18rem; }
+.pagamentos-detalhe-titulo {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--cinza-claro);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
 
-.pag-linha { display: flex; justify-content: space-between; font-size: 0.7rem; }
-.pag-metodo { color: var(--cinza-texto); }
-.pag-valor  { font-family: var(--font-display); font-weight: 700; color: var(--branco); }
+.pagamentos-breakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 0.55rem;
+}
 
-.relatorio-filtros {
+.pag-linha {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.5rem 0.7rem;
+  transition: border-color var(--t-fast);
+}
+
+.pag-linha:hover { border-color: var(--ouro-borda); }
+
+.pag-metodo {
+  font-size: 0.72rem;
+  color: var(--cinza-claro);
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.pag-valor {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--branco);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Barra de período (dia / semana / mês / ano / personalizado) ── */
+.periodo-bar {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.7rem;
   padding: 0.58rem 1.4rem;
   border-bottom: 1px solid var(--preto-borda);
   flex-wrap: wrap;
 }
 
-.relatorio-filtros label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--cinza-texto);
-  font-weight: 600;
-}
-
-.relatorio-filtros input[type="date"] {
+.periodo-tipos {
+  display: flex;
+  gap: 0.22rem;
   background: var(--cinza-escuro);
   border: 1px solid var(--preto-borda);
   border-radius: var(--raio);
-  padding: 0.34rem 0.66rem;
+  padding: 0.2rem;
+}
+
+.periodo-tipo-btn {
+  background: transparent;
+  border: none;
+  color: var(--cinza-texto);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.32rem 0.62rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+
+.periodo-tipo-btn:hover { color: var(--branco); }
+
+.periodo-tipo-btn.active {
+  background: var(--vermelho);
   color: var(--branco);
+}
+
+.periodo-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.periodo-nav.periodo-nav-oculto { display: none; }
+
+.periodo-nav-btn {
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  color: var(--branco);
+  width: 28px;
+  height: 28px;
+  border-radius: var(--raio);
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t-fast);
+}
+
+.periodo-nav-btn:hover { background: var(--cinza-medio); border-color: var(--ouro-borda); }
+
+.periodo-label {
+  font-family: var(--font-display);
   font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--branco);
+  min-width: 110px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.periodo-hoje-btn {
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  color: var(--cinza-claro);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.3rem 0.56rem;
+  border-radius: var(--raio);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+
+.periodo-hoje-btn:hover { background: var(--cinza-medio); color: var(--branco); }
+
+.periodo-custom {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.periodo-custom.periodo-custom-ativo { display: flex; }
+
+.periodo-custom input[type="date"] {
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.34rem 0.6rem;
+  color: var(--branco);
+  font-size: 0.8rem;
   color-scheme: dark;
-  flex: 1;
   min-width: 128px;
   transition: border-color var(--t-fast);
 }
 
-.relatorio-filtros input[type="date"]:focus { border-color: var(--vermelho); }
+.periodo-custom input[type="date"]:focus { border-color: var(--vermelho); }
+
+.periodo-custom-sep { font-size: 0.72rem; color: var(--cinza-texto); }
+
+.periodo-acoes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
 
 .btn-imprimir-relatorio {
   background: var(--cinza-escuro);
@@ -1941,6 +2093,29 @@ body.page-relatorio { padding-top: var(--header-h); }
 .btn-imprimir-relatorio:hover { background: var(--cinza-medio); }
 
 .relatorio-main { padding: 1.2rem 1.4rem 2rem; }
+
+.vendas-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+  max-width: 960px;
+}
+
+.vendas-header-titulo {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--branco);
+}
+
+.vendas-header-count {
+  font-size: 0.7rem;
+  color: var(--cinza-texto);
+  font-weight: 600;
+  white-space: nowrap;
+}
 
 .vendas-lista {
   display: flex;
@@ -2003,16 +2178,6 @@ body.page-relatorio { padding-top: var(--header-h); }
 .venda-item-nome { flex: 1; }
 .venda-item-qty  { margin-right: 1rem; }
 .venda-item-val  { font-family: var(--font-display); color: var(--branco); font-weight: 500; }
-
-.btn-filtro-rapido {
-  background: var(--cinza-escuro);
-  color: var(--cinza-texto);
-  border: 1px solid var(--preto-borda);
-  transition: all var(--t-fast);
-  white-space: nowrap;
-}
-
-.btn-filtro-rapido:hover { background: var(--cinza-medio); color: var(--branco); }
 
 /* ── Gráfico de produtos mais vendidos ── */
 .chart-itens-dia-wrap {
@@ -2726,15 +2891,15 @@ body.page-relatorio { padding-top: var(--header-h); }
   }
 
   .resumo-card   { min-width: 0; padding: 0.65rem 0.74rem; }
-  .resumo-icon   { font-size: 0.92rem; }
+  .resumo-icon-badge { width: 28px; height: 28px; font-size: 0.86rem; }
   .resumo-valor  { font-size: 1rem; }
   .resumo-label  { font-size: 0.56rem; }
-  .resumo-pagamentos { grid-column: 1 / -1; }
+  .resumo-card-ticket { grid-column: 1 / -1; }
 
-  /* Filtros de data com scroll horizontal suave */
-  .relatorio-filtros {
+  /* Barra de período com scroll horizontal suave */
+  .periodo-bar {
     padding: 0.52rem max(0.82rem, env(safe-area-inset-right)) 0.52rem max(0.82rem, env(safe-area-inset-left));
-    gap: 0.32rem;
+    gap: 0.42rem;
     overflow-x: auto;
     flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
@@ -2743,27 +2908,29 @@ body.page-relatorio { padding-top: var(--header-h); }
     scroll-snap-type: x proximity;
   }
 
-  .relatorio-filtros::-webkit-scrollbar { display: none; }
-  .relatorio-filtros label { display: none; }
+  .periodo-bar::-webkit-scrollbar { display: none; }
 
-  .relatorio-filtros input[type="date"] {
-    flex: 0 0 auto;
-    font-size: 16px; /* evita zoom iOS */
-    padding: 0.3rem 0.5rem;
-    min-width: 120px;
+  .periodo-tipos,
+  .periodo-nav,
+  .periodo-custom,
+  .periodo-acoes {
+    flex-shrink: 0;
     scroll-snap-align: start;
   }
 
-  .relatorio-filtros .btn-secondary,
-  .relatorio-filtros .btn-filtro-rapido,
-  .relatorio-filtros .btn-imprimir-relatorio,
-  .relatorio-filtros .btn-logout {
-    flex-shrink: 0;
-    white-space: nowrap;
+  .periodo-acoes { margin-left: 0; }
+
+  .periodo-custom input[type="date"] {
+    font-size: 16px; /* evita zoom iOS */
+    padding: 0.3rem 0.5rem;
+    min-width: 112px;
+  }
+
+  .periodo-bar .btn-imprimir-relatorio,
+  .periodo-bar .btn-logout {
     font-size: 0.7rem;
     padding: 0.28rem 0.54rem;
     min-height: 34px;
-    scroll-snap-align: start;
   }
 
   .relatorio-main {
@@ -2808,6 +2975,14 @@ body.page-relatorio { padding-top: var(--header-h); }
   .chart-itens-dia-chart-wrap { height: 200px; }
   .chart-itens-dia-titulo { font-size: 0.72rem; margin-bottom: 0.85rem; }
   .cid-linha { grid-template-columns: 1.1rem 1fr 44px 1.9rem 2.2rem; gap: 0.32rem; font-size: 0.68rem; }
+
+  /* Faturamento por forma de pagamento */
+  .pagamentos-detalhe-wrap { margin: 0 0 1.2rem; padding: 0.9rem max(0.82rem, env(safe-area-inset-right)) 0.9rem max(0.82rem, env(safe-area-inset-left)); }
+  .pagamentos-detalhe-titulo { font-size: 0.72rem; margin-bottom: 0.85rem; }
+  .pagamentos-breakdown { grid-template-columns: 1fr; gap: 0.42rem; }
+  .pag-linha { padding: 0.46rem 0.6rem; }
+  .pag-metodo { font-size: 0.7rem; }
+  .pag-valor { font-size: 0.78rem; }
 
   /* Faturamento */
   .fat-resumo {

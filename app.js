@@ -1494,6 +1494,13 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 let unsubRelatorio = null;
 let vendasAtuais = [];
 
+// ── Estado do período selecionado ─────────────────────────
+let _periodoTipo = "dia";       // "dia" | "semana" | "mes" | "ano" | "personalizado"
+let _periodoRef = new Date();   // data de referência para dia/semana/mes/ano
+let _periodoCustomIni = null;   // "YYYY-MM-DD" (personalizado)
+let _periodoCustomFim = null;   // "YYYY-MM-DD" (personalizado)
+let _periodoLabelAtual = "";    // label textual do período atual (usado na impressão)
+
 // ── Autenticação do relatório ─────────────────────────────
 // SEGURANÇA: A senha NÃO é armazenada no client-side.
 // Configure o hash SHA-256 da senha como atributo data-hash
@@ -1561,42 +1568,136 @@ function initRelatorio() {
   if (_autenticado) { mostrarConteudoRelatorio(); } else { mostrarTelaLogin(); }
 }
 
+function _dataStr(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function _inicioDia(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function _fimDia(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
+
+// ── Calcula o intervalo [inicio, fim] e o label de exibição para um tipo de período ──
+function _calcularRangePeriodo(tipo, ref) {
+  const r = new Date(ref);
+
+  if (tipo === "semana") {
+    const inicioSemana = new Date(r); inicioSemana.setDate(r.getDate() - r.getDay());
+    const fimSemana = new Date(inicioSemana); fimSemana.setDate(inicioSemana.getDate() + 6);
+    const fmt = d => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    return { inicio: _inicioDia(inicioSemana), fim: _fimDia(fimSemana), label: `${fmt(inicioSemana)} – ${fmt(fimSemana)}` };
+  }
+  if (tipo === "mes") {
+    const inicioMes = new Date(r.getFullYear(), r.getMonth(), 1);
+    const fimMes = new Date(r.getFullYear(), r.getMonth() + 1, 0);
+    const label = inicioMes.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return { inicio: _inicioDia(inicioMes), fim: _fimDia(fimMes), label: label.charAt(0).toUpperCase() + label.slice(1) };
+  }
+  if (tipo === "ano") {
+    const inicioAno = new Date(r.getFullYear(), 0, 1);
+    const fimAno = new Date(r.getFullYear(), 11, 31);
+    return { inicio: _inicioDia(inicioAno), fim: _fimDia(fimAno), label: String(r.getFullYear()) };
+  }
+  // "dia" (padrão)
+  const labelDia = r.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  return { inicio: _inicioDia(r), fim: _fimDia(r), label: labelDia.replace(".", "").replace(/^\w/, c => c.toUpperCase()) };
+}
+
+// ── Desloca a referência do período em -1/+1 unidade (não usado no personalizado) ──
+function _deslocarPeriodo(tipo, ref, direcao) {
+  const r = new Date(ref);
+  if (tipo === "semana") r.setDate(r.getDate() + direcao * 7);
+  else if (tipo === "mes") r.setMonth(r.getMonth() + direcao);
+  else if (tipo === "ano") r.setFullYear(r.getFullYear() + direcao);
+  else r.setDate(r.getDate() + direcao);
+  return r;
+}
+
 function _iniciarConteudoRelatorio() {
-  const _h = new Date();
-  const _dataStr = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const hoje = _dataStr(_h);
-  const inputData = document.getElementById("filtroData");
-  if (!inputData) return;
-  inputData.value = hoje;
+  _periodoTipo = "dia";
+  _periodoRef = new Date();
+  _periodoCustomIni = null;
+  _periodoCustomFim = null;
 
-  function _setData(str) { inputData.value = str; escutarVendas(str); }
+  const tipoBtns = document.querySelectorAll(".periodo-tipo-btn");
+  const nav = document.getElementById("periodoNav");
+  const custom = document.getElementById("periodoCustom");
+  const iniInput = document.getElementById("customDataIni");
+  const fimInput = document.getElementById("customDataFim");
 
-  inputData.addEventListener("change", () => escutarVendas(inputData.value));
-  document.getElementById("btnHoje")?.addEventListener("click", () => _setData(hoje));
-  document.getElementById("btnOntem")?.addEventListener("click", () => {
-    const d = new Date(_h); d.setDate(d.getDate() - 1); _setData(_dataStr(d));
+  tipoBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tipo = btn.dataset.tipo;
+      if (tipo === _periodoTipo) return;
+      tipoBtns.forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      _periodoTipo = tipo;
+
+      if (tipo === "personalizado") {
+        nav?.classList.add("periodo-nav-oculto");
+        custom?.classList.add("periodo-custom-ativo");
+        const hoje = _dataStr(new Date());
+        if (iniInput && !iniInput.value) iniInput.value = hoje;
+        if (fimInput && !fimInput.value) fimInput.value = hoje;
+        if (iniInput?.value && fimInput?.value) _aplicarPeriodoCustom();
+      } else {
+        nav?.classList.remove("periodo-nav-oculto");
+        custom?.classList.remove("periodo-custom-ativo");
+        _periodoRef = new Date();
+        _aplicarPeriodo();
+      }
+    });
   });
-  document.getElementById("btnAnteOntem")?.addEventListener("click", () => {
-    const d = new Date(_h); d.setDate(d.getDate() - 2); _setData(_dataStr(d));
+
+  document.getElementById("btnPeriodoAnterior")?.addEventListener("click", () => {
+    _periodoRef = _deslocarPeriodo(_periodoTipo, _periodoRef, -1);
+    _aplicarPeriodo();
   });
-  document.getElementById("btn7dias")?.addEventListener("click", () => {
-    const d = new Date(_h); d.setDate(d.getDate() - 6); _setData(_dataStr(d));
+  document.getElementById("btnPeriodoProximo")?.addEventListener("click", () => {
+    _periodoRef = _deslocarPeriodo(_periodoTipo, _periodoRef, 1);
+    _aplicarPeriodo();
   });
+  document.getElementById("btnPeriodoHoje")?.addEventListener("click", () => {
+    _periodoRef = new Date();
+    _aplicarPeriodo();
+  });
+  document.getElementById("btnAplicarCustom")?.addEventListener("click", _aplicarPeriodoCustom);
+
   document.getElementById("btnImprimirRelatorio")?.addEventListener("click", () => {
-    imprimirRelatorio(inputData.value, vendasAtuais);
+    imprimirRelatorio(_periodoLabelAtual, vendasAtuais);
   });
 
-  escutarVendas(hoje);
+  _aplicarPeriodo();
   initFaturamento();
   window.addEventListener("pagehide", () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
 }
 
-function escutarVendas(dataStr) {
-  if (unsubRelatorio) { unsubRelatorio(); unsubRelatorio = null; }
+function _aplicarPeriodoCustom() {
+  const ini = document.getElementById("customDataIni")?.value;
+  const fim = document.getElementById("customDataFim")?.value;
+  if (!ini || !fim) { toast("Selecione as duas datas.", "info"); return; }
+  if (ini > fim) { toast("A data inicial deve ser anterior à final.", "erro"); return; }
+  _periodoCustomIni = ini;
+  _periodoCustomFim = fim;
 
-  const [ano, mes, dia] = dataStr.split("-").map(Number);
-  const inicio = new Date(ano, mes - 1, dia, 0, 0, 0);
-  const fim = new Date(ano, mes - 1, dia, 23, 59, 59);
+  const [ai, mi, di] = ini.split("-").map(Number);
+  const [af, mf, df] = fim.split("-").map(Number);
+  const inicio = _inicioDia(new Date(ai, mi - 1, di));
+  const fimData = _fimDia(new Date(af, mf - 1, df));
+  const fmt = s => { const [a, m, d] = s.split("-"); return `${d}/${m}/${a}`; };
+  _periodoLabelAtual = ini === fim ? fmt(ini) : `${fmt(ini)} – ${fmt(fim)}`;
+
+  const labelEl = document.getElementById("periodoLabel");
+  if (labelEl) labelEl.textContent = _periodoLabelAtual;
+  escutarVendas(inicio, fimData);
+}
+
+function _aplicarPeriodo() {
+  const { inicio, fim, label } = _calcularRangePeriodo(_periodoTipo, _periodoRef);
+  _periodoLabelAtual = label;
+  const labelEl = document.getElementById("periodoLabel");
+  if (labelEl) labelEl.textContent = label;
+  escutarVendas(inicio, fim);
+}
+
+function escutarVendas(inicio, fim) {
+  if (unsubRelatorio) { unsubRelatorio(); unsubRelatorio = null; }
 
   const q = query(
     collection(db, "vendas"),
@@ -1631,16 +1732,24 @@ function renderRelatorio(vendas) {
 
   const porPag = {};
   vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
+  const pagWrap = el("pagamentosDetalheWrap");
   const breakdown = el("pagamentosBreakdown");
+  const temPagamentos = Object.keys(porPag).length > 0;
+  if (pagWrap) pagWrap.style.display = temPagamentos ? "" : "none";
   if (breakdown) {
-    breakdown.innerHTML = Object.keys(porPag).length === 0
-      ? `<span class="resumo-label">Nenhum pagamento</span>`
-      : Object.entries(porPag).map(([met, val]) => `
+    breakdown.innerHTML = temPagamentos
+      ? Object.entries(porPag).map(([met, val]) => `
         <div class="pag-linha">
           <span class="pag-metodo">${esc(met)}</span>
           <span class="pag-valor">${fmtMoeda(val)}</span>
-        </div>`).join("");
+        </div>`).join("")
+      : "";
   }
+
+  const headerLabel = el("vendasHeaderLabel");
+  if (headerLabel) headerLabel.textContent = `Vendas — ${_periodoLabelAtual}`;
+  const headerCount = el("vendasHeaderCount");
+  if (headerCount) headerCount.textContent = `${qtdMesas} ${qtdMesas === 1 ? "venda" : "vendas"}`;
 
   const container = el("vendasLista");
   if (!container) return;
@@ -1739,7 +1848,7 @@ function _renderGraficoItensDia(vendas) {
       return `
         <div class="cid-linha">
           <span class="cid-pos">${i + 1}</span>
-          <span class="cid-nome">${nome}</span>
+          <span class="cid-nome">${esc(nome)}</span>
           <div class="cid-bar-wrap"><div class="cid-bar" style="width:${pct}%;background:${cores[i]}"></div></div>
           <span class="cid-qty">${qty}x</span>
           <span class="cid-pct">${pct}%</span>
@@ -1761,11 +1870,8 @@ async function excluirVenda(vendaId) {
   }
 }
 
-function imprimirRelatorio(dataStr, vendas) {
+function imprimirRelatorio(labelPeriodo, vendas) {
   if (!vendas || !vendas.length) { toast("Nenhuma venda para imprimir.", "info"); return; }
-
-  const [ano, mes, dia] = dataStr.split("-").map(Number);
-  const dataFormatada = new Date(ano, mes - 1, dia).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
   const qtdMesas = vendas.length;
@@ -1775,7 +1881,7 @@ function imprimirRelatorio(dataStr, vendas) {
   vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
 
   const pagamentosHtml = Object.entries(porPag).map(([met, val]) => `
-    <div class="print-relatorio-resumo-linha"><span>${met}</span><span>${fmtMoeda(val)}</span></div>
+    <div class="print-relatorio-resumo-linha"><span>${esc(met)}</span><span>${fmtMoeda(val)}</span></div>
   `).join("");
 
   const vendasHtml = vendas.map(venda => {
@@ -1786,14 +1892,14 @@ function imprimirRelatorio(dataStr, vendas) {
       else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
     });
     const itensHtml = itensAgrupados.map(item => `
-      <div class="print-item"><span>${item.qty}x ${item.nome}</span><span>${fmtMoeda(item.subtotal)}</span></div>
+      <div class="print-item"><span>${item.qty}x ${esc(item.nome)}</span><span>${fmtMoeda(item.subtotal)}</span></div>
     `).join("");
     return `
       <div class="print-relatorio-venda">
         <div class="print-relatorio-venda-header">
-          <span>Mesa ${venda.mesaNumero}</span>
+          <span>Mesa ${esc(String(venda.mesaNumero))}</span>
           <span>${fmtDataHora(venda.fechadoEm)}</span>
-          <span>${venda.formaPagamento || "—"}</span>
+          <span>${esc(venda.formaPagamento || "—")}</span>
           <span>${fmtMoeda(venda.total || 0)}</span>
         </div>
         ${itensHtml}
@@ -1806,10 +1912,10 @@ function imprimirRelatorio(dataStr, vendas) {
 
   printArea.innerHTML = `
     <div class="print-relatorio-titulo">MIKAMI SUSHI</div>
-    <div class="print-relatorio-data">Relatório do Dia — ${dataFormatada}</div>
+    <div class="print-relatorio-data">Relatório — ${esc(labelPeriodo)}</div>
     <div class="print-relatorio-data">Impresso em ${new Date().toLocaleString("pt-BR")}</div>
     <div class="print-relatorio-resumo">
-      <div class="print-relatorio-resumo-linha"><span>Total do dia</span><span><strong>${fmtMoeda(totalDia)}</strong></span></div>
+      <div class="print-relatorio-resumo-linha"><span>Total do período</span><span><strong>${fmtMoeda(totalDia)}</strong></span></div>
       <div class="print-relatorio-resumo-linha"><span>Mesas fechadas</span><span>${qtdMesas}</span></div>
       <div class="print-relatorio-resumo-linha"><span>Ticket médio</span><span>${fmtMoeda(ticketMed)}</span></div>
       <hr style="border:none;border-top:1px dashed #000;margin:4px 0"/>
