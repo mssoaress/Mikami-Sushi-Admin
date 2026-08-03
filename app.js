@@ -142,6 +142,126 @@ function iniciarRelogio() {
   setInterval(atualizar, 1000);
 }
 
+// Loja aberta/fechada — controla se o site público (cardápio online)
+// aceita pedidos. Documento: config/loja { aberto: boolean }
+const LOJA_DOC = () => doc(db, "config", "loja");
+
+function initSite() {
+  iniciarRelogio();
+
+  const statusEl = document.getElementById("siteStatus");
+  const statusText = document.getElementById("siteStatusText");
+  const desc = document.getElementById("siteDesc");
+  const updated = document.getElementById("siteUpdated");
+  const motivoAtualEl = document.getElementById("siteMotivoAtual");
+  const btnAbrir = document.getElementById("btnAbrirSite");
+  const btnFechar = document.getElementById("btnFecharSite");
+  const modalFechar = document.getElementById("modalFecharSite");
+  const motivoOpcoes = document.getElementById("motivoOpcoes");
+  const motivoCustom = document.getElementById("motivoCustom");
+  const btnCancelarFechar = document.getElementById("btnCancelarFechar");
+  const btnConfirmarFechar = document.getElementById("btnConfirmarFechar");
+  if (!statusEl) return;
+
+  let atualizando = false;
+  let motivoSelecionado = null;
+
+  onSnapshot(LOJA_DOC(), snap => {
+    const dados = snap.exists() ? snap.data() : {};
+    const aberto = dados.aberto !== false; // se o doc não existir ainda, considera aberto
+
+    statusEl.classList.toggle("site-status--aberta", aberto);
+    statusEl.classList.toggle("site-status--fechada", !aberto);
+    statusText.textContent = aberto ? "Site aberto para pedidos" : "Site fechado para pedidos";
+    desc.textContent = aberto
+      ? "Os clientes conseguem montar o carrinho e finalizar o pedido normalmente pelo WhatsApp."
+      : "Os clientes veem o cardápio, mas ao tentar finalizar o pedido recebem a mensagem abaixo em vez de conseguir enviar o pedido.";
+
+    btnAbrir.disabled = aberto;
+    btnFechar.disabled = !aberto;
+
+    if (!aberto && dados.motivo) {
+      motivoAtualEl.style.display = "block";
+      motivoAtualEl.innerHTML = `<strong>Mensagem exibida no site:</strong><br>"${esc(dados.motivo)}"`;
+    } else {
+      motivoAtualEl.style.display = "none";
+    }
+
+    if (dados.atualizadoEm) {
+      updated.textContent = `Última alteração: ${fmtDataHora(dados.atualizadoEm)}`;
+    } else {
+      updated.textContent = "";
+    }
+  }, err => {
+    console.error("Erro ao ler status do site:", err);
+    statusText.textContent = "Não foi possível carregar o status";
+  });
+
+  async function fecharComMotivo(motivo) {
+    if (atualizando || !motivo || !motivo.trim()) return;
+    atualizando = true;
+    try {
+      await setDoc(LOJA_DOC(), { aberto: false, motivo: motivo.trim(), atualizadoEm: serverTimestamp() }, { merge: true });
+      toast("Site fechado para pedidos", "info");
+      fecharModal();
+    } catch (err) {
+      console.error("Erro ao fechar o site:", err);
+      toast("Não foi possível atualizar. Tente novamente.", "erro");
+    } finally {
+      atualizando = false;
+    }
+  }
+
+  async function abrirSite() {
+    if (atualizando) return;
+    atualizando = true;
+    btnAbrir.disabled = true;
+    try {
+      await setDoc(LOJA_DOC(), { aberto: true, atualizadoEm: serverTimestamp() }, { merge: true });
+      toast("Site aberto para pedidos", "sucesso");
+    } catch (err) {
+      console.error("Erro ao abrir o site:", err);
+      toast("Não foi possível atualizar. Tente novamente.", "erro");
+    } finally {
+      atualizando = false;
+    }
+  }
+
+  function abrirModal() {
+    motivoSelecionado = null;
+    motivoCustom.value = "";
+    motivoOpcoes.querySelectorAll(".motivo-btn").forEach(b => b.classList.remove("selected"));
+    modalFechar.classList.add("open");
+  }
+  function fecharModal() { modalFechar.classList.remove("open"); }
+
+  motivoOpcoes.querySelectorAll(".motivo-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      motivoOpcoes.querySelectorAll(".motivo-btn").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      motivoSelecionado = btn.dataset.motivo;
+      motivoCustom.value = "";
+    });
+  });
+
+  motivoCustom.addEventListener("input", () => {
+    if (motivoCustom.value.trim()) {
+      motivoOpcoes.querySelectorAll(".motivo-btn").forEach(b => b.classList.remove("selected"));
+      motivoSelecionado = null;
+    }
+  });
+
+  btnAbrir.addEventListener("click", abrirSite);
+  btnFechar.addEventListener("click", abrirModal);
+  btnCancelarFechar.addEventListener("click", fecharModal);
+  modalFechar.addEventListener("click", e => { if (e.target === modalFechar) fecharModal(); });
+  btnConfirmarFechar.addEventListener("click", () => {
+    const motivoFinal = motivoCustom.value.trim() || motivoSelecionado;
+    if (!motivoFinal) { toast("Escolha ou escreva um motivo", "erro"); return; }
+    fecharComMotivo(motivoFinal);
+  });
+}
+
 // Modal de confirmação genérico (substitui confirm() nativo)
 function _confirmarAcao(mensagem) {
   return new Promise(resolve => {
@@ -2064,4 +2184,5 @@ const pagina = document.body.className;
 if (pagina.includes("page-mesas")) initIndex();
 else if (pagina.includes("page-mesa")) initMesa();
 else if (pagina.includes("page-cozinha")) initCozinha();
+else if (pagina.includes("page-site")) initSite();
 else if (pagina.includes("page-relatorio")) initRelatorio();  // FIX: estava faltando

@@ -1840,6 +1840,168 @@ body.page-relatorio .header-brand {
 }
 
 /* ================================================================
+   SITE (abrir/fechar pedidos online)
+   ================================================================ */
+body.page-site { padding-top: var(--header-h); }
+
+.site-main {
+  min-height: calc(100vh - var(--header-h));
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2.4rem 1.4rem 6rem;
+}
+
+.site-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--preto-card);
+  border: 1px solid var(--preto-borda);
+  border-top: var(--linha-ouro);
+  border-radius: var(--raio-xl);
+  padding: 1.8rem 1.6rem;
+  text-align: center;
+}
+
+.site-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 1px solid var(--preto-borda);
+  background: var(--cinza-escuro);
+  color: var(--cinza-claro);
+}
+
+.site-status-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--cinza-texto);
+  flex-shrink: 0;
+}
+
+.site-status--aberta { border-color: var(--verde-borda); background: var(--verde-bg); color: var(--verde); }
+.site-status--aberta .site-status-dot { background: var(--verde); box-shadow: 0 0 8px var(--verde); }
+
+.site-status--fechada { border-color: var(--vermelho-borda); background: var(--vermelho-bg); color: var(--vermelho-vivo); }
+.site-status--fechada .site-status-dot { background: var(--vermelho-vivo); box-shadow: 0 0 8px var(--vermelho-vivo); }
+
+.site-desc {
+  font-size: 0.85rem;
+  color: var(--cinza-texto);
+  margin: 1rem 0 1.5rem;
+  line-height: 1.5;
+}
+
+.site-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.site-btn {
+  padding: 0.9rem;
+  border-radius: var(--raio-lg);
+  font-family: var(--font-display);
+  font-size: 0.88rem;
+  font-weight: 700;
+  border: 1px solid var(--preto-borda);
+  background: var(--cinza-escuro);
+  color: var(--branco);
+  transition: all var(--t-fast);
+}
+
+.site-btn--abrir:not(:disabled):hover { border-color: var(--verde-borda); background: var(--verde-bg); color: var(--verde); }
+.site-btn--fechar:not(:disabled):hover { border-color: var(--vermelho-borda); background: var(--vermelho-bg); color: var(--vermelho-vivo); }
+
+.site-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.site-info-box {
+  margin-top: 1.6rem;
+  padding: 0.9rem 1rem;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  text-align: left;
+}
+
+.site-info-box p { font-size: 0.76rem; color: var(--cinza-texto); margin: 0; line-height: 1.5; }
+.site-info-box p + p { margin-top: 0.35rem; }
+.site-info-box p strong { color: var(--branco); font-size: 0.78rem; }
+
+.site-updated {
+  margin-top: 1rem;
+  font-size: 0.68rem;
+  color: var(--cinza-texto);
+}
+
+.site-motivo-atual {
+  margin-top: 1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--vermelho-bg);
+  border: 1px solid var(--vermelho-borda);
+  border-radius: var(--raio);
+  text-align: left;
+  font-size: 0.78rem;
+  color: var(--branco);
+  line-height: 1.5;
+}
+.site-motivo-atual strong { color: var(--vermelho-vivo); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.motivo-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.motivo-btn {
+  text-align: left;
+  padding: 0.72rem 0.85rem;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  color: var(--branco);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all var(--t-fast);
+}
+.motivo-btn:hover { border-color: var(--cinza-medio); }
+.motivo-btn.selected { border-color: var(--ouro); background: var(--ouro-bg); color: var(--ouro-claro); }
+
+.motivo-custom-label {
+  display: block;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cinza-texto);
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.motivo-custom-input {
+  width: 100%;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.65rem 0.75rem;
+  color: var(--branco);
+  font-family: var(--font-body, inherit);
+  font-size: 0.82rem;
+  resize: vertical;
+  transition: border-color var(--t-fast);
+}
+.motivo-custom-input:focus { outline: none; border-color: var(--ouro); }
+.motivo-custom-input::placeholder { color: var(--cinza-texto); }
+
+/* ================================================================
    RELATÓRIO
    ================================================================ */
 body.page-relatorio { padding-top: var(--header-h); }
@@ -2505,7 +2667,8 @@ body.page-relatorio { padding-top: var(--header-h); }
   /* Centraliza brand nas páginas sem back-btn */
   body.page-mesas .header-brand,
   body.page-cozinha .header-brand,
-  body.page-relatorio .header-brand {
+  body.page-relatorio .header-brand,
+  body.page-site .header-brand {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
@@ -2871,6 +3034,20 @@ body.page-relatorio { padding-top: var(--header-h); }
   }
 
   .btn-excluir-pedido { min-height: 44px; }
+
+  /* ================================================================
+     SITE (abrir/fechar pedidos online)
+     ================================================================ */
+  body.page-site {
+    padding-top: var(--mob-header);
+    padding-bottom: var(--mob-bottom);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  .site-main { padding: 1.4rem 1rem 2rem; }
+  .site-card { padding: 1.4rem 1.2rem; }
+  .motivo-btn, .site-btn { min-height: 44px; }
 
   /* ================================================================
      RELATÓRIO

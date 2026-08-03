@@ -32,6 +32,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Config — status do site (aberto/fechado para pedidos)
+    // Leitura livre: o site público precisa ler em tempo real.
+    // Escrita aberta, no mesmo padrão de mesas/pedidos deste projeto.
+    match /config/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Bloqueia tudo que não foi declarado acima
     match /{document=**} {
       allow read, write: if false;

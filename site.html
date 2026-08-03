@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Mikami Sushi — Site</title>
+  <link rel="icon" href="img/logo123.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-site">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+      <span class="kanji" style="display:none">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+        <p class="brand-sub">Site de Pedidos</p>
+      </div>
+    </div>
+    <nav class="main-nav">
+      <a href="index.html" class="nav-link">Mesas</a>
+      <a href="cozinha.html" class="nav-link">Cozinha</a>
+      <a href="relatorio.html" class="nav-link">Relatório</a>
+      <a href="site.html" class="nav-link active">Site</a>
+    </nav>
+    <div class="header-clock" id="headerClock"></div>
+  </header>
+
+  <main class="site-main">
+    <div class="site-card">
+      <div class="site-status" id="siteStatus">
+        <span class="site-status-dot"></span>
+        <span class="site-status-text" id="siteStatusText">Carregando…</span>
+      </div>
+
+      <p class="site-desc" id="siteDesc">
+        Verificando o status atual do site de pedidos…
+      </p>
+
+      <div class="site-actions">
+        <button class="site-btn site-btn--abrir" id="btnAbrirSite">
+          🟢 Abrir o site para pedidos
+        </button>
+        <button class="site-btn site-btn--fechar" id="btnFecharSite">
+          🔴 Fechar o site (parar pedidos)
+        </button>
+      </div>
+
+      <div class="site-motivo-atual" id="siteMotivoAtual" style="display:none"></div>
+
+      <div class="site-info-box">
+        <p><strong>O que acontece quando o site está fechado?</strong></p>
+        <p>O cardápio continua visível normalmente, mas quando o cliente for finalizar o pedido no carrinho, aparece a mensagem que você escolher abaixo — o pedido não pode ser enviado pelo WhatsApp.</p>
+      </div>
+
+      <div class="site-updated" id="siteUpdated"></div>
+    </div>
+  </main>
+
+  <!-- Modal: escolher motivo do fechamento -->
+  <div class="modal-overlay" id="modalFecharSite">
+    <div class="modal-box" style="max-width:440px">
+      <h3>Fechar o site</h3>
+      <p>Escolha a mensagem que o cliente vai ver na hora de finalizar o pedido:</p>
+
+      <div class="motivo-opcoes" id="motivoOpcoes">
+        <button class="motivo-btn" data-motivo="No momento não estamos fazendo delivery. Assim que voltarmos a atender, você já pode finalizar seu pedido normalmente.">
+          Delivery não está funcionando no momento
+        </button>
+        <button class="motivo-btn" data-motivo="Algumas peças do cardápio não estão sendo preparadas no momento. Pedidos temporariamente pausados.">
+          Algumas peças não estão sendo feitas no momento
+        </button>
+        <button class="motivo-btn" data-motivo="Estamos com alta demanda no momento e pausamos novos pedidos por instantes. Tente novamente em breve.">
+          Alta demanda — pedidos pausados por instantes
+        </button>
+        <button class="motivo-btn" data-motivo="No momento estamos fora do nosso horário de atendimento. Confira nosso horário de funcionamento e volte em breve.">
+          Fora do horário de atendimento
+        </button>
+        <button class="motivo-btn" data-motivo="Nossa cozinha está passando por uma manutenção rápida. Voltamos a atender em instantes.">
+          Cozinha em manutenção
+        </button>
+      </div>
+
+      <label class="motivo-custom-label" for="motivoCustom">Ou escreva uma mensagem personalizada</label>
+      <textarea id="motivoCustom" class="motivo-custom-input" rows="2" placeholder="Ex.: Voltamos a atender às 18h. Obrigado pela compreensão!"></textarea>
+
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFechar">Cancelar</button>
+        <button class="btn-confirmar-fechar" id="btnConfirmarFechar">Fechar site com esse aviso</button>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="index.html" class="bottom-nav-item">Mesas</a>
+    <a href="cozinha.html" class="bottom-nav-item">Cozinha</a>
+    <a href="relatorio.html" class="bottom-nav-item">Relatório</a>
+    <a href="site.html" class="bottom-nav-item active">Site</a>
+  </nav>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
