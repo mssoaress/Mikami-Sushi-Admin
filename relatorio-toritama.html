@@ -2,12 +2,11 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#080808" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Mikami Sushi — Relatório Toritama</title>
-  <link rel="icon" href="img/logo123.jpg">
 
   <!--
     SEGURANÇA: mesma senha de acesso ao relatório da matriz.
@@ -17,10 +16,12 @@
   -->
   <meta name="report-hash-toritama" content="205f9391ddcc5158c52ff55a811710667fee6225bbcbe83e25d94bdb1cbfcdc4">
 
+  <link rel="icon" href="img/logo123.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body class="page-relatorio-toritama">
 
@@ -55,58 +56,141 @@
     </div>
   </div>
 
-  <main class="site-main">
+  <div id="relatorioMain">
+    <div class="loading-mesas" style="padding:4rem">
+      <div class="loading-spinner"></div>
+      <p>Carregando...</p>
+    </div>
+  </div>
 
-    <!-- LOGIN -->
-    <div class="site-card" id="relatorioLoginToritama" style="max-width:380px">
-      <div class="login-icon">🔐</div>
-      <h2 style="text-align:center;margin:0.4rem 0 0.2rem">Área Restrita</h2>
-      <p class="site-desc" style="text-align:center">Digite a senha para acessar o relatório de Toritama.</p>
-      <form id="formLoginRelatorioToritama">
-        <input
-          type="password"
-          id="senhaRelatorioToritama"
-          class="site-produtos-busca"
-          placeholder="Senha"
-          autocomplete="off"
-        />
-        <button type="submit" class="site-btn site-btn--abrir" style="width:100%;margin-top:0.6rem">Entrar</button>
-      </form>
-      <div class="login-erro" id="loginErroToritama" style="text-align:center;color:var(--vermelho-vivo);font-size:0.78rem;margin-top:0.6rem"></div>
+  <!-- Template injetado após login -->
+  <template id="tplRelatorio">
+    <div class="relatorio-resumo">
+      <div class="resumo-card resumo-card-total">
+        <span class="resumo-icon-badge resumo-icon-badge-r">💰</span>
+        <span class="resumo-valor" id="resumoTotal">R$ 0,00</span>
+        <span class="resumo-label">Faturamento no Período</span>
+      </div>
+      <div class="resumo-card resumo-card-mesas">
+        <span class="resumo-icon-badge resumo-icon-badge-v">📋</span>
+        <span class="resumo-valor" id="resumoMesas">0</span>
+        <span class="resumo-label">Comandas Fechadas</span>
+      </div>
+      <div class="resumo-card resumo-card-ticket">
+        <span class="resumo-icon-badge resumo-icon-badge-o">🎯</span>
+        <span class="resumo-valor" id="resumoTicket">R$ 0,00</span>
+        <span class="resumo-label">Ticket Médio</span>
+      </div>
     </div>
 
-    <!-- CONTEÚDO -->
-    <div id="relatorioConteudoToritama" class="hidden" style="width:100%;max-width:720px">
+    <div class="periodo-bar">
+      <div class="periodo-tipos" id="periodoTipos" role="tablist" aria-label="Tipo de período">
+        <button class="periodo-tipo-btn active" data-tipo="dia" role="tab" aria-selected="true">Dia</button>
+        <button class="periodo-tipo-btn" data-tipo="semana" role="tab" aria-selected="false">Semana</button>
+        <button class="periodo-tipo-btn" data-tipo="mes" role="tab" aria-selected="false">Mês</button>
+        <button class="periodo-tipo-btn" data-tipo="ano" role="tab" aria-selected="false">Ano</button>
+        <button class="periodo-tipo-btn" data-tipo="personalizado" role="tab" aria-selected="false">Personalizado</button>
+      </div>
 
-      <div class="fat-resumo fat-resumo--toritama">
-        <div class="fat-card">
-          <span class="fat-label">Hoje</span>
-          <strong class="fat-valor" id="resHojeValor">R$ 0,00</strong>
-          <span class="fat-label" id="resHojeCount">0 venda(s)</span>
-        </div>
-        <div class="fat-card">
-          <span class="fat-label">Últimos 7 dias</span>
-          <strong class="fat-valor" id="resSemanaValor">R$ 0,00</strong>
-          <span class="fat-label" id="resSemanaCount">0 venda(s)</span>
-        </div>
-        <div class="fat-card">
-          <span class="fat-label">Últimos 30 dias</span>
-          <strong class="fat-valor" id="resMesValor">R$ 0,00</strong>
-          <span class="fat-label" id="resMesCount">0 venda(s)</span>
+      <div class="periodo-nav" id="periodoNav">
+        <button class="periodo-nav-btn" id="btnPeriodoAnterior" aria-label="Período anterior">‹</button>
+        <div class="periodo-label" id="periodoLabel">—</div>
+        <button class="periodo-nav-btn" id="btnPeriodoProximo" aria-label="Próximo período">›</button>
+        <button class="periodo-hoje-btn" id="btnPeriodoHoje">Hoje</button>
+      </div>
+
+      <div class="periodo-custom" id="periodoCustom">
+        <input type="date" id="customDataIni" aria-label="Data inicial" />
+        <span class="periodo-custom-sep">até</span>
+        <input type="date" id="customDataFim" aria-label="Data final" />
+        <button class="btn-secondary btn-sm" id="btnAplicarCustom">Aplicar</button>
+      </div>
+
+      <div class="periodo-acoes">
+        <button class="btn-imprimir-relatorio btn-sm" id="btnImprimirRelatorio">🖨️ Imprimir</button>
+        <button class="btn-logout btn-sm" id="btnLogout">🔒 Sair</button>
+      </div>
+    </div>
+
+    <main class="relatorio-main">
+      <div class="vendas-header">
+        <h3 class="vendas-header-titulo" id="vendasHeaderLabel">Vendas do período</h3>
+        <span class="vendas-header-count" id="vendasHeaderCount">0 vendas</span>
+      </div>
+      <div class="vendas-lista" id="vendasLista">
+        <div class="loading-mesas">
+          <div class="loading-spinner"></div>
+          <p>Carregando...</p>
         </div>
       </div>
 
-      <h2 class="site-produtos-title" style="margin:1.4rem 0 0.8rem">Vendas</h2>
-      <div id="listaVendasToritama" class="vendas-lista"></div>
+      <div class="chart-itens-dia-wrap" id="chartItensDiaWrap" style="display:none">
+        <div class="chart-itens-dia-titulo">🍣 Produtos mais vendidos no dia</div>
+        <div class="chart-itens-dia-inner">
+          <div class="chart-itens-dia-chart-wrap">
+            <canvas id="chartItensDia"></canvas>
+          </div>
+          <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
+        </div>
+      </div>
+
+      <div class="pagamentos-detalhe-wrap" id="pagamentosDetalheWrap" style="display:none">
+        <div class="pagamentos-detalhe-titulo">💳 Faturamento por Forma de Pagamento</div>
+        <div class="pagamentos-breakdown" id="pagamentosBreakdown"></div>
+      </div>
+    </main>
+
+    <div class="fat-resumo">
+      <div class="fat-card">
+        <span class="fat-icon">📅</span>
+        <span class="fat-label">Hoje</span>
+        <span class="fat-valor" id="fatHoje">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">📆</span>
+        <span class="fat-label">7 dias</span>
+        <span class="fat-valor" id="fatSemana">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">🗓️</span>
+        <span class="fat-label">30 dias</span>
+        <span class="fat-valor" id="fatMes">R$ 0,00</span>
+      </div>
+      <div class="fat-card">
+        <span class="fat-icon">📊</span>
+        <span class="fat-label">12 meses</span>
+        <span class="fat-valor" id="fatAnual">R$ 0,00</span>
+      </div>
     </div>
 
-  </main>
+    <div class="fat-main">
+      <div class="fat-grid">
+        <div class="fat-chart-box fat-chart-wide">
+          <div class="fat-chart-titulo">📈 Últimos 7 dias</div>
+          <div class="fat-chart-wrap"><canvas id="chartSemanal"></canvas></div>
+        </div>
+        <div class="fat-chart-box">
+          <div class="fat-chart-titulo">💳 Por Pagamento</div>
+          <div class="fat-chart-wrap"><canvas id="chartPagamento"></canvas></div>
+        </div>
+        <div class="fat-chart-box fat-chart-full">
+          <div class="fat-chart-titulo">📅 Últimos 30 dias</div>
+          <div class="fat-chart-wrap fat-chart-tall"><canvas id="chartMensal"></canvas></div>
+        </div>
+        <div class="fat-chart-box fat-chart-full">
+          <div class="fat-chart-titulo">📊 Últimos 12 meses</div>
+          <div class="fat-chart-wrap"><canvas id="chartAnual"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </template>
 
   <nav class="bottom-nav">
     <a href="toritama.html" class="bottom-nav-item">Comandas</a>
     <a href="relatorio-toritama.html" class="bottom-nav-item active">Relatório</a>
   </nav>
 
+  <div id="printArea" class="print-area"></div>
   <script type="module" src="firebase.js"></script>
   <script type="module" src="app-toritama.js"></script>
 </body>

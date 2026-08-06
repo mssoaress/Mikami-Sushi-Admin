@@ -168,6 +168,7 @@ async function garantirComandas() {
 // ============================================================
 function _cardComanda(c) {
   const statusLabel = c.status === "ocupada" ? "Ocupada" : "Livre";
+  const itensResumo = (c.itens || []).map(it => `${it.qty}x ${it.nome}`).join(" · ");
   return `
     <a href="comanda.html?id=${c.numero}" class="mesa-card ${c.status}">
       <div class="mesa-card-header">
@@ -179,6 +180,7 @@ function _cardComanda(c) {
         <div class="mesa-meta">
           ${c.abertaEm ? `<span>Aberta: ${fmtHora(c.abertaEm)}</span>` : `<span>Comanda livre</span>`}
         </div>
+        ${itensResumo ? `<div class="comanda-itens-resumo">${esc(itensResumo)}</div>` : ""}
       </div>
     </a>
   `;
@@ -278,11 +280,11 @@ function renderComandaAtual() {
     <div class="pedido-item" data-id="${esc(it.produtoId)}">
       <div class="pedido-item-header">
         <span class="pedido-item-nome">${esc(it.nome)}</span>
-        <span class="pedido-item-subtotal">${fmtMoeda(it.preco * it.qtd)}</span>
+        <span class="pedido-item-subtotal">${fmtMoeda(it.preco * it.qty)}</span>
       </div>
       <div class="pedido-item-controls">
         <button type="button" class="qty-btn" data-id="${esc(it.produtoId)}" data-delta="-1">−</button>
-        <span class="qty-value">${it.qtd}</span>
+        <span class="qty-value">${it.qty}</span>
         <button type="button" class="qty-btn" data-id="${esc(it.produtoId)}" data-delta="1">+</button>
         <span style="font-size:0.68rem;color:var(--cinza-texto);margin-left:0.3rem">${fmtMoeda(it.preco)} un.</span>
       </div>
@@ -311,7 +313,7 @@ function renderComandaAtual() {
 }
 
 function _calcularTotal(itens) {
-  return itens.reduce((soma, it) => soma + it.preco * it.qtd, 0);
+  return itens.reduce((soma, it) => soma + it.preco * it.qty, 0);
 }
 
 async function adicionarItemComanda(produtoId) {
@@ -321,9 +323,9 @@ async function adicionarItemComanda(produtoId) {
   const itens = [...(_comandaDados.itens || [])];
   const existente = itens.find(it => it.produtoId === produtoId);
   if (existente) {
-    existente.qtd += 1;
+    existente.qty += 1;
   } else {
-    itens.push({ produtoId, nome: produto.nome, preco: produto.preco, qtd: 1 });
+    itens.push({ produtoId, nome: produto.nome, preco: produto.preco, qty: 1 });
   }
 
   try {
@@ -345,8 +347,8 @@ async function alterarQtdItem(produtoId, delta) {
   const idx = itens.findIndex(it => it.produtoId === produtoId);
   if (idx === -1) return;
 
-  itens[idx] = { ...itens[idx], qtd: itens[idx].qtd + delta };
-  if (itens[idx].qtd <= 0) itens = itens.filter((_, i) => i !== idx);
+  itens[idx] = { ...itens[idx], qty: itens[idx].qty + delta };
+  if (itens[idx].qty <= 0) itens = itens.filter((_, i) => i !== idx);
 
   try {
     await updateDoc(doc(db, "comandas_toritama", _comandaId), {
@@ -395,7 +397,7 @@ function initModalFecharComanda() {
         itens: _comandaDados.itens || [],
         total: _comandaDados.total || 0,
         formaPagamento: formaSelecionada,
-        fechadaEm: serverTimestamp()
+        fechadoEm: serverTimestamp()
       });
       await updateDoc(doc(db, "comandas_toritama", _comandaId), {
         status: "livre", abertaEm: null, total: 0, itens: []
@@ -446,111 +448,25 @@ async function initComanda() {
 // ============================================================
 // 6. PÁGINA: RELATÓRIO TORITAMA
 // ============================================================
+// Réplica funcional do relatório da matriz (mesmos gráficos, mesma
+// seleção de período, mesma impressão), só que lendo de
+// vendas_toritama em vez de vendas — nada é compartilhado.
+
+let unsubRelatorioToritama = null;
+let vendasAtuaisToritama = [];
+
+let _periodoTipoT = "dia";
+let _periodoRefT = new Date();
+let _periodoLabelAtualT = "";
+
+let _autenticadoToritama = false;
+
 async function _sha256(texto) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-function _inicioDoDia(diasAtras = 0) {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - diasAtras);
-  return d;
-}
-
-async function _somaVendasDesde(desde) {
-  const q = query(
-    collection(db, "vendas_toritama"),
-    where("fechadaEm", ">=", Timestamp.fromDate(desde))
-  );
-  const snap = await getDocs(q);
-  let total = 0;
-  snap.forEach(d => { total += d.data().total || 0; });
-  return { total, count: snap.size };
-}
-
-async function carregarResumoToritama() {
-  const hoje = await _somaVendasDesde(_inicioDoDia(0));
-  const semana = await _somaVendasDesde(_inicioDoDia(6));
-  const mes = await _somaVendasDesde(_inicioDoDia(29));
-
-  document.getElementById("resHojeValor").textContent = fmtMoeda(hoje.total);
-  document.getElementById("resHojeCount").textContent = `${hoje.count} venda(s)`;
-  document.getElementById("resSemanaValor").textContent = fmtMoeda(semana.total);
-  document.getElementById("resSemanaCount").textContent = `${semana.count} venda(s)`;
-  document.getElementById("resMesValor").textContent = fmtMoeda(mes.total);
-  document.getElementById("resMesCount").textContent = `${mes.count} venda(s)`;
-}
-
-function _cardVendaToritama(id, v) {
-  return `
-    <div class="venda-card" data-id="${id}">
-      <div class="venda-card-header">
-        <span class="venda-mesa">Comanda ${v.comandaNumero}</span>
-        <span class="venda-hora">${fmtDataHora(v.fechadaEm)}</span>
-        <span class="venda-pagamento">${esc(v.formaPagamento)}</span>
-        <span class="venda-total-valor">${fmtMoeda(v.total)}</span>
-      </div>
-      <div class="venda-itens-lista">
-        ${(v.itens || []).map(it => `
-          <div class="venda-item-linha">
-            <span class="venda-item-nome">${esc(it.nome)}</span>
-            <span class="venda-item-qty">${it.qtd}x</span>
-            <span class="venda-item-val">${fmtMoeda(it.preco * it.qtd)}</span>
-          </div>
-        `).join("")}
-      </div>
-      <button type="button" class="btn-excluir-venda" data-id="${id}" style="margin-top:0.6rem">Excluir</button>
-    </div>
-  `;
-}
-
-async function carregarListaVendasToritama() {
-  const lista = document.getElementById("listaVendasToritama");
-  if (!lista) return;
-  lista.innerHTML = `<p class="conta-vazia">Carregando…</p>`;
-
-  const q = query(collection(db, "vendas_toritama"), orderBy("fechadaEm", "desc"));
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    lista.innerHTML = `<p class="conta-vazia">Nenhuma venda registrada ainda.</p>`;
-    return;
-  }
-
-  lista.innerHTML = snap.docs.map(d => _cardVendaToritama(d.id, d.data())).join("");
-
-  lista.querySelectorAll(".btn-excluir-venda").forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (!confirm("Excluir esta venda do relatório? Essa ação não pode ser desfeita.")) return;
-      try {
-        await deleteDoc(doc(db, "vendas_toritama", btn.dataset.id));
-        toast("Venda excluída", "info");
-        carregarResumoToritama();
-        carregarListaVendasToritama();
-      } catch (err) {
-        console.error("[Toritama] Erro ao excluir venda:", err);
-        toast("Não foi possível excluir", "erro");
-      }
-    });
-  });
-}
-
-function mostrarConteudoRelatorioToritama() {
-  document.getElementById("relatorioLoginToritama")?.classList.add("hidden");
-  document.getElementById("relatorioConteudoToritama")?.classList.remove("hidden");
-  carregarResumoToritama();
-  carregarListaVendasToritama();
-}
-
-// Autenticação por hash SHA-256, igual ao relatório da matriz: a senha
-// não fica no JS. Configure em relatorio-toritama.html:
-//   <meta name="report-hash-toritama" content="SEU_HASH_SHA256_AQUI">
-// Gerar o hash (Node.js):
-//   require('crypto').createHash('sha256').update('suasenha').digest('hex')
-let _autenticadoToritama = false;
-
-async function _fazerLoginToritama(senha) {
+async function fazerLoginToritama(senha) {
   const metaEl = document.querySelector('meta[name="report-hash-toritama"]');
   const hashEsperado = metaEl?.content?.trim();
   if (!hashEsperado) {
@@ -562,23 +478,542 @@ async function _fazerLoginToritama(senha) {
   return false;
 }
 
+function fazerLogoutToritama() { _autenticadoToritama = false; window.location.reload(); }
+
+function mostrarTelaLoginToritama() {
+  const m = document.getElementById("relatorioMain"); if (!m) return;
+  m.innerHTML = `
+    <div class="login-box">
+      <div class="login-icon">🔐</div>
+      <h2>Área Restrita</h2>
+      <p>Digite a senha para acessar o Relatório de Toritama.</p>
+      <div class="login-campo">
+        <input type="password" id="senhaInput" placeholder="Senha" autocomplete="off" />
+        <button class="btn-primary btn-login" id="btnLogin">Entrar</button>
+      </div>
+      <div class="login-erro" id="loginErro"></div>
+    </div>`;
+  const inp = document.getElementById("senhaInput"), btn = document.getElementById("btnLogin"), err = document.getElementById("loginErro");
+  async function t() {
+    if (await fazerLoginToritama(inp.value.trim())) { mostrarConteudoRelatorioToritama(); }
+    else { err.textContent = "Senha incorreta."; inp.value = ""; inp.focus(); setTimeout(() => { err.textContent = ""; }, 2000); }
+  }
+  btn.addEventListener("click", t);
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") t(); });
+  inp.focus();
+}
+
+function mostrarConteudoRelatorioToritama() {
+  const m = document.getElementById("relatorioMain"), t = document.getElementById("tplRelatorio");
+  if (m && t) { m.innerHTML = ""; m.appendChild(t.content.cloneNode(true)); }
+  document.getElementById("btnLogout")?.addEventListener("click", fazerLogoutToritama);
+  _iniciarConteudoRelatorioToritama();
+}
+
 function initRelatorioToritama() {
   iniciarRelogio();
   initFilialSwitcher();
+  if (_autenticadoToritama) { mostrarConteudoRelatorioToritama(); } else { mostrarTelaLoginToritama(); }
+}
 
-  if (_autenticadoToritama) { mostrarConteudoRelatorioToritama(); }
+function _dataStrT(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+function _inicioDiaT(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function _fimDiaT(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
 
-  const form = document.getElementById("formLoginRelatorioToritama");
-  form?.addEventListener("submit", async e => {
-    e.preventDefault();
-    const inp = document.getElementById("senhaRelatorioToritama");
-    const err = document.getElementById("loginErroToritama");
-    if (await _fazerLoginToritama(inp.value.trim())) {
-      mostrarConteudoRelatorioToritama();
-    } else {
-      if (err) { err.textContent = "Senha incorreta."; setTimeout(() => { err.textContent = ""; }, 2000); }
-      inp.value = "";
-      inp.focus();
+function _calcularRangePeriodoT(tipo, ref) {
+  const r = new Date(ref);
+
+  if (tipo === "semana") {
+    const inicioSemana = new Date(r); inicioSemana.setDate(r.getDate() - r.getDay());
+    const fimSemana = new Date(inicioSemana); fimSemana.setDate(inicioSemana.getDate() + 6);
+    const fmt = d => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    return { inicio: _inicioDiaT(inicioSemana), fim: _fimDiaT(fimSemana), label: `${fmt(inicioSemana)} – ${fmt(fimSemana)}` };
+  }
+  if (tipo === "mes") {
+    const inicioMes = new Date(r.getFullYear(), r.getMonth(), 1);
+    const fimMes = new Date(r.getFullYear(), r.getMonth() + 1, 0);
+    const label = inicioMes.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    return { inicio: _inicioDiaT(inicioMes), fim: _fimDiaT(fimMes), label: label.charAt(0).toUpperCase() + label.slice(1) };
+  }
+  if (tipo === "ano") {
+    const inicioAno = new Date(r.getFullYear(), 0, 1);
+    const fimAno = new Date(r.getFullYear(), 11, 31);
+    return { inicio: _inicioDiaT(inicioAno), fim: _fimDiaT(fimAno), label: String(r.getFullYear()) };
+  }
+  const labelDia = r.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+  return { inicio: _inicioDiaT(r), fim: _fimDiaT(r), label: labelDia.replace(".", "").replace(/^\w/, c => c.toUpperCase()) };
+}
+
+function _deslocarPeriodoT(tipo, ref, direcao) {
+  const r = new Date(ref);
+  if (tipo === "semana") r.setDate(r.getDate() + direcao * 7);
+  else if (tipo === "mes") r.setMonth(r.getMonth() + direcao);
+  else if (tipo === "ano") r.setFullYear(r.getFullYear() + direcao);
+  else r.setDate(r.getDate() + direcao);
+  return r;
+}
+
+function _iniciarConteudoRelatorioToritama() {
+  _periodoTipoT = "dia";
+  _periodoRefT = new Date();
+
+  const tipoBtns = document.querySelectorAll(".periodo-tipo-btn");
+  const nav = document.getElementById("periodoNav");
+  const custom = document.getElementById("periodoCustom");
+  const iniInput = document.getElementById("customDataIni");
+  const fimInput = document.getElementById("customDataFim");
+
+  tipoBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const tipo = btn.dataset.tipo;
+      if (tipo === _periodoTipoT) return;
+      tipoBtns.forEach(b => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      _periodoTipoT = tipo;
+
+      if (tipo === "personalizado") {
+        nav?.classList.add("periodo-nav-oculto");
+        custom?.classList.add("periodo-custom-ativo");
+        const hoje = _dataStrT(new Date());
+        if (iniInput && !iniInput.value) iniInput.value = hoje;
+        if (fimInput && !fimInput.value) fimInput.value = hoje;
+        if (iniInput?.value && fimInput?.value) _aplicarPeriodoCustomT();
+      } else {
+        nav?.classList.remove("periodo-nav-oculto");
+        custom?.classList.remove("periodo-custom-ativo");
+        _periodoRefT = new Date();
+        _aplicarPeriodoT();
+      }
+    });
+  });
+
+  document.getElementById("btnPeriodoAnterior")?.addEventListener("click", () => {
+    _periodoRefT = _deslocarPeriodoT(_periodoTipoT, _periodoRefT, -1);
+    _aplicarPeriodoT();
+  });
+  document.getElementById("btnPeriodoProximo")?.addEventListener("click", () => {
+    _periodoRefT = _deslocarPeriodoT(_periodoTipoT, _periodoRefT, 1);
+    _aplicarPeriodoT();
+  });
+  document.getElementById("btnPeriodoHoje")?.addEventListener("click", () => {
+    _periodoRefT = new Date();
+    _aplicarPeriodoT();
+  });
+  document.getElementById("btnAplicarCustom")?.addEventListener("click", _aplicarPeriodoCustomT);
+
+  document.getElementById("btnImprimirRelatorio")?.addEventListener("click", () => {
+    imprimirRelatorioToritama(_periodoLabelAtualT, vendasAtuaisToritama);
+  });
+
+  _aplicarPeriodoT();
+  initFaturamentoToritama();
+  window.addEventListener("pagehide", () => { if (unsubRelatorioToritama) unsubRelatorioToritama(); }, { once: true });
+}
+
+function _aplicarPeriodoCustomT() {
+  const ini = document.getElementById("customDataIni")?.value;
+  const fim = document.getElementById("customDataFim")?.value;
+  if (!ini || !fim) { toast("Selecione as duas datas.", "info"); return; }
+  if (ini > fim) { toast("A data inicial deve ser anterior à final.", "erro"); return; }
+
+  const [ai, mi, di] = ini.split("-").map(Number);
+  const [af, mf, df] = fim.split("-").map(Number);
+  const inicio = _inicioDiaT(new Date(ai, mi - 1, di));
+  const fimData = _fimDiaT(new Date(af, mf - 1, df));
+  const fmt = s => { const [a, m, d] = s.split("-"); return `${d}/${m}/${a}`; };
+  _periodoLabelAtualT = ini === fim ? fmt(ini) : `${fmt(ini)} – ${fmt(fim)}`;
+
+  const labelEl = document.getElementById("periodoLabel");
+  if (labelEl) labelEl.textContent = _periodoLabelAtualT;
+  escutarVendasToritama(inicio, fimData);
+}
+
+function _aplicarPeriodoT() {
+  const { inicio, fim, label } = _calcularRangePeriodoT(_periodoTipoT, _periodoRefT);
+  _periodoLabelAtualT = label;
+  const labelEl = document.getElementById("periodoLabel");
+  if (labelEl) labelEl.textContent = label;
+  escutarVendasToritama(inicio, fim);
+}
+
+function escutarVendasToritama(inicio, fim) {
+  if (unsubRelatorioToritama) { unsubRelatorioToritama(); unsubRelatorioToritama = null; }
+
+  const q = query(
+    collection(db, "vendas_toritama"),
+    where("fechadoEm", ">=", Timestamp.fromDate(inicio)),
+    where("fechadoEm", "<=", Timestamp.fromDate(fim)),
+    orderBy("fechadoEm", "desc")
+  );
+
+  const container = document.getElementById("vendasLista");
+  if (container) container.innerHTML = `<div class="loading-mesas"><div class="loading-spinner"></div><p>Carregando...</p></div>`;
+
+  unsubRelatorioToritama = onSnapshot(q, snap => {
+    const vendas = [];
+    snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
+    vendasAtuaisToritama = vendas;
+    renderRelatorioToritama(vendas);
+  }, err => {
+    console.error("[Toritama] Erro ao carregar vendas:", err);
+    toast("Erro ao carregar relatório.", "erro");
+  });
+}
+
+function renderRelatorioToritama(vendas) {
+  const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+  const qtdComandas = vendas.length;
+  const ticketMed = qtdComandas > 0 ? totalDia / qtdComandas : 0;
+
+  const el = id => document.getElementById(id);
+  if (el("resumoTotal")) el("resumoTotal").textContent = fmtMoeda(totalDia);
+  if (el("resumoMesas")) el("resumoMesas").textContent = qtdComandas;
+  if (el("resumoTicket")) el("resumoTicket").textContent = fmtMoeda(ticketMed);
+
+  const porPag = {};
+  vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
+  const pagWrap = el("pagamentosDetalheWrap");
+  const breakdown = el("pagamentosBreakdown");
+  const temPagamentos = Object.keys(porPag).length > 0;
+  if (pagWrap) pagWrap.style.display = temPagamentos ? "" : "none";
+  if (breakdown) {
+    breakdown.innerHTML = temPagamentos
+      ? Object.entries(porPag).map(([met, val]) => `
+        <div class="pag-linha">
+          <span class="pag-metodo">${esc(met)}</span>
+          <span class="pag-valor">${fmtMoeda(val)}</span>
+        </div>`).join("")
+      : "";
+  }
+
+  const headerLabel = el("vendasHeaderLabel");
+  if (headerLabel) headerLabel.textContent = `Vendas — ${_periodoLabelAtualT}`;
+  const headerCount = el("vendasHeaderCount");
+  if (headerCount) headerCount.textContent = `${qtdComandas} ${qtdComandas === 1 ? "venda" : "vendas"}`;
+
+  const container = el("vendasLista");
+  if (!container) return;
+
+  if (!vendas.length) {
+    container.innerHTML = `
+      <div class="loading-mesas">
+        <span style="font-size:2rem">📋</span>
+        <p>Nenhuma venda registrada nessa data.</p>
+      </div>`;
+    _renderGraficoItensDiaToritama([]);
+    return;
+  }
+
+  container.innerHTML = vendas.map(venda => {
+    const itensAgrupados = [];
+    (venda.itens || []).forEach(item => {
+      const ex = itensAgrupados.find(i => i.nome === item.nome);
+      if (ex) { ex.qty += item.qty; ex.subtotal += item.preco * item.qty; }
+      else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
+    });
+
+    const itensHtml = itensAgrupados.map(item => `
+      <div class="venda-item-linha">
+        <span class="venda-item-nome">${esc(item.nome)}</span>
+        <span class="venda-item-qty">${Number(item.qty)}x</span>
+        <span class="venda-item-val">${fmtMoeda(item.subtotal)}</span>
+      </div>
+    `).join("");
+
+    return `
+      <div class="venda-card">
+        <div class="venda-card-header">
+          <span class="venda-mesa">Comanda ${esc(String(venda.comandaNumero))}</span>
+          <span class="venda-hora">${fmtDataHora(venda.fechadoEm)}</span>
+          <span class="venda-pagamento">${esc(venda.formaPagamento || "—")}</span>
+          <span class="venda-total-valor">${fmtMoeda(venda.total || 0)}</span>
+          <button class="btn-excluir-venda" data-venda-id="${venda.id}" title="Excluir registro">🗑 Excluir</button>
+        </div>
+        <div class="venda-itens-lista">${itensHtml}</div>
+      </div>
+    `;
+  }).join("");
+
+  document.querySelectorAll(".btn-excluir-venda").forEach(btn => {
+    btn.addEventListener("click", () => excluirVendaToritama(btn.dataset.vendaId));
+  });
+
+  _renderGraficoItensDiaToritama(vendas);
+}
+
+function _renderGraficoItensDiaToritama(vendas) {
+  const wrap = document.getElementById("chartItensDiaWrap");
+  if (!wrap) return;
+
+  const contagemItens = {};
+  vendas.forEach(v => {
+    (v.itens || []).forEach(item => {
+      const nome = item.nome || "?";
+      contagemItens[nome] = (contagemItens[nome] || 0) + (item.qty || 1);
+    });
+  });
+
+  const sorted = Object.entries(contagemItens).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  if (!sorted.length) { wrap.style.display = "none"; return; }
+  wrap.style.display = "";
+
+  const labels = sorted.map(([n]) => n);
+  const values = sorted.map(([, q]) => q);
+  const total = values.reduce((a, b) => a + b, 0);
+
+  const cores = labels.map((_, i) => {
+    const t = labels.length <= 1 ? 0 : i / (labels.length - 1);
+    const r = Math.round(192 + (212 - 192) * t);
+    const g = Math.round(57 + (160 - 57) * t);
+    const b = Math.round(43 + (23 - 43) * t);
+    return `rgba(${r},${g},${b},0.85)`;
+  });
+
+  _renderGraficoT("chartItensDia", "bar", labels, values, "Qtd pedida");
+
+  if (_chartInstancesT["chartItensDia"]) {
+    _chartInstancesT["chartItensDia"].data.datasets[0].backgroundColor = cores;
+    _chartInstancesT["chartItensDia"].data.datasets[0].borderColor = cores.map(c => c.replace("0.85", "1"));
+    _chartInstancesT["chartItensDia"].update();
+  }
+
+  const lista = document.getElementById("chartItensDiaLista");
+  if (lista) {
+    lista.innerHTML = sorted.map(([nome, qty], i) => {
+      const pct = total > 0 ? Math.round((qty / total) * 100) : 0;
+      return `
+        <div class="cid-linha">
+          <span class="cid-pos">${i + 1}</span>
+          <span class="cid-nome">${esc(nome)}</span>
+          <div class="cid-bar-wrap"><div class="cid-bar" style="width:${pct}%;background:${cores[i]}"></div></div>
+          <span class="cid-qty">${qty}x</span>
+          <span class="cid-pct">${pct}%</span>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+async function excluirVendaToritama(vendaId) {
+  const confirmado = await _confirmarAcaoT("Excluir este registro de venda? Esta ação não pode ser desfeita.");
+  if (!confirmado) return;
+  try {
+    await deleteDoc(doc(db, "vendas_toritama", vendaId));
+    toast("Registro excluído.", "sucesso");
+  } catch (err) {
+    console.error("[Toritama] Erro ao excluir venda:", err);
+    toast("Erro ao excluir registro.", "erro");
+  }
+}
+
+function _confirmarAcaoT(mensagem) {
+  return new Promise(resolve => {
+    let overlay = document.getElementById("_modalConfirmT");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "_modalConfirmT";
+      overlay.className = "modal-overlay";
+      overlay.innerHTML = `
+        <div class="modal-box" style="max-width:380px;border-radius:var(--raio-lg)">
+          <p id="_modalConfirmMsgT" style="font-size:0.9rem;color:var(--branco);margin-bottom:1.25rem;line-height:1.5"></p>
+          <div class="modal-acoes">
+            <button class="btn-secondary" id="_modalConfirmNaoT">Cancelar</button>
+            <button class="btn-primary" id="_modalConfirmSimT">Confirmar</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+    }
+    document.getElementById("_modalConfirmMsgT").textContent = mensagem;
+    overlay.classList.add("open");
+    const fechar = (res) => { overlay.classList.remove("open"); resolve(res); };
+    document.getElementById("_modalConfirmSimT").onclick = () => fechar(true);
+    document.getElementById("_modalConfirmNaoT").onclick = () => fechar(false);
+    overlay.onclick = (e) => { if (e.target === overlay) fechar(false); };
+  });
+}
+
+function imprimirRelatorioToritama(labelPeriodo, vendas) {
+  if (!vendas || !vendas.length) { toast("Nenhuma venda para imprimir.", "info"); return; }
+
+  const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
+  const qtdComandas = vendas.length;
+  const ticketMed = qtdComandas > 0 ? totalDia / qtdComandas : 0;
+
+  const porPag = {};
+  vendas.forEach(v => { const met = v.formaPagamento || "Outros"; porPag[met] = (porPag[met] || 0) + (v.total || 0); });
+
+  const pagamentosHtml = Object.entries(porPag).map(([met, val]) => `
+    <div class="print-relatorio-resumo-linha"><span>${esc(met)}</span><span>${fmtMoeda(val)}</span></div>
+  `).join("");
+
+  const vendasHtml = vendas.map(venda => {
+    const itensAgrupados = [];
+    (venda.itens || []).forEach(item => {
+      const ex = itensAgrupados.find(i => i.nome === item.nome);
+      if (ex) { ex.qty += item.qty; ex.subtotal += item.preco * item.qty; }
+      else itensAgrupados.push({ nome: item.nome, qty: item.qty, preco: item.preco, subtotal: item.preco * item.qty });
+    });
+    const itensHtml = itensAgrupados.map(item => `
+      <div class="print-item"><span>${item.qty}x ${esc(item.nome)}</span><span>${fmtMoeda(item.subtotal)}</span></div>
+    `).join("");
+    return `
+      <div class="print-relatorio-venda">
+        <div class="print-relatorio-venda-header">
+          <span>Comanda ${esc(String(venda.comandaNumero))}</span>
+          <span>${fmtDataHora(venda.fechadoEm)}</span>
+          <span>${esc(venda.formaPagamento || "—")}</span>
+          <span>${fmtMoeda(venda.total || 0)}</span>
+        </div>
+        ${itensHtml}
+      </div>
+    `;
+  }).join("");
+
+  const printArea = document.getElementById("printArea");
+  if (!printArea) { toast("Área de impressão não encontrada.", "erro"); return; }
+
+  printArea.innerHTML = `
+    <div class="print-relatorio-titulo">MIKAMI SUSHI — TORITAMA</div>
+    <div class="print-relatorio-data">Relatório — ${esc(labelPeriodo)}</div>
+    <div class="print-relatorio-data">Impresso em ${new Date().toLocaleString("pt-BR")}</div>
+    <div class="print-relatorio-resumo">
+      <div class="print-relatorio-resumo-linha"><span>Total do período</span><span><strong>${fmtMoeda(totalDia)}</strong></span></div>
+      <div class="print-relatorio-resumo-linha"><span>Comandas fechadas</span><span>${qtdComandas}</span></div>
+      <div class="print-relatorio-resumo-linha"><span>Ticket médio</span><span>${fmtMoeda(ticketMed)}</span></div>
+      <hr style="border:none;border-top:1px dashed #000;margin:4px 0"/>
+      ${pagamentosHtml}
+    </div>
+    <div class="print-section-title">Detalhe por Comanda</div>
+    ${vendasHtml}
+    <div class="print-footer">Mikami Sushi Toritama — Sistema de Gestão</div>
+  `;
+  window.print();
+}
+
+function initFaturamentoToritama() {
+  const agora = new Date();
+  const inicioAno = new Date(agora.getFullYear() - 1, agora.getMonth() + 1, 1);
+  inicioAno.setHours(0, 0, 0, 0);
+
+  const q = query(
+    collection(db, "vendas_toritama"),
+    where("fechadoEm", ">=", Timestamp.fromDate(inicioAno)),
+    orderBy("fechadoEm", "asc")
+  );
+
+  onSnapshot(q, snap => {
+    const vendas = [];
+    snap.forEach(d => vendas.push({ id: d.id, ...d.data() }));
+    renderFaturamentoToritama(vendas);
+  });
+}
+
+function renderFaturamentoToritama(vendas) {
+  const agora = new Date();
+
+  const porData = new Map();
+  const porMes = new Map();
+  vendas.forEach(v => {
+    if (!v.fechadoEm) return;
+    const vd = v.fechadoEm.toDate ? v.fechadoEm.toDate() : new Date(v.fechadoEm);
+    const dataKey = vd.toDateString();
+    const mesKey = `${vd.getFullYear()}-${vd.getMonth()}`;
+    porData.set(dataKey, (porData.get(dataKey) || 0) + (v.total || 0));
+    porMes.set(mesKey, (porMes.get(mesKey) || 0) + (v.total || 0));
+  });
+
+  const diasSemana = [], totalSemana = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+    diasSemana.push(d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit" }));
+    totalSemana.push(parseFloat((porData.get(d.toDateString()) || 0).toFixed(2)));
+  }
+
+  const diasMes = [], totalMes = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(agora); d.setDate(d.getDate() - i); d.setHours(0, 0, 0, 0);
+    diasMes.push(d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }));
+    totalMes.push(parseFloat((porData.get(d.toDateString()) || 0).toFixed(2)));
+  }
+
+  const mesesLabel = [], totalAnual = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+    mesesLabel.push(d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }));
+    totalAnual.push(parseFloat((porMes.get(`${d.getFullYear()}-${d.getMonth()}`) || 0).toFixed(2)));
+  }
+
+  const totalHoje = porData.get(agora.toDateString()) || 0;
+
+  const el = id => document.getElementById(id);
+  if (el("fatHoje")) el("fatHoje").textContent = fmtMoeda(totalHoje);
+  if (el("fatSemana")) el("fatSemana").textContent = fmtMoeda(totalSemana.reduce((a, b) => a + b, 0));
+  if (el("fatMes")) el("fatMes").textContent = fmtMoeda(totalMes.reduce((a, b) => a + b, 0));
+  if (el("fatAnual")) el("fatAnual").textContent = fmtMoeda(totalAnual.reduce((a, b) => a + b, 0));
+
+  const porPag = {};
+  vendas.forEach(v => { const met = (v.formaPagamento || "Outros").split(" (")[0].trim(); porPag[met] = (porPag[met] || 0) + (v.total || 0); });
+  const pagLabels = Object.keys(porPag);
+  const pagValues = pagLabels.map(k => parseFloat(porPag[k].toFixed(2)));
+
+  _renderGraficoT("chartSemanal", "bar", diasSemana, totalSemana, "Faturamento Diário (7 dias)");
+  _renderGraficoT("chartMensal", "bar", diasMes, totalMes, "Faturamento Diário (30 dias)");
+  _renderGraficoT("chartAnual", "bar", mesesLabel, totalAnual, "Faturamento Mensal (12 meses)");
+  _renderGraficoT("chartPagamento", "doughnut", pagLabels, pagValues, "Por Forma de Pagamento");
+}
+
+const _chartInstancesT = {};
+function _renderGraficoT(canvasId, tipo, labels, data, titulo) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (_chartInstancesT[canvasId]) { _chartInstancesT[canvasId].destroy(); }
+
+  const cores = [
+    "rgba(192,57,43,0.85)", "rgba(212,160,23,0.85)", "rgba(39,174,96,0.85)",
+    "rgba(41,128,185,0.85)", "rgba(142,68,173,0.85)",
+  ];
+  const isBarra = tipo === "bar";
+
+  _chartInstancesT[canvasId] = new Chart(canvas, {
+    type: tipo,
+    data: {
+      labels,
+      datasets: [{
+        label: titulo,
+        data,
+        backgroundColor: isBarra ? "rgba(192,57,43,0.75)" : cores,
+        borderColor: isBarra ? "rgba(192,57,43,1)" : cores.map(c => c.replace("0.85", "1")),
+        borderWidth: isBarra ? 0 : 2,
+        borderRadius: isBarra ? 6 : 0,
+        hoverBackgroundColor: isBarra ? "rgba(231,76,60,0.9)" : cores,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: tipo === "doughnut",
+          labels: { color: "#f0ece6", font: { family: "Inter", size: 12 }, padding: 16 }
+        },
+        tooltip: {
+          callbacks: { label: ctx => ` ${fmtMoeda(ctx.parsed.y ?? ctx.parsed ?? 0)}` },
+          backgroundColor: "#1e1e1e", titleColor: "#f0ece6",
+          bodyColor: "#d4a017", borderColor: "#363636", borderWidth: 1,
+        }
+      },
+      scales: isBarra ? {
+        x: {
+          ticks: { color: "#888", font: { size: 11, family: "Inter" }, maxRotation: 45 },
+          grid: { color: "rgba(255,255,255,0.04)" }
+        },
+        y: {
+          ticks: { color: "#888", font: { size: 11, family: "Inter" }, callback: v => "R$\u00a0" + v.toLocaleString("pt-BR") },
+          grid: { color: "rgba(255,255,255,0.06)" }
+        }
+      } : {}
     }
   });
 }
