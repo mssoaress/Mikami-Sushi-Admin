@@ -24,6 +24,7 @@
         <h1>Mikami Sushi</h1>
         <p class="brand-sub">Sistema de Gestão</p>
       </div>
+      <button class="filial-btn" id="btnFilial">📍 <strong>Centro</strong> <span class="filial-caret">▾</span></button>
     </div>
     <nav class="main-nav">
       <a href="index.html" class="nav-link active">Mesas</a>
@@ -52,6 +53,19 @@
     </div>
     <div class="stat-divider"></div>
     <button class="btn-add-mesa" id="btnAddMesa" title="Adicionar mesa">＋</button>
+  </div>
+
+  <div class="modal-overlay" id="modalFilial">
+    <div class="modal-box" style="max-width:320px">
+      <h3>Selecionar Filial</h3>
+      <div class="filial-opcoes">
+        <button class="filial-opcao ativa" data-href="index.html">🏠 Centro <span class="filial-opcao-check">✓</span></button>
+        <button class="filial-opcao" data-href="toritama.html">🏢 Toritama</button>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFilial">Cancelar</button>
+      </div>
+    </div>
   </div>
 
   <div class="modal-overlay" id="modalAddMesa">

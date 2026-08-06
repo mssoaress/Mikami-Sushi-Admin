@@ -209,12 +209,32 @@ function iniciarRelogio() {
   setInterval(atualizar, 1000);
 }
 
+// Botão de filial (ao lado da logo) — só navegação entre os HTMLs da
+// matriz (Centro) e os HTMLs da filial Toritama. Não depende de Firestore,
+// por isso pode ser chamado em qualquer página sem risco de conflito.
+function initFilialSwitcher() {
+  const btn = document.getElementById("btnFilial");
+  const modal = document.getElementById("modalFilial");
+  if (!btn || !modal) return;
+
+  btn.addEventListener("click", () => modal.classList.add("open"));
+  document.getElementById("btnCancelarFilial")?.addEventListener("click", () => modal.classList.remove("open"));
+  modal.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("open"); });
+  modal.querySelectorAll(".filial-opcao").forEach(op => {
+    op.addEventListener("click", () => {
+      if (op.classList.contains("ativa")) { modal.classList.remove("open"); return; }
+      window.location.href = op.dataset.href;
+    });
+  });
+}
+
 // Loja aberta/fechada — controla se o site público (cardápio online)
 // aceita pedidos. Documento: config/loja { aberto: boolean }
 const LOJA_DOC = () => doc(db, "config", "loja");
 
 function initSite() {
   iniciarRelogio();
+  initFilialSwitcher();
 
   const statusEl = document.getElementById("siteStatus");
   const statusText = document.getElementById("siteStatusText");
@@ -566,6 +586,7 @@ async function adicionarMesa(tipo) {
 
 function initIndex() {
   iniciarRelogio();
+  initFilialSwitcher();
 
   let _debounceTimer = null;
   const _unsubMesas = onSnapshot(collection(db, "mesas"), snap => {
@@ -699,6 +720,7 @@ const ADICIONAIS = [
 
 async function initMesa() {
   iniciarRelogio();
+  initFilialSwitcher();
 
   const params = new URLSearchParams(window.location.search);
   estadoMesa.numero = parseInt(params.get("mesa")) || 1;
@@ -1606,6 +1628,7 @@ let _primeiraLeituraCozinha = true;
 
 function initCozinha() {
   iniciarRelogio();
+  initFilialSwitcher();
   document.getElementById("btnCancelarEdicaoCozinha")?.addEventListener("click", fecharModalEditar);
   document.getElementById("btnSalvarEdicaoCozinha")?.addEventListener("click", salvarEdicaoPedido);
 
@@ -1865,6 +1888,7 @@ function mostrarConteudoRelatorio() {
 // FIX: initRelatorio agora chama corretamente as funções de login/conteúdo
 function initRelatorio() {
   iniciarRelogio();
+  initFilialSwitcher();
   if (_autenticado) { mostrarConteudoRelatorio(); } else { mostrarTelaLogin(); }
 }
 

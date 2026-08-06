@@ -136,7 +136,9 @@ input, textarea, select {
 
 body.page-mesas .header-brand,
 body.page-cozinha .header-brand,
-body.page-relatorio .header-brand {
+body.page-relatorio .header-brand,
+body.page-toritama .header-brand,
+body.page-relatorio-toritama .header-brand {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -159,6 +161,49 @@ body.page-relatorio .header-brand {
   font-weight: 800;
   line-height: 1;
 }
+
+/* ---- Botão de seleção de filial (ao lado da logo) ---- */
+.filial-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  margin-left: 0.4rem;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: 999px;
+  color: var(--cinza-claro);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: all var(--t-fast);
+}
+.filial-btn:hover { border-color: var(--ouro); color: var(--ouro-claro); }
+.filial-btn strong { color: var(--ouro-claro); font-weight: 700; }
+.filial-caret { font-size: 0.6rem; color: var(--cinza-texto); }
+
+.filial-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.9rem 0 1.1rem;
+}
+.filial-opcao {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  color: var(--branco);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+}
+.filial-opcao:hover { border-color: var(--ouro); }
+.filial-opcao.ativa { border-color: var(--ouro); background: var(--ouro-bg); color: var(--ouro-claro); }
+.filial-opcao-check { margin-left: auto; color: var(--ouro-claro); font-size: 0.8rem; }
 
 .brand-text h1 {
   font-family: var(--font-display);
@@ -1842,7 +1887,8 @@ body.page-relatorio .header-brand {
 /* ================================================================
    SITE (abrir/fechar pedidos online)
    ================================================================ */
-body.page-site { padding-top: var(--header-h); }
+body.page-site,
+body.page-relatorio-toritama { padding-top: var(--header-h); }
 
 .site-main {
   min-height: calc(100vh - var(--header-h));
@@ -2528,6 +2574,17 @@ body.page-relatorio { padding-top: var(--header-h); }
   margin-top: 0.5rem;
 }
 
+.fat-resumo--toritama {
+  grid-template-columns: repeat(3, 1fr);
+  padding: 0;
+  background: transparent;
+  border: none;
+  margin-top: 0;
+  width: 100%;
+}
+
+.hidden { display: none !important; }
+
 .fat-card {
   background: var(--cinza-escuro);
   border: 1px solid var(--preto-borda);
@@ -2796,11 +2853,15 @@ body.page-relatorio { padding-top: var(--header-h); }
   body.page-mesas .header-brand,
   body.page-cozinha .header-brand,
   body.page-relatorio .header-brand,
-  body.page-site .header-brand {
+  body.page-site .header-brand,
+  body.page-toritama .header-brand,
+  body.page-relatorio-toritama .header-brand {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
   }
+
+  .filial-btn { font-size: 0.62rem; padding: 0.26rem 0.55rem; }
 
   .brand-logo    { height: 26px; }
   .kanji         { font-size: 1.3rem; }
@@ -2929,7 +2990,8 @@ body.page-relatorio { padding-top: var(--header-h); }
   /* ================================================================
      PÁGINA MESA — header
      ================================================================ */
-  body.page-mesa .main-header {
+  body.page-mesa .main-header,
+  body.page-comanda .main-header {
     padding: 0 max(0.72rem, env(safe-area-inset-right)) 0 max(0.72rem, env(safe-area-inset-left));
     gap: 0.45rem;
     height: var(--mob-header);
@@ -2937,13 +2999,22 @@ body.page-relatorio { padding-top: var(--header-h); }
 
   body.page-mesa .brand-logo,
   body.page-mesa .kanji,
-  body.page-mesa .brand-text { display: none !important; }
+  body.page-mesa .brand-text,
+  body.page-comanda .brand-logo,
+  body.page-comanda .kanji,
+  body.page-comanda .brand-text { display: none !important; }
 
-  body.page-mesa .header-brand  { position: static; transform: none; flex-shrink: 0; }
-  body.page-mesa .mesa-header-info { margin-left: auto; gap: 0.32rem; }
-  body.page-mesa .mesa-numero-badge { font-size: 0.88rem; padding: 0.26rem 0.62rem; }
-  body.page-mesa .mesa-status-badge { font-size: 0.6rem; padding: 0.18rem 0.44rem; }
+  body.page-mesa .header-brand,
+  body.page-comanda .header-brand { position: static; transform: none; flex-shrink: 0; }
+  body.page-mesa .mesa-header-info,
+  body.page-comanda .mesa-header-info { margin-left: auto; gap: 0.32rem; }
+  body.page-mesa .mesa-numero-badge,
+  body.page-comanda .mesa-numero-badge { font-size: 0.88rem; padding: 0.26rem 0.62rem; }
+  body.page-mesa .mesa-status-badge,
+  body.page-comanda .mesa-status-badge { font-size: 0.6rem; padding: 0.18rem 0.44rem; }
   .mesa-header-meta { display: none; }
+  body.page-mesa .filial-btn,
+  body.page-comanda .filial-btn { display: none; }
 
   /* ================================================================
      PÁGINA MESA — abas
@@ -3164,14 +3235,17 @@ body.page-relatorio { padding-top: var(--header-h); }
   .btn-excluir-pedido { min-height: 44px; }
 
   /* ================================================================
-     SITE (abrir/fechar pedidos online)
+     SITE (abrir/fechar pedidos online) + RELATÓRIO TORITAMA
      ================================================================ */
-  body.page-site {
+  body.page-site,
+  body.page-relatorio-toritama {
     padding-top: var(--mob-header);
     padding-bottom: var(--mob-bottom);
     padding-left: env(safe-area-inset-left, 0px);
     padding-right: env(safe-area-inset-right, 0px);
   }
+
+  .fat-resumo--toritama { grid-template-columns: 1fr; gap: 0.5rem; }
 
   .site-main { padding: 1.4rem 1rem 2rem; }
   .site-card { padding: 1.4rem 1.2rem; }

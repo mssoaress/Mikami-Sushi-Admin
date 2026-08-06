@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Mikami Sushi — Comanda</title>
+  <link rel="icon" href="img/logo123.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-comanda">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <a href="toritama.html" class="back-btn">← Voltar</a>
+      <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+      <span class="kanji" style="display:none">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+      </div>
+      <button class="filial-btn" id="btnFilial">📍 <strong>Toritama</strong> <span class="filial-caret">▾</span></button>
+    </div>
+    <div class="mesa-header-info">
+      <div class="mesa-numero-badge" id="comandaNumeroBadge">Comanda —</div>
+      <div class="mesa-status-badge" id="comandaStatusBadge">Livre</div>
+    </div>
+  </header>
+
+  <div class="modal-overlay" id="modalFilial">
+    <div class="modal-box" style="max-width:320px">
+      <h3>Selecionar Filial</h3>
+      <div class="filial-opcoes">
+        <button class="filial-opcao" data-href="index.html">🏠 Centro</button>
+        <button class="filial-opcao ativa" data-href="toritama.html">🏢 Toritama <span class="filial-opcao-check">✓</span></button>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFilial">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Abas mobile -->
+  <div class="mesa-abas" style="display:none">
+    <button class="mesa-aba-btn active" data-aba="cardapio">📋 Cardápio</button>
+    <button class="mesa-aba-btn" data-aba="pedido">🛒 Comanda<span id="pedidoBadge"></span></button>
+  </div>
+
+  <div class="mesa-layout">
+
+    <!-- COLUNA A: CARDÁPIO -->
+    <div class="col-cardapio aba-ativa" data-col="cardapio">
+      <div class="col-header">
+        <h2>Cardápio — Toritama</h2>
+      </div>
+      <div class="cardapio-busca">
+        <input
+          type="search"
+          id="buscaProduto"
+          placeholder="Buscar produto..."
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          inputmode="search"
+          enterkeyhint="search"
+        />
+        <span class="busca-icon" aria-hidden="true">🔍</span>
+      </div>
+      <div class="categorias-tabs" id="categoriasTabs"></div>
+      <div class="produtos-lista" id="produtosLista"></div>
+    </div>
+
+    <!-- COLUNA B: COMANDA ATUAL -->
+    <div class="col-pedido" data-col="pedido">
+      <div class="col-header">
+        <h2>Comanda Atual</h2>
+        <span class="pedido-count" id="pedidoCount">Toque em um produto pra lançar</span>
+      </div>
+
+      <div class="pedido-itens" id="pedidoItens">
+        <div class="pedido-vazio">
+          <span class="pedido-vazio-icon">🍱</span>
+          <p>Nenhum item lançado ainda</p>
+        </div>
+      </div>
+      <div class="pedido-footer">
+        <div class="pedido-total-row">
+          <span>Total da comanda:</span>
+          <strong id="pedidoTotal">R$ 0,00</strong>
+        </div>
+        <div class="pedido-footer-btns">
+          <button class="btn-fechar-mesa btn-danger" id="btnFecharComanda" style="width:100%" disabled>Fechar Comanda</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL FECHAR COMANDA -->
+  <div class="modal-overlay" id="modalFecharComanda">
+    <div class="modal-box">
+      <h3>Fechar Comanda</h3>
+      <p>Total a cobrar: <strong id="modalFecharTotal">R$ 0,00</strong></p>
+      <div class="modal-pagamento">
+        <label>Forma de Pagamento:</label>
+        <div class="pagamento-opcoes">
+          <button class="pagamento-btn" data-method="Pix">💸 Pix</button>
+          <button class="pagamento-btn" data-method="Dinheiro">💵 Dinheiro</button>
+          <button class="pagamento-btn" data-method="Débito">💳 Débito</button>
+          <button class="pagamento-btn" data-method="Crédito">💳 Crédito</button>
+        </div>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFecharComanda">Cancelar</button>
+        <button class="btn-confirmar-fechar btn-danger" id="btnConfirmarFecharComanda">Confirmar Fechamento</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app-toritama.js"></script>
+  <script>
+    // Sistema de abas mobile
+    const abaBtns = document.querySelectorAll('.mesa-aba-btn');
+    const cols    = document.querySelectorAll('.mesa-layout [data-col]');
+    abaBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const aba = btn.dataset.aba;
+        abaBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        cols.forEach(c => c.classList.toggle('aba-ativa', c.dataset.col === aba));
+      });
+    });
+  </script>
+</body>
+</html>

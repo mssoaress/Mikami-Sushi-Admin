@@ -40,6 +40,20 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Filial Toritama — coleções isoladas da matriz
+    match /produtos_toritama/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /comandas_toritama/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /vendas_toritama/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Bloqueia tudo que não foi declarado acima
     match /{document=**} {
       allow read, write: if false;
