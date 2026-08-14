@@ -81,6 +81,16 @@
         <span class="resumo-valor" id="resumoTicket">R$ 0,00</span>
         <span class="resumo-label">Ticket Médio</span>
       </div>
+      <div class="resumo-card resumo-card-despesas">
+        <span class="resumo-icon-badge resumo-icon-badge-r">💸</span>
+        <span class="resumo-valor" id="resumoDespesas">R$ 0,00</span>
+        <span class="resumo-label">Despesas no Período</span>
+      </div>
+      <div class="resumo-card resumo-card-lucro">
+        <span class="resumo-icon-badge resumo-icon-badge-v">📈</span>
+        <span class="resumo-valor" id="resumoLucro">R$ 0,00</span>
+        <span class="resumo-label">Lucro Líquido</span>
+      </div>
     </div>
 
     <div class="periodo-bar">
@@ -113,32 +123,54 @@
     </div>
 
     <main class="relatorio-main">
-      <div class="vendas-header">
-        <h3 class="vendas-header-titulo" id="vendasHeaderLabel">Vendas do período</h3>
-        <span class="vendas-header-count" id="vendasHeaderCount">0 vendas</span>
-      </div>
-      <div class="vendas-lista" id="vendasLista">
-        <div class="loading-mesas">
-          <div class="loading-spinner"></div>
-          <p>Carregando...</p>
-        </div>
+      <div class="relatorio-view-tabs" id="relatorioViewTabs">
+        <button class="relatorio-view-tab active" data-view="vendas">📈 Vendas</button>
+        <button class="relatorio-view-tab" data-view="despesas">💸 Despesas</button>
       </div>
 
-      <!-- Gráfico de produtos mais vendidos — integrado no fluxo natural -->
-      <div class="chart-itens-dia-wrap" id="chartItensDiaWrap" style="display:none">
-        <div class="chart-itens-dia-titulo">🍣 Produtos mais vendidos no dia</div>
-        <div class="chart-itens-dia-inner">
-          <div class="chart-itens-dia-chart-wrap">
-            <canvas id="chartItensDia"></canvas>
+      <div id="viewVendas">
+        <div class="vendas-header">
+          <h3 class="vendas-header-titulo" id="vendasHeaderLabel">Vendas do período</h3>
+          <span class="vendas-header-count" id="vendasHeaderCount">0 vendas</span>
+        </div>
+        <div class="vendas-lista" id="vendasLista">
+          <div class="loading-mesas">
+            <div class="loading-spinner"></div>
+            <p>Carregando...</p>
           </div>
-          <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
+        </div>
+
+        <div class="chart-itens-dia-wrap" id="chartItensDiaWrap" style="display:none">
+          <div class="chart-itens-dia-titulo">🍣 Produtos mais vendidos no dia</div>
+          <div class="chart-itens-dia-inner">
+            <div class="chart-itens-dia-chart-wrap">
+              <canvas id="chartItensDia"></canvas>
+            </div>
+            <div class="chart-itens-dia-lista" id="chartItensDiaLista"></div>
+          </div>
+        </div>
+
+        <div class="pagamentos-detalhe-wrap" id="pagamentosDetalheWrap" style="display:none">
+          <div class="pagamentos-detalhe-titulo">💳 Faturamento por Forma de Pagamento</div>
+          <div class="pagamentos-breakdown" id="pagamentosBreakdown"></div>
         </div>
       </div>
 
-      <!-- Faturamento por forma de pagamento — abaixo da lista de produtos -->
-      <div class="pagamentos-detalhe-wrap" id="pagamentosDetalheWrap" style="display:none">
-        <div class="pagamentos-detalhe-titulo">💳 Faturamento por Forma de Pagamento</div>
-        <div class="pagamentos-breakdown" id="pagamentosBreakdown"></div>
+      <div id="viewDespesas" class="hidden">
+        <div class="despesas-form-box">
+          <h3>Adicionar Despesa</h3>
+          <div class="despesas-form-row">
+            <input type="text" id="despesaDescricao" placeholder="Descrição (ex: Gás, Aluguel, Fornecedor...)" />
+            <input type="number" id="despesaValor" placeholder="Valor (R$)" step="0.01" min="0" />
+            <input type="date" id="despesaData" />
+            <button class="btn-primary" id="btnAddDespesa">Adicionar</button>
+          </div>
+        </div>
+        <div class="vendas-header">
+          <h3 class="vendas-header-titulo">Despesas do período</h3>
+          <span class="vendas-header-count" id="despesasHeaderCount">0 despesas</span>
+        </div>
+        <div class="despesas-lista" id="despesasLista"></div>
       </div>
     </main>
 

@@ -1816,6 +1816,9 @@ async function excluirPedido(pedidoId, mesaId, totalPedido) {
 // ============================================================
 let unsubRelatorio = null;
 let vendasAtuais = [];
+let unsubDespesas = null;
+let despesasAtuais = [];
+let _totalVendasPeriodo = 0;
 
 // ── Estado do período selecionado ─────────────────────────
 let _periodoTipo = "dia";       // "dia" | "semana" | "mes" | "ano" | "personalizado"
@@ -1987,9 +1990,26 @@ function _iniciarConteudoRelatorio() {
     imprimirRelatorio(_periodoLabelAtual, vendasAtuais);
   });
 
+  document.querySelectorAll(".relatorio-view-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".relatorio-view-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const view = btn.dataset.view;
+      document.getElementById("viewVendas")?.classList.toggle("hidden", view !== "vendas");
+      document.getElementById("viewDespesas")?.classList.toggle("hidden", view !== "despesas");
+    });
+  });
+
+  const despesaDataInput = document.getElementById("despesaData");
+  if (despesaDataInput) despesaDataInput.value = _dataStr(new Date());
+  document.getElementById("btnAddDespesa")?.addEventListener("click", criarDespesa);
+
   _aplicarPeriodo();
   initFaturamento();
-  window.addEventListener("pagehide", () => { if (unsubRelatorio) unsubRelatorio(); }, { once: true });
+  window.addEventListener("pagehide", () => {
+    if (unsubRelatorio) unsubRelatorio();
+    if (unsubDespesas) unsubDespesas();
+  }, { once: true });
 }
 
 function _aplicarPeriodoCustom() {
@@ -2010,6 +2030,7 @@ function _aplicarPeriodoCustom() {
   const labelEl = document.getElementById("periodoLabel");
   if (labelEl) labelEl.textContent = _periodoLabelAtual;
   escutarVendas(inicio, fimData);
+  escutarDespesas(inicio, fimData);
 }
 
 function _aplicarPeriodo() {
@@ -2018,6 +2039,7 @@ function _aplicarPeriodo() {
   const labelEl = document.getElementById("periodoLabel");
   if (labelEl) labelEl.textContent = label;
   escutarVendas(inicio, fim);
+  escutarDespesas(inicio, fim);
 }
 
 function escutarVendas(inicio, fim) {
@@ -2044,10 +2066,133 @@ function escutarVendas(inicio, fim) {
   });
 }
 
+// ── Despesas ────────────────────────────────────────────────
+function escutarDespesas(inicio, fim) {
+  if (unsubDespesas) { unsubDespesas(); unsubDespesas = null; }
+
+  const q = query(
+    collection(db, "despesas"),
+    where("dataDespesa", ">=", Timestamp.fromDate(inicio)),
+    where("dataDespesa", "<=", Timestamp.fromDate(fim)),
+    orderBy("dataDespesa", "desc")
+  );
+
+  unsubDespesas = onSnapshot(q, snap => {
+    const despesas = [];
+    snap.forEach(d => despesas.push({ id: d.id, ...d.data() }));
+    despesasAtuais = despesas;
+    renderDespesas(despesas);
+    atualizarLucro();
+  }, err => {
+    console.error("[Mikami] Erro ao carregar despesas:", err);
+    toast("Erro ao carregar despesas.", "erro");
+  });
+}
+
+function renderDespesas(despesas) {
+  const lista = document.getElementById("despesasLista");
+  const count = document.getElementById("despesasHeaderCount");
+  if (count) count.textContent = `${despesas.length} ${despesas.length === 1 ? "despesa" : "despesas"}`;
+  if (!lista) return;
+
+  if (!despesas.length) {
+    lista.innerHTML = `
+      <div class="loading-mesas">
+        <span style="font-size:2rem">💸</span>
+        <p>Nenhuma despesa registrada nesse período.</p>
+      </div>`;
+    return;
+  }
+
+  const porDia = new Map();
+  despesas.forEach(d => {
+    const data = d.dataDespesa?.toDate ? d.dataDespesa.toDate() : new Date(d.dataDespesa);
+    const chave = data.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+    if (!porDia.has(chave)) porDia.set(chave, []);
+    porDia.get(chave).push(d);
+  });
+
+  lista.innerHTML = Array.from(porDia.entries()).map(([dia, itens]) => {
+    const totalDia = itens.reduce((a, d) => a + (d.valor || 0), 0);
+    const itensHtml = itens.map(d => `
+      <div class="despesa-item" data-id="${d.id}">
+        <span class="despesa-item-desc">${esc(d.descricao)}</span>
+        <span class="despesa-item-valor">${fmtMoeda(d.valor)}</span>
+        <button class="despesa-item-del" data-id="${d.id}" title="Excluir despesa">🗑</button>
+      </div>
+    `).join("");
+    return `
+      <div class="despesa-dia-grupo">
+        <div class="despesa-dia-titulo"><span>${esc(dia.replace(".", ""))}</span><span>${fmtMoeda(totalDia)}</span></div>
+        ${itensHtml}
+      </div>
+    `;
+  }).join("");
+
+  lista.querySelectorAll(".despesa-item-del").forEach(btn => {
+    btn.addEventListener("click", () => excluirDespesa(btn.dataset.id));
+  });
+}
+
+async function criarDespesa() {
+  const descInput = document.getElementById("despesaDescricao");
+  const valorInput = document.getElementById("despesaValor");
+  const dataInput = document.getElementById("despesaData");
+
+  const descricao = descInput?.value.trim();
+  const valor = parseFloat(valorInput?.value);
+  const dataStr = dataInput?.value;
+
+  if (!descricao) { toast("Descreva a despesa.", "info"); return; }
+  if (!valor || valor <= 0) { toast("Informe um valor válido.", "info"); return; }
+  if (!dataStr) { toast("Escolha a data da despesa.", "info"); return; }
+
+  const [a, m, d] = dataStr.split("-").map(Number);
+  const dataDespesa = _inicioDia(new Date(a, m - 1, d));
+
+  try {
+    await addDoc(collection(db, "despesas"), {
+      descricao, valor, dataDespesa: Timestamp.fromDate(dataDespesa), criadoEm: serverTimestamp()
+    });
+    toast("Despesa adicionada.", "sucesso");
+    descInput.value = "";
+    valorInput.value = "";
+  } catch (err) {
+    console.error("[Mikami] Erro ao adicionar despesa:", err);
+    toast("Erro ao adicionar despesa.", "erro");
+  }
+}
+
+async function excluirDespesa(despesaId) {
+  const confirmado = await _confirmarAcao("Excluir esta despesa? Esta ação não pode ser desfeita.");
+  if (!confirmado) return;
+  try {
+    await deleteDoc(doc(db, "despesas", despesaId));
+    toast("Despesa excluída.", "sucesso");
+  } catch (err) {
+    console.error("[Mikami] Erro ao excluir despesa:", err);
+    toast("Erro ao excluir despesa.", "erro");
+  }
+}
+
+function atualizarLucro() {
+  const totalDespesas = despesasAtuais.reduce((a, d) => a + (d.valor || 0), 0);
+  const lucro = _totalVendasPeriodo - totalDespesas;
+  const elD = document.getElementById("resumoDespesas");
+  const elL = document.getElementById("resumoLucro");
+  if (elD) elD.textContent = fmtMoeda(totalDespesas);
+  if (elL) {
+    elL.textContent = fmtMoeda(lucro);
+    elL.style.color = lucro < 0 ? "var(--vermelho-vivo)" : "";
+  }
+}
+
 function renderRelatorio(vendas) {
   const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
   const qtdMesas = vendas.length;
   const ticketMed = qtdMesas > 0 ? totalDia / qtdMesas : 0;
+  _totalVendasPeriodo = totalDia;
+  atualizarLucro();
 
   const el = id => document.getElementById(id);
   if (el("resumoTotal")) el("resumoTotal").textContent = fmtMoeda(totalDia);

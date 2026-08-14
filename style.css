@@ -2587,6 +2587,91 @@ body.page-relatorio { padding-top: var(--header-h); }
 
 .hidden { display: none !important; }
 
+.relatorio-view-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--preto-borda);
+}
+.relatorio-view-tab {
+  padding: 0.6rem 0.2rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--cinza-texto);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: -1px;
+}
+.relatorio-view-tab.active { color: var(--ouro-claro); border-bottom-color: var(--ouro); }
+.relatorio-view-tab:hover:not(.active) { color: var(--branco); }
+
+.despesas-form-box {
+  background: var(--cinza-escuro);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio-lg);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+.despesas-form-box h3 {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  color: var(--branco);
+  margin: 0 0 0.7rem;
+}
+.despesas-form-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.despesas-form-row input {
+  flex: 1;
+  min-width: 140px;
+  background: var(--preto-card);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+  padding: 0.65rem 0.8rem;
+  color: var(--branco);
+  font-size: 0.85rem;
+  min-height: 44px;
+}
+.despesas-form-row input:focus { outline: none; border-color: var(--ouro); }
+.despesas-form-row input::placeholder { color: var(--cinza-texto); }
+.despesas-form-row button { flex-shrink: 0; min-height: 44px; }
+
+.despesas-lista { display: flex; flex-direction: column; gap: 1rem; }
+
+.despesa-dia-grupo { display: flex; flex-direction: column; gap: 0.4rem; }
+.despesa-dia-titulo {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ouro-claro);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.despesa-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--preto-card);
+  border: 1px solid var(--preto-borda);
+  border-radius: var(--raio);
+}
+.despesa-item-desc { font-size: 0.85rem; color: var(--branco); flex: 1; min-width: 0; }
+.despesa-item-valor { font-family: var(--font-display); font-weight: 700; color: var(--vermelho-vivo); white-space: nowrap; }
+.despesa-item-del {
+  background: none;
+  border: none;
+  color: var(--cinza-texto);
+  font-size: 0.85rem;
+  padding: 0.3rem;
+  min-height: 32px;
+}
+.despesa-item-del:hover { color: var(--vermelho-vivo); }
+
 .fat-card {
   background: var(--cinza-escuro);
   border: 1px solid var(--preto-borda);

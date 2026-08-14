@@ -454,6 +454,9 @@ async function initComanda() {
 
 let unsubRelatorioToritama = null;
 let vendasAtuaisToritama = [];
+let unsubDespesasToritama = null;
+let despesasAtuaisToritama = [];
+let _totalVendasPeriodoToritama = 0;
 
 let _periodoTipoT = "dia";
 let _periodoRefT = new Date();
@@ -606,9 +609,26 @@ function _iniciarConteudoRelatorioToritama() {
     imprimirRelatorioToritama(_periodoLabelAtualT, vendasAtuaisToritama);
   });
 
+  document.querySelectorAll(".relatorio-view-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".relatorio-view-tab").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const view = btn.dataset.view;
+      document.getElementById("viewVendas")?.classList.toggle("hidden", view !== "vendas");
+      document.getElementById("viewDespesas")?.classList.toggle("hidden", view !== "despesas");
+    });
+  });
+
+  const despesaDataInput = document.getElementById("despesaData");
+  if (despesaDataInput) despesaDataInput.value = _dataStrT(new Date());
+  document.getElementById("btnAddDespesa")?.addEventListener("click", criarDespesaToritama);
+
   _aplicarPeriodoT();
   initFaturamentoToritama();
-  window.addEventListener("pagehide", () => { if (unsubRelatorioToritama) unsubRelatorioToritama(); }, { once: true });
+  window.addEventListener("pagehide", () => {
+    if (unsubRelatorioToritama) unsubRelatorioToritama();
+    if (unsubDespesasToritama) unsubDespesasToritama();
+  }, { once: true });
 }
 
 function _aplicarPeriodoCustomT() {
@@ -627,6 +647,7 @@ function _aplicarPeriodoCustomT() {
   const labelEl = document.getElementById("periodoLabel");
   if (labelEl) labelEl.textContent = _periodoLabelAtualT;
   escutarVendasToritama(inicio, fimData);
+  escutarDespesasToritama(inicio, fimData);
 }
 
 function _aplicarPeriodoT() {
@@ -635,6 +656,7 @@ function _aplicarPeriodoT() {
   const labelEl = document.getElementById("periodoLabel");
   if (labelEl) labelEl.textContent = label;
   escutarVendasToritama(inicio, fim);
+  escutarDespesasToritama(inicio, fim);
 }
 
 function escutarVendasToritama(inicio, fim) {
@@ -661,10 +683,133 @@ function escutarVendasToritama(inicio, fim) {
   });
 }
 
+// ── Despesas (Toritama) ──────────────────────────────────────
+function escutarDespesasToritama(inicio, fim) {
+  if (unsubDespesasToritama) { unsubDespesasToritama(); unsubDespesasToritama = null; }
+
+  const q = query(
+    collection(db, "despesas_toritama"),
+    where("dataDespesa", ">=", Timestamp.fromDate(inicio)),
+    where("dataDespesa", "<=", Timestamp.fromDate(fim)),
+    orderBy("dataDespesa", "desc")
+  );
+
+  unsubDespesasToritama = onSnapshot(q, snap => {
+    const despesas = [];
+    snap.forEach(d => despesas.push({ id: d.id, ...d.data() }));
+    despesasAtuaisToritama = despesas;
+    renderDespesasToritama(despesas);
+    atualizarLucroToritama();
+  }, err => {
+    console.error("[Toritama] Erro ao carregar despesas:", err);
+    toast("Erro ao carregar despesas.", "erro");
+  });
+}
+
+function renderDespesasToritama(despesas) {
+  const lista = document.getElementById("despesasLista");
+  const count = document.getElementById("despesasHeaderCount");
+  if (count) count.textContent = `${despesas.length} ${despesas.length === 1 ? "despesa" : "despesas"}`;
+  if (!lista) return;
+
+  if (!despesas.length) {
+    lista.innerHTML = `
+      <div class="loading-mesas">
+        <span style="font-size:2rem">💸</span>
+        <p>Nenhuma despesa registrada nesse período.</p>
+      </div>`;
+    return;
+  }
+
+  const porDia = new Map();
+  despesas.forEach(d => {
+    const data = d.dataDespesa?.toDate ? d.dataDespesa.toDate() : new Date(d.dataDespesa);
+    const chave = data.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+    if (!porDia.has(chave)) porDia.set(chave, []);
+    porDia.get(chave).push(d);
+  });
+
+  lista.innerHTML = Array.from(porDia.entries()).map(([dia, itens]) => {
+    const totalDia = itens.reduce((a, d) => a + (d.valor || 0), 0);
+    const itensHtml = itens.map(d => `
+      <div class="despesa-item" data-id="${d.id}">
+        <span class="despesa-item-desc">${esc(d.descricao)}</span>
+        <span class="despesa-item-valor">${fmtMoeda(d.valor)}</span>
+        <button class="despesa-item-del" data-id="${d.id}" title="Excluir despesa">🗑</button>
+      </div>
+    `).join("");
+    return `
+      <div class="despesa-dia-grupo">
+        <div class="despesa-dia-titulo"><span>${esc(dia.replace(".", ""))}</span><span>${fmtMoeda(totalDia)}</span></div>
+        ${itensHtml}
+      </div>
+    `;
+  }).join("");
+
+  lista.querySelectorAll(".despesa-item-del").forEach(btn => {
+    btn.addEventListener("click", () => excluirDespesaToritama(btn.dataset.id));
+  });
+}
+
+async function criarDespesaToritama() {
+  const descInput = document.getElementById("despesaDescricao");
+  const valorInput = document.getElementById("despesaValor");
+  const dataInput = document.getElementById("despesaData");
+
+  const descricao = descInput?.value.trim();
+  const valor = parseFloat(valorInput?.value);
+  const dataStr = dataInput?.value;
+
+  if (!descricao) { toast("Descreva a despesa.", "info"); return; }
+  if (!valor || valor <= 0) { toast("Informe um valor válido.", "info"); return; }
+  if (!dataStr) { toast("Escolha a data da despesa.", "info"); return; }
+
+  const [a, m, d] = dataStr.split("-").map(Number);
+  const dataDespesa = _inicioDiaT(new Date(a, m - 1, d));
+
+  try {
+    await addDoc(collection(db, "despesas_toritama"), {
+      descricao, valor, dataDespesa: Timestamp.fromDate(dataDespesa), criadoEm: serverTimestamp()
+    });
+    toast("Despesa adicionada.", "sucesso");
+    descInput.value = "";
+    valorInput.value = "";
+  } catch (err) {
+    console.error("[Toritama] Erro ao adicionar despesa:", err);
+    toast("Erro ao adicionar despesa.", "erro");
+  }
+}
+
+async function excluirDespesaToritama(despesaId) {
+  const confirmado = await _confirmarAcaoT("Excluir esta despesa? Esta ação não pode ser desfeita.");
+  if (!confirmado) return;
+  try {
+    await deleteDoc(doc(db, "despesas_toritama", despesaId));
+    toast("Despesa excluída.", "sucesso");
+  } catch (err) {
+    console.error("[Toritama] Erro ao excluir despesa:", err);
+    toast("Erro ao excluir despesa.", "erro");
+  }
+}
+
+function atualizarLucroToritama() {
+  const totalDespesas = despesasAtuaisToritama.reduce((a, d) => a + (d.valor || 0), 0);
+  const lucro = _totalVendasPeriodoToritama - totalDespesas;
+  const elD = document.getElementById("resumoDespesas");
+  const elL = document.getElementById("resumoLucro");
+  if (elD) elD.textContent = fmtMoeda(totalDespesas);
+  if (elL) {
+    elL.textContent = fmtMoeda(lucro);
+    elL.style.color = lucro < 0 ? "var(--vermelho-vivo)" : "";
+  }
+}
+
 function renderRelatorioToritama(vendas) {
   const totalDia = vendas.reduce((acc, v) => acc + (v.total || 0), 0);
   const qtdComandas = vendas.length;
   const ticketMed = qtdComandas > 0 ? totalDia / qtdComandas : 0;
+  _totalVendasPeriodoToritama = totalDia;
+  atualizarLucroToritama();
 
   const el = id => document.getElementById(id);
   if (el("resumoTotal")) el("resumoTotal").textContent = fmtMoeda(totalDia);

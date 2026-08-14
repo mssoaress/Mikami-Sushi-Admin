@@ -32,6 +32,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Despesas — mesmo padrão de acesso de vendas
+    match /despesas/{id} {
+      allow read, write: if true;
+    }
+
     // Config — status do site (aberto/fechado para pedidos)
     // Leitura livre: o site público precisa ler em tempo real.
     // Escrita aberta, no mesmo padrão de mesas/pedidos deste projeto.
@@ -50,6 +55,10 @@ service cloud.firestore {
       allow write: if true;
     }
     match /vendas_toritama/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+    match /despesas_toritama/{id} {
       allow read: if true;
       allow write: if true;
     }
