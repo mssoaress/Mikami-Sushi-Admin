@@ -102,6 +102,7 @@ input, textarea, select {
   font-family: var(--font-body);
   outline: none;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 ::-webkit-scrollbar { width: 3px; height: 3px; }
@@ -561,6 +562,7 @@ body.page-relatorio-toritama .header-brand {
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
