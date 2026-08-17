@@ -45,6 +45,14 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Produtos do site público (cardápio Mikami-Sushi/React) — gerenciados
+    // pelo painel admin na aba Site. Leitura livre pro site ler em tempo
+    // real; escrita aberta, mesmo padrão do resto do projeto.
+    match /produtos_site/{id} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Filial Toritama — coleções isoladas da matriz
     match /produtos_toritama/{id} {
       allow read: if true;

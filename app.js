@@ -76,70 +76,10 @@ const CARDAPIO = [
 const TOTAL_MESAS = 12;
 
 // Catálogo do CARDÁPIO PÚBLICO (site de pedidos / Mikami-Sushi em React).
-// É um catálogo diferente do CARDAPIO acima (que é usado só nos pedidos de
-// mesa). Mantido aqui apenas com id + nome + categoria, só para exibir a
-// lista de disponibilidade nesta tela — os dados completos (preço, foto,
-// descrição) vivem no repositório do site. Se o cardápio do site mudar,
-// atualize esta lista também para manter em sincronia.
-const PRODUTOS_SITE = [
-  // Combos
-  { id: 101, nome: "Temaki + Hot Roll", categoria: "Combos" },
-  { id: 102, nome: "Mini Dog + Croquete + Uramaki", categoria: "Combos" },
-  { id: 103, nome: "Hot Skim + Uramaki + Rosomaki", categoria: "Combos" },
-  { id: 104, nome: "20 Hot Roll Sortidas", categoria: "Combos" },
-  { id: 105, nome: "Joe + Niguiri + Mix", categoria: "Combos" },
-  // Individuais
-  { id: 201, nome: "Uramaki de Salmão", categoria: "Individuais" },
-  { id: 202, nome: "Hot Roll", categoria: "Individuais" },
-  { id: 203, nome: "Hosomaki de Salmão", categoria: "Individuais" },
-  { id: 204, nome: "Hot Roll Camarão", categoria: "Individuais" },
-  { id: 205, nome: "Croquete de Salmão (6 un.)", categoria: "Individuais" },
-  { id: 207, nome: "Hot Dog Salmão", categoria: "Individuais" },
-  { id: 208, nome: "Hot Dog Salmão e Camarão", categoria: "Individuais" },
-  { id: 209, nome: "Sunomo", categoria: "Individuais" },
-  { id: 214, nome: "Kani de Queijo", categoria: "Individuais" },
-  { id: 210, nome: "Poke 500ml", categoria: "Individuais" },
-  { id: 211, nome: "Camarão ao Alho e Óleo 250g", categoria: "Individuais" },
-  { id: 212, nome: "Batata Frita P", categoria: "Individuais" },
-  { id: 213, nome: "Batata Frita G", categoria: "Individuais" },
-  // Especiais
-  { id: 301, nome: "Uramaki de Kani com Camarão", categoria: "Especiais" },
-  { id: 302, nome: "Uramaki Especial", categoria: "Especiais" },
-  { id: 303, nome: "Hot Especial", categoria: "Especiais" },
-  { id: 304, nome: "Nathos de Salmão com Doritos", categoria: "Especiais" },
-  { id: 305, nome: "Joe", categoria: "Especiais" },
-  { id: 306, nome: "Niguiri Salmão", categoria: "Especiais" },
-  { id: 307, nome: "Mikami Supremo 500g", categoria: "Especiais" },
-  { id: 308, nome: "Hossomaki Especial", categoria: "Especiais" },
-  { id: 309, nome: "Joe Ebi Crocante", categoria: "Especiais" },
-  { id: 310, nome: "Uramaki Philadelphia + Lâminas de Sashimi", categoria: "Especiais" },
-  { id: 311, nome: "Camarão Empanado", categoria: "Especiais" },
-  // Temakis
-  { id: 401, nome: "Temaki de Copo — Salmão", categoria: "Temakis" },
-  { id: 402, nome: "Temaki de Salmão", categoria: "Temakis" },
-  { id: 403, nome: "Temaki de Kani", categoria: "Temakis" },
-  { id: 404, nome: "Temaki de Skin", categoria: "Temakis" },
-  { id: 405, nome: "Temaki de Camarão", categoria: "Temakis" },
-  // Yakisoba
-  { id: 501, nome: "Yakisoba Individual", categoria: "Yakisoba" },
-  { id: 502, nome: "Yakisoba para 2 Pessoas", categoria: "Yakisoba" },
-  // Peças Doces
-  { id: 601, nome: "Harumaki de Banana com Nutella", categoria: "Peças Doces" },
-  { id: 602, nome: "Harumaki Nutella + Doce de Leite + Romeu e Julieta", categoria: "Peças Doces" },
-  { id: 603, nome: "Brownie com Sorvete", categoria: "Peças Doces" },
-  // Bebidas
-  { id: 701, nome: "Coca Zero Lata (350ml)", categoria: "Bebidas" },
-  { id: 702, nome: "Coca Cola Lata (350ml)", categoria: "Bebidas" },
-  { id: 703, nome: "Guaraná Antarctica (350ml)", categoria: "Bebidas" },
-  { id: 704, nome: "Guaraná Antarctica Zero (350ml)", categoria: "Bebidas" },
-  { id: 705, nome: "H2O Limoneto (500ml)", categoria: "Bebidas" },
-  { id: 706, nome: "Guaraná Antarctica (1L)", categoria: "Bebidas" },
-  { id: 707, nome: "Água", categoria: "Bebidas" },
-  { id: 708, nome: "Água com Gás", categoria: "Bebidas" },
-  { id: 709, nome: "Suco Copo", categoria: "Bebidas" },
-  { id: 710, nome: "Suco Jarra", categoria: "Bebidas" },
-  { id: 711, nome: "Suco Laranja com Morango", categoria: "Bebidas" },
-];
+// Os produtos agora vivem inteiramente no Firestore, na coleção
+// produtos_site — veja initProdutosSite() mais abaixo. Esse array
+// hardcoded não é mais necessário: tudo (nome, preço, foto, categoria,
+// disponibilidade) é gerenciado direto por aqui, na tela Site.
 
 // ============================================================
 // 2. UTILITÁRIOS
@@ -348,102 +288,59 @@ function initSite() {
     fecharComMotivo(motivoFinal);
   });
 
-  initProdutosDisponibilidade();
+  initProdutosSite();
 }
 
-// Documento com os produtos do site marcados como indisponíveis.
-// config/produtos { indisponiveis: [id, id, ...] }
-const PRODUTOS_DOC = () => doc(db, "config", "produtos");
+// ============================================================
+// PRODUTOS DO SITE — CRUD completo (nome, preço, descrição, foto,
+// categoria, disponibilidade e destaque), com upload de imagem pro
+// Cloudinary. Tudo grava direto em produtos_site no Firestore, que é
+// a mesma coleção que o site público (Mikami-Sushi) lê em tempo real.
+// ============================================================
 
-function initProdutosDisponibilidade() {
+// Configuração Cloudinary — upload "unsigned" (sem segredo nenhum aqui,
+// é seguro rodar no navegador). Se o upload falhar com erro de preset,
+// confirme no painel do Cloudinary (Settings → Upload → Upload presets)
+// que existe um preset com esse nome, modo "Unsigned".
+const CLOUDINARY_CLOUD_NAME = "dnxnmjihb";
+const CLOUDINARY_UPLOAD_PRESET = "mikami_site";
+
+async function uploadImagemCloudinary(file, categoria) {
+  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+  const form = new FormData();
+  form.append("file", file);
+  form.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+  form.append("folder", `mikami-sushi/${(categoria || "outros").toLowerCase().replace(/\s+/g, "-")}`);
+
+  const resp = await fetch(url, { method: "POST", body: form });
+  const data = await resp.json();
+  if (!resp.ok) {
+    throw new Error(data?.error?.message || "Falha no upload da imagem");
+  }
+  return data.secure_url;
+}
+
+let _produtosSiteAtuais = [];
+let _produtoEditandoId = null;
+let _produtoImgUrlAtual = "";
+
+function initProdutosSite() {
   const lista = document.getElementById("produtosLista");
   const busca = document.getElementById("produtosBusca");
+  const btnNovo = document.getElementById("btnNovoProduto");
   if (!lista) return;
 
-  // Agrupa por categoria, na ordem em que aparecem no catálogo
-  const categorias = [];
-  const porCategoria = {};
-  PRODUTOS_SITE.forEach(p => {
-    if (!porCategoria[p.categoria]) { porCategoria[p.categoria] = []; categorias.push(p.categoria); }
-    porCategoria[p.categoria].push(p);
-  });
-
-  // Monta o HTML uma vez; o estado (disponível/indisponível) é atualizado
-  // via onSnapshot, sem precisar re-renderizar tudo a cada mudança.
-  // Acordeão feito à mão (sem <details>/<summary>) pra ter controle total
-  // do visual e do foco, em vez de depender do estilo nativo do navegador.
-  lista.innerHTML = categorias.map((cat, i) => `
-    <div class="site-produtos-categoria">
-      <button type="button" class="site-produtos-cat-toggle" data-cat="${i}" aria-expanded="false">
-        <span class="site-produtos-cat-nome">${esc(cat)}</span>
-        <span class="site-produtos-categoria-count">${porCategoria[cat].length}</span>
-        <span class="site-produtos-cat-arrow">▾</span>
-      </button>
-      <div class="site-produtos-itens" id="produtosCat${i}" hidden>
-        ${porCategoria[cat].map(p => `
-          <div class="site-produto-row" data-nome="${esc(p.nome.toLowerCase())}">
-            <span class="site-produto-nome">${esc(p.nome)}</span>
-            <button type="button" class="site-produto-toggle" data-id="${p.id}">Disponível</button>
-          </div>
-        `).join("")}
-      </div>
-    </div>
-  `).join("");
-
-  function setCategoriaAberta(catEl, aberta) {
-    const toggle = catEl.querySelector(".site-produtos-cat-toggle");
-    const itens = catEl.querySelector(".site-produtos-itens");
-    toggle.setAttribute("aria-expanded", String(aberta));
-    catEl.classList.toggle("aberta", aberta);
-    itens.hidden = !aberta;
-  }
-
-  let indisponiveisAtual = new Set();
-
-  onSnapshot(PRODUTOS_DOC(), snap => {
-    const dados = snap.exists() ? snap.data() : {};
-    indisponiveisAtual = new Set(dados.indisponiveis || []);
-    lista.querySelectorAll(".site-produto-toggle").forEach(btn => {
-      const id = Number(btn.dataset.id);
-      const indisponivel = indisponiveisAtual.has(id);
-      btn.classList.toggle("indisponivel", indisponivel);
-      btn.textContent = indisponivel ? "Indisponível" : "Disponível";
-    });
+  onSnapshot(collection(db, "produtos_site"), snap => {
+    _produtosSiteAtuais = snap.docs
+      .map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+    renderProdutosSite();
   }, err => {
-    console.error("Erro ao ler disponibilidade dos produtos:", err);
+    console.error("Erro ao ler produtos do site:", err);
+    toast("Erro ao carregar produtos do site.", "erro");
   });
 
-  lista.addEventListener("click", async e => {
-    const catToggle = e.target.closest(".site-produtos-cat-toggle");
-    if (catToggle) {
-      const catEl = catToggle.closest(".site-produtos-categoria");
-      const aberta = catToggle.getAttribute("aria-expanded") === "true";
-      setCategoriaAberta(catEl, !aberta);
-      return;
-    }
-
-    const btn = e.target.closest(".site-produto-toggle");
-    if (!btn) return;
-    const id = Number(btn.dataset.id);
-    const estavaIndisponivel = indisponiveisAtual.has(id);
-    btn.disabled = true;
-    try {
-      await updateDoc(PRODUTOS_DOC(), {
-        indisponiveis: estavaIndisponivel ? arrayRemove(id) : arrayUnion(id)
-      }).catch(async () => {
-        // Se o documento ainda não existir, updateDoc falha — cria com setDoc
-        await setDoc(PRODUTOS_DOC(), {
-          indisponiveis: estavaIndisponivel ? [] : [id]
-        }, { merge: true });
-      });
-      toast(estavaIndisponivel ? "Produto marcado como disponível" : "Produto marcado como indisponível", "info");
-    } catch (err) {
-      console.error("Erro ao atualizar disponibilidade:", err);
-      toast("Não foi possível atualizar. Tente novamente.", "erro");
-    } finally {
-      btn.disabled = false;
-    }
-  });
+  btnNovo?.addEventListener("click", () => abrirModalProduto(null));
 
   if (busca) {
     busca.addEventListener("input", () => {
@@ -456,10 +353,235 @@ function initProdutosDisponibilidade() {
           if (bate) algumVisivel = true;
         });
         catEl.style.display = algumVisivel ? "" : "none";
-        setCategoriaAberta(catEl, termo.length > 0 && algumVisivel);
+        _setCategoriaProdutoAberta(catEl, termo.length > 0 && algumVisivel);
       });
     });
   }
+
+  initModalProduto();
+}
+
+function _setCategoriaProdutoAberta(catEl, aberta) {
+  const toggle = catEl.querySelector(".site-produtos-cat-toggle");
+  const itens = catEl.querySelector(".site-produtos-itens");
+  toggle.setAttribute("aria-expanded", String(aberta));
+  itens.hidden = !aberta;
+}
+
+function renderProdutosSite() {
+  const lista = document.getElementById("produtosLista");
+  if (!lista) return;
+
+  if (!_produtosSiteAtuais.length) {
+    lista.innerHTML = `<p class="conta-vazia">Nenhum produto cadastrado ainda. Clique em "+ Novo Produto" pra começar.</p>`;
+    return;
+  }
+
+  const categorias = [];
+  const porCategoria = {};
+  _produtosSiteAtuais.forEach(p => {
+    const cat = p.categoria || "Sem categoria";
+    if (!porCategoria[cat]) { porCategoria[cat] = []; categorias.push(cat); }
+    porCategoria[cat].push(p);
+  });
+
+  const abertasAntes = new Set(
+    Array.from(lista.querySelectorAll('.site-produtos-cat-toggle[aria-expanded="true"]'))
+      .map(b => b.dataset.cat)
+  );
+
+  lista.innerHTML = categorias.map(cat => `
+    <div class="site-produtos-categoria">
+      <button type="button" class="site-produtos-cat-toggle" data-cat="${esc(cat)}" aria-expanded="${abertasAntes.has(cat) ? "true" : "false"}">
+        <span class="site-produtos-cat-nome">${esc(cat)}</span>
+        <span class="site-produtos-categoria-count">${porCategoria[cat].length}</span>
+        <span class="site-produtos-cat-arrow">▾</span>
+      </button>
+      <div class="site-produtos-itens" ${abertasAntes.has(cat) ? "" : "hidden"}>
+        ${porCategoria[cat].map(p => `
+          <div class="site-produto-row" data-nome="${esc((p.nome || "").toLowerCase())}" data-id="${esc(p.id)}">
+            <img class="produto-thumb" src="${esc(p.img || "")}" alt="" onerror="this.style.visibility='hidden'" />
+            <div class="site-produto-info">
+              <span class="site-produto-nome">${esc(p.nome || "(sem nome)")}</span>
+              <span class="produto-preco-mini">${fmtMoeda(p.preco || 0)}${p.destaque ? " · ⭐ Destaque" : ""}</span>
+            </div>
+            <button type="button" class="site-produto-toggle${p.disponivel === false ? " indisponivel" : ""}" data-id="${esc(p.id)}">
+              ${p.disponivel === false ? "Indisponível" : "Disponível"}
+            </button>
+            <button type="button" class="btn-editar-produto" data-id="${esc(p.id)}">Editar</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  lista.querySelectorAll(".site-produtos-cat-toggle").forEach(toggle => {
+    toggle.addEventListener("click", () => {
+      const catEl = toggle.closest(".site-produtos-categoria");
+      const aberta = toggle.getAttribute("aria-expanded") === "true";
+      _setCategoriaProdutoAberta(catEl, !aberta);
+    });
+  });
+
+  lista.querySelectorAll(".site-produto-toggle").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const produto = _produtosSiteAtuais.find(p => p.id === id);
+      if (!produto) return;
+      const novoStatus = produto.disponivel === false;
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, "produtos_site", id), { disponivel: novoStatus });
+        toast(novoStatus ? "Produto marcado como disponível" : "Produto marcado como indisponível", "info");
+      } catch (err) {
+        console.error("Erro ao atualizar disponibilidade:", err);
+        toast("Não foi possível atualizar. Tente novamente.", "erro");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  lista.querySelectorAll(".btn-editar-produto").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const produto = _produtosSiteAtuais.find(p => p.id === btn.dataset.id);
+      if (produto) abrirModalProduto(produto);
+    });
+  });
+
+  // Atualiza a lista de categorias sugeridas no campo do modal
+  const datalist = document.getElementById("categoriasExistentes");
+  if (datalist) {
+    const unicas = [...new Set(_produtosSiteAtuais.map(p => p.categoria).filter(Boolean))];
+    datalist.innerHTML = unicas.map(c => `<option value="${esc(c)}"></option>`).join("");
+  }
+}
+
+function abrirModalProduto(produto) {
+  const modal = document.getElementById("modalProduto");
+  if (!modal) return;
+
+  _produtoEditandoId = produto?.id || null;
+  _produtoImgUrlAtual = produto?.img || "";
+
+  document.getElementById("modalProdutoTitulo").textContent = produto ? "Editar Produto" : "Novo Produto";
+  document.getElementById("produtoNome").value = produto?.nome || "";
+  document.getElementById("produtoDescricao").value = produto?.descricao || "";
+  document.getElementById("produtoPreco").value = produto?.preco ?? "";
+  document.getElementById("produtoCategoria").value = produto?.categoria || "";
+  document.getElementById("produtoDisponivel").checked = produto?.disponivel !== false;
+  document.getElementById("produtoDestaque").checked = !!produto?.destaque;
+
+  const preview = document.getElementById("produtoImgPreview");
+  const placeholder = document.getElementById("produtoImgPlaceholder");
+  if (_produtoImgUrlAtual) {
+    preview.src = _produtoImgUrlAtual;
+    preview.style.display = "block";
+    placeholder.style.display = "none";
+  } else {
+    preview.style.display = "none";
+    placeholder.style.display = "flex";
+  }
+  document.getElementById("produtoImgStatus").textContent = "";
+
+  const btnExcluir = document.getElementById("btnExcluirProduto");
+  btnExcluir.style.display = produto ? "inline-flex" : "none";
+
+  modal.classList.add("open");
+  document.getElementById("produtoNome").focus();
+}
+
+function fecharModalProduto() {
+  document.getElementById("modalProduto")?.classList.remove("open");
+  _produtoEditandoId = null;
+}
+
+function initModalProduto() {
+  const modal = document.getElementById("modalProduto");
+  if (!modal) return;
+
+  const imgInput = document.getElementById("produtoImgInput");
+  const btnCancelar = document.getElementById("btnCancelarProduto");
+  const btnSalvar = document.getElementById("btnSalvarProduto");
+  const btnExcluir = document.getElementById("btnExcluirProduto");
+
+  btnCancelar.addEventListener("click", fecharModalProduto);
+  modal.addEventListener("click", e => { if (e.target === modal) fecharModalProduto(); });
+
+  imgInput.addEventListener("change", async () => {
+    const file = imgInput.files?.[0];
+    if (!file) return;
+    const status = document.getElementById("produtoImgStatus");
+    const preview = document.getElementById("produtoImgPreview");
+    const placeholder = document.getElementById("produtoImgPlaceholder");
+    const categoria = document.getElementById("produtoCategoria").value;
+
+    status.textContent = "Enviando…";
+    status.style.color = "var(--cinza-texto)";
+    try {
+      const url = await uploadImagemCloudinary(file, categoria);
+      _produtoImgUrlAtual = url;
+      preview.src = url;
+      preview.style.display = "block";
+      placeholder.style.display = "none";
+      status.textContent = "Imagem enviada ✓";
+      status.style.color = "var(--verde)";
+    } catch (err) {
+      console.error("Erro no upload:", err);
+      status.textContent = "Falha no upload — confira o upload preset no Cloudinary";
+      status.style.color = "var(--vermelho-vivo)";
+    } finally {
+      imgInput.value = "";
+    }
+  });
+
+  btnSalvar.addEventListener("click", async () => {
+    const nome = document.getElementById("produtoNome").value.trim();
+    const descricao = document.getElementById("produtoDescricao").value.trim();
+    const preco = parseFloat(document.getElementById("produtoPreco").value);
+    const categoria = document.getElementById("produtoCategoria").value.trim();
+    const disponivel = document.getElementById("produtoDisponivel").checked;
+    const destaque = document.getElementById("produtoDestaque").checked;
+
+    if (!nome) { toast("Dê um nome ao produto.", "info"); return; }
+    if (!categoria) { toast("Informe a categoria.", "info"); return; }
+    if (!preco || preco <= 0) { toast("Informe um preço válido.", "info"); return; }
+    if (!_produtoImgUrlAtual) { toast("Envie uma foto do produto.", "info"); return; }
+
+    btnSalvar.disabled = true;
+    try {
+      const dados = { nome, descricao, preco, categoria, disponivel, destaque, img: _produtoImgUrlAtual };
+      if (_produtoEditandoId) {
+        await updateDoc(doc(db, "produtos_site", _produtoEditandoId), dados);
+        toast("Produto atualizado.", "sucesso");
+      } else {
+        await addDoc(collection(db, "produtos_site"), { ...dados, ordem: _produtosSiteAtuais.length });
+        toast("Produto criado.", "sucesso");
+      }
+      fecharModalProduto();
+    } catch (err) {
+      console.error("Erro ao salvar produto:", err);
+      toast("Não foi possível salvar. Tente novamente.", "erro");
+    } finally {
+      btnSalvar.disabled = false;
+    }
+  });
+
+  btnExcluir.addEventListener("click", async () => {
+    if (!_produtoEditandoId) return;
+    const confirmado = await _confirmarAcao("Excluir este produto do site? Ele some do cardápio imediatamente e isso não pode ser desfeito.");
+    if (!confirmado) return;
+    try {
+      await deleteDoc(doc(db, "produtos_site", _produtoEditandoId));
+      toast("Produto excluído.", "sucesso");
+      fecharModalProduto();
+    } catch (err) {
+      console.error("Erro ao excluir produto:", err);
+      toast("Não foi possível excluir. Tente novamente.", "erro");
+    }
+  });
 }
 
 // Modal de confirmação genérico (substitui confirm() nativo)
