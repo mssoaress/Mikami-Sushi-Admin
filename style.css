@@ -139,6 +139,7 @@ body.page-mesas .header-brand,
 body.page-cozinha .header-brand,
 body.page-relatorio .header-brand,
 body.page-toritama .header-brand,
+body.page-produtos-toritama .header-brand,
 body.page-relatorio-toritama .header-brand {
   position: absolute;
   left: 50%;
@@ -1901,6 +1902,7 @@ body.page-relatorio-toritama .header-brand {
    SITE (abrir/fechar pedidos online)
    ================================================================ */
 body.page-site,
+body.page-produtos-toritama,
 body.page-relatorio-toritama { padding-top: var(--header-h); }
 
 .site-main {
@@ -3068,6 +3070,7 @@ body.page-relatorio { padding-top: var(--header-h); }
   body.page-relatorio .header-brand,
   body.page-site .header-brand,
   body.page-toritama .header-brand,
+  body.page-produtos-toritama .header-brand,
   body.page-relatorio-toritama .header-brand {
     position: absolute;
     left: 50%;
@@ -3450,7 +3453,8 @@ body.page-relatorio { padding-top: var(--header-h); }
   /* ================================================================
      SITE (abrir/fechar pedidos online)
      ================================================================ */
-  body.page-site {
+  body.page-site,
+  body.page-produtos-toritama {
     padding-top: var(--mob-header);
     padding-bottom: var(--mob-bottom);
     padding-left: env(safe-area-inset-left, 0px);

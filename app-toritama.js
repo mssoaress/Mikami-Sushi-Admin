@@ -164,6 +164,224 @@ async function garantirComandas() {
 }
 
 // ============================================================
+// 3.5 PÁGINA: PRODUTOS (CRUD completo, só de Toritama)
+// ============================================================
+let _produtosToritamaAtuais = [];
+let _produtoToritamaEditandoId = null;
+
+function initProdutosToritamaPage() {
+  iniciarRelogio();
+  initFilialSwitcher();
+
+  const lista = document.getElementById("produtosToritamaLista");
+  const busca = document.getElementById("produtosToritamaBusca");
+  const btnNovo = document.getElementById("btnNovoProdutoToritama");
+  if (!lista) return;
+
+  onSnapshot(collection(db, "produtos_toritama"), snap => {
+    _produtosToritamaAtuais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderProdutosToritamaPage();
+  }, err => {
+    console.error("[Toritama] Erro ao ler produtos:", err);
+    toast("Erro ao carregar produtos.", "erro");
+  });
+
+  btnNovo?.addEventListener("click", () => abrirModalProdutoToritama(null));
+
+  if (busca) {
+    busca.addEventListener("input", () => {
+      const termo = busca.value.trim().toLowerCase();
+      lista.querySelectorAll(".site-produtos-categoria").forEach(catEl => {
+        let algumVisivel = false;
+        catEl.querySelectorAll(".site-produto-row").forEach(row => {
+          const bate = !termo || row.dataset.nome.includes(termo);
+          row.style.display = bate ? "" : "none";
+          if (bate) algumVisivel = true;
+        });
+        catEl.style.display = algumVisivel ? "" : "none";
+        _setCategoriaProdutoToritamaAberta(catEl, termo.length > 0 && algumVisivel);
+      });
+    });
+  }
+
+  initModalProdutoToritama();
+}
+
+function _setCategoriaProdutoToritamaAberta(catEl, aberta) {
+  const toggle = catEl.querySelector(".site-produtos-cat-toggle");
+  const itens = catEl.querySelector(".site-produtos-itens");
+  toggle.setAttribute("aria-expanded", String(aberta));
+  itens.hidden = !aberta;
+}
+
+function renderProdutosToritamaPage() {
+  const lista = document.getElementById("produtosToritamaLista");
+  if (!lista) return;
+
+  if (!_produtosToritamaAtuais.length) {
+    lista.innerHTML = `<p class="conta-vazia">Nenhum produto cadastrado ainda. Clique em "+ Novo Produto" pra começar.</p>`;
+    return;
+  }
+
+  const categorias = [];
+  const porCategoria = {};
+  _produtosToritamaAtuais
+    .slice()
+    .sort((a, b) => (a.categoria || "").localeCompare(b.categoria || "") || (a.nome || "").localeCompare(b.nome || ""))
+    .forEach(p => {
+      const cat = p.categoria || "Sem categoria";
+      if (!porCategoria[cat]) { porCategoria[cat] = []; categorias.push(cat); }
+      porCategoria[cat].push(p);
+    });
+
+  const abertasAntes = new Set(
+    Array.from(lista.querySelectorAll('.site-produtos-cat-toggle[aria-expanded="true"]'))
+      .map(b => b.dataset.cat)
+  );
+
+  lista.innerHTML = categorias.map(cat => `
+    <div class="site-produtos-categoria">
+      <button type="button" class="site-produtos-cat-toggle" data-cat="${esc(cat)}" aria-expanded="${abertasAntes.has(cat) ? "true" : "false"}">
+        <span class="site-produtos-cat-nome">${esc(cat)}</span>
+        <span class="site-produtos-categoria-count">${porCategoria[cat].length}</span>
+        <span class="site-produtos-cat-arrow">▾</span>
+      </button>
+      <div class="site-produtos-itens" ${abertasAntes.has(cat) ? "" : "hidden"}>
+        ${porCategoria[cat].map(p => `
+          <div class="site-produto-row" data-nome="${esc((p.nome || "").toLowerCase())}" data-id="${esc(p.id)}">
+            <div class="site-produto-info">
+              <span class="site-produto-nome">${esc(p.nome || "(sem nome)")}</span>
+              <span class="produto-preco-mini">${fmtMoeda(p.preco || 0)}</span>
+            </div>
+            <button type="button" class="site-produto-toggle${p.ativo === false ? " indisponivel" : ""}" data-id="${esc(p.id)}">
+              ${p.ativo === false ? "Indisponível" : "Disponível"}
+            </button>
+            <button type="button" class="btn-editar-produto" data-id="${esc(p.id)}">Editar</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  lista.querySelectorAll(".site-produtos-cat-toggle").forEach(toggle => {
+    toggle.addEventListener("click", () => {
+      const catEl = toggle.closest(".site-produtos-categoria");
+      const aberta = toggle.getAttribute("aria-expanded") === "true";
+      _setCategoriaProdutoToritamaAberta(catEl, !aberta);
+    });
+  });
+
+  lista.querySelectorAll(".site-produto-toggle").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const produto = _produtosToritamaAtuais.find(p => p.id === id);
+      if (!produto) return;
+      const novoStatus = produto.ativo === false;
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, "produtos_toritama", id), { ativo: novoStatus });
+        toast(novoStatus ? "Produto marcado como disponível" : "Produto marcado como indisponível", "info");
+      } catch (err) {
+        console.error("[Toritama] Erro ao atualizar disponibilidade:", err);
+        toast("Não foi possível atualizar. Tente novamente.", "erro");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  lista.querySelectorAll(".btn-editar-produto").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const produto = _produtosToritamaAtuais.find(p => p.id === btn.dataset.id);
+      if (produto) abrirModalProdutoToritama(produto);
+    });
+  });
+
+  const datalist = document.getElementById("categoriasToritamaExistentes");
+  if (datalist) {
+    const unicas = [...new Set(_produtosToritamaAtuais.map(p => p.categoria).filter(Boolean))];
+    datalist.innerHTML = unicas.map(c => `<option value="${esc(c)}"></option>`).join("");
+  }
+}
+
+function abrirModalProdutoToritama(produto) {
+  const modal = document.getElementById("modalProdutoToritama");
+  if (!modal) return;
+
+  _produtoToritamaEditandoId = produto?.id || null;
+
+  document.getElementById("modalProdutoToritamaTitulo").textContent = produto ? "Editar Produto" : "Novo Produto";
+  document.getElementById("produtoToritamaNome").value = produto?.nome || "";
+  document.getElementById("produtoToritamaPreco").value = produto?.preco ?? "";
+  document.getElementById("produtoToritamaCategoria").value = produto?.categoria || "";
+  document.getElementById("produtoToritamaDisponivel").checked = produto?.ativo !== false;
+
+  document.getElementById("btnExcluirProdutoToritama").style.display = produto ? "inline-flex" : "none";
+
+  modal.classList.add("open");
+  document.getElementById("produtoToritamaNome").focus();
+}
+
+function fecharModalProdutoToritama() {
+  document.getElementById("modalProdutoToritama")?.classList.remove("open");
+  _produtoToritamaEditandoId = null;
+}
+
+function initModalProdutoToritama() {
+  const modal = document.getElementById("modalProdutoToritama");
+  if (!modal) return;
+
+  document.getElementById("btnCancelarProdutoToritama").addEventListener("click", fecharModalProdutoToritama);
+  modal.addEventListener("click", e => { if (e.target === modal) fecharModalProdutoToritama(); });
+
+  document.getElementById("btnSalvarProdutoToritama").addEventListener("click", async () => {
+    const btnSalvar = document.getElementById("btnSalvarProdutoToritama");
+    const nome = document.getElementById("produtoToritamaNome").value.trim();
+    const preco = parseFloat(document.getElementById("produtoToritamaPreco").value);
+    const categoria = document.getElementById("produtoToritamaCategoria").value.trim();
+    const ativo = document.getElementById("produtoToritamaDisponivel").checked;
+
+    if (!nome) { toast("Dê um nome ao produto.", "info"); return; }
+    if (!categoria) { toast("Informe a categoria.", "info"); return; }
+    if (!preco || preco <= 0) { toast("Informe um preço válido.", "info"); return; }
+
+    btnSalvar.disabled = true;
+    try {
+      const dados = { nome, preco, categoria, ativo };
+      if (_produtoToritamaEditandoId) {
+        await updateDoc(doc(db, "produtos_toritama", _produtoToritamaEditandoId), dados);
+        toast("Produto atualizado.", "sucesso");
+      } else {
+        await addDoc(collection(db, "produtos_toritama"), dados);
+        toast("Produto criado.", "sucesso");
+      }
+      fecharModalProdutoToritama();
+    } catch (err) {
+      console.error("[Toritama] Erro ao salvar produto:", err);
+      toast("Não foi possível salvar. Tente novamente.", "erro");
+    } finally {
+      btnSalvar.disabled = false;
+    }
+  });
+
+  document.getElementById("btnExcluirProdutoToritama").addEventListener("click", async () => {
+    if (!_produtoToritamaEditandoId) return;
+    const confirmado = await _confirmarAcaoT("Excluir este produto? Ele some da comanda imediatamente e isso não pode ser desfeito.");
+    if (!confirmado) return;
+    try {
+      await deleteDoc(doc(db, "produtos_toritama", _produtoToritamaEditandoId));
+      toast("Produto excluído.", "sucesso");
+      fecharModalProdutoToritama();
+    } catch (err) {
+      console.error("[Toritama] Erro ao excluir produto:", err);
+      toast("Não foi possível excluir. Tente novamente.", "erro");
+    }
+  });
+}
+
+// ============================================================
 // 4. PÁGINA: COMANDAS (grade)
 // ============================================================
 function _cardComanda(c) {
@@ -241,6 +459,7 @@ function renderProdutosToritama() {
   if (!lista) return;
 
   const filtrados = _produtosToritama.filter(p => {
+    if (p.ativo === false) return false;
     const bateCategoria = _categoriaAtiva === "Todas" || p.categoria === _categoriaAtiva;
     const bateBusca = !busca || p.nome.toLowerCase().includes(busca);
     return bateCategoria && bateBusca;
@@ -1170,4 +1389,5 @@ const pagina = document.body.className;
 
 if (pagina.includes("page-toritama")) initComandasGrid();
 else if (pagina.includes("page-comanda")) initComanda();
+else if (pagina.includes("page-produtos-toritama")) initProdutosToritamaPage();
 else if (pagina.includes("page-relatorio-toritama")) initRelatorioToritama();

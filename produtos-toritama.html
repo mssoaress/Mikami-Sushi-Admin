@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#080808" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Mikami Sushi — Produtos Toritama</title>
+  <link rel="icon" href="img/logo123.jpg">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="page-produtos-toritama">
+
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="img/logo123.jpg" alt="Mikami Sushi" class="brand-logo"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />
+      <span class="kanji" style="display:none">御</span>
+      <div class="brand-text">
+        <h1>Mikami Sushi</h1>
+        <p class="brand-sub">Toritama · Produtos</p>
+      </div>
+      <button class="filial-btn" id="btnFilial">📍 <strong>Toritama</strong> <span class="filial-caret">▾</span></button>
+    </div>
+    <nav class="main-nav">
+      <a href="toritama.html" class="nav-link">Comandas</a>
+      <a href="produtos-toritama.html" class="nav-link active">Produtos</a>
+      <a href="relatorio-toritama.html" class="nav-link">Relatório</a>
+    </nav>
+    <div class="header-clock" id="headerClock"></div>
+  </header>
+
+  <div class="modal-overlay" id="modalFilial">
+    <div class="modal-box" style="max-width:320px">
+      <h3>Selecionar Filial</h3>
+      <div class="filial-opcoes">
+        <button class="filial-opcao" data-href="index.html">🏠 Centro</button>
+        <button class="filial-opcao ativa" data-href="toritama.html">🏢 Toritama <span class="filial-opcao-check">✓</span></button>
+      </div>
+      <div class="modal-acoes">
+        <button class="btn-secondary" id="btnCancelarFilial">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="site-main">
+    <div class="site-card site-produtos-card">
+      <div class="site-produtos-header-row">
+        <div>
+          <h2 class="site-produtos-title">Produtos de Toritama</h2>
+          <p class="site-desc" style="margin:0.2rem 0 0">
+            Cadastre, edite nome/preço e marque disponibilidade. Esses produtos são só dessa filial — não afetam o site nem a matriz.
+          </p>
+        </div>
+        <button type="button" class="btn-primary" id="btnNovoProdutoToritama" style="flex-shrink:0">+ Novo Produto</button>
+      </div>
+
+      <input
+        type="text"
+        id="produtosToritamaBusca"
+        class="site-produtos-busca"
+        placeholder="Buscar produto…"
+        autocomplete="off"
+      />
+
+      <div id="produtosToritamaLista" class="site-produtos-lista"></div>
+    </div>
+  </main>
+
+  <!-- Modal: adicionar/editar produto de Toritama -->
+  <div class="modal-overlay" id="modalProdutoToritama">
+    <div class="modal-box" style="max-width:420px">
+      <h3 id="modalProdutoToritamaTitulo">Novo Produto</h3>
+
+      <label class="produto-form-label">Nome</label>
+      <input type="text" id="produtoToritamaNome" class="site-produtos-busca" placeholder="Ex.: Temaki de Salmão" />
+
+      <div class="produto-form-row">
+        <div style="flex:1">
+          <label class="produto-form-label">Preço (R$)</label>
+          <input type="number" id="produtoToritamaPreco" class="site-produtos-busca" step="0.01" min="0" placeholder="0,00" />
+        </div>
+        <div style="flex:1">
+          <label class="produto-form-label">Categoria</label>
+          <input type="text" id="produtoToritamaCategoria" class="site-produtos-busca" placeholder="Ex.: Bebidas" list="categoriasToritamaExistentes" />
+          <datalist id="categoriasToritamaExistentes"></datalist>
+        </div>
+      </div>
+
+      <div class="produto-form-checkboxes">
+        <label class="produto-checkbox-label">
+          <input type="checkbox" id="produtoToritamaDisponivel" checked /> Disponível na comanda
+        </label>
+      </div>
+
+      <div class="modal-acoes" style="justify-content:space-between">
+        <button class="btn-secondary" id="btnExcluirProdutoToritama" style="display:none;color:var(--vermelho-vivo)">Excluir</button>
+        <div style="display:flex;gap:0.6rem;margin-left:auto">
+          <button class="btn-secondary" id="btnCancelarProdutoToritama">Cancelar</button>
+          <button class="btn-primary" id="btnSalvarProdutoToritama">Salvar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="toritama.html" class="bottom-nav-item">Comandas</a>
+    <a href="produtos-toritama.html" class="bottom-nav-item active">Produtos</a>
+    <a href="relatorio-toritama.html" class="bottom-nav-item">Relatório</a>
+  </nav>
+
+  <script type="module" src="firebase.js"></script>
+  <script type="module" src="app-toritama.js"></script>
+</body>
+</html>
