@@ -138,6 +138,7 @@ input, textarea, select {
 body.page-mesas .header-brand,
 body.page-cozinha .header-brand,
 body.page-relatorio .header-brand,
+body.page-produtos .header-brand,
 body.page-toritama .header-brand,
 body.page-produtos-toritama .header-brand,
 body.page-relatorio-toritama .header-brand {
@@ -1902,6 +1903,7 @@ body.page-relatorio-toritama .header-brand {
    SITE (abrir/fechar pedidos online)
    ================================================================ */
 body.page-site,
+body.page-produtos,
 body.page-produtos-toritama,
 body.page-relatorio-toritama { padding-top: var(--header-h); }
 
@@ -3069,6 +3071,7 @@ body.page-relatorio { padding-top: var(--header-h); }
   body.page-cozinha .header-brand,
   body.page-relatorio .header-brand,
   body.page-site .header-brand,
+  body.page-produtos .header-brand,
   body.page-toritama .header-brand,
   body.page-produtos-toritama .header-brand,
   body.page-relatorio-toritama .header-brand {
@@ -3454,6 +3457,7 @@ body.page-relatorio { padding-top: var(--header-h); }
      SITE (abrir/fechar pedidos online)
      ================================================================ */
   body.page-site,
+  body.page-produtos,
   body.page-produtos-toritama {
     padding-top: var(--mob-header);
     padding-bottom: var(--mob-bottom);

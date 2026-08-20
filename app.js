@@ -585,6 +585,231 @@ function initModalProduto() {
 }
 
 // Modal de confirmação genérico (substitui confirm() nativo)
+// ============================================================
+// PRODUTOS — MESAS (CENTRO) — CRUD completo (nome, preço, categoria,
+// disponibilidade), sem foto. É o mesmo cardápio usado na tela de
+// lançar pedido nas mesas/delivery — grava na coleção "produtos",
+// independente de produtos_site (o site público) e de
+// produtos_toritama (a outra filial).
+// ============================================================
+let _produtosCentroAtuais = [];
+let _produtoCentroEditandoId = null;
+
+function initProdutosCentroPage() {
+  const lista = document.getElementById("produtosCentroLista");
+  const busca = document.getElementById("produtosCentroBusca");
+  const btnNovo = document.getElementById("btnNovoProdutoCentro");
+  if (!lista) return;
+
+  onSnapshot(collection(db, "produtos"), snap => {
+    _produtosCentroAtuais = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderProdutosCentroPage();
+  }, err => {
+    console.error("Erro ao ler produtos do cardápio:", err);
+    toast("Erro ao carregar produtos.", "erro");
+  });
+
+  btnNovo?.addEventListener("click", () => abrirModalProdutoCentro(null));
+
+  if (busca) {
+    busca.addEventListener("input", () => {
+      const termo = busca.value.trim().toLowerCase();
+      lista.querySelectorAll(".site-produtos-categoria").forEach(catEl => {
+        let algumVisivel = false;
+        catEl.querySelectorAll(".site-produto-row").forEach(row => {
+          const bate = !termo || row.dataset.nome.includes(termo);
+          row.style.display = bate ? "" : "none";
+          if (bate) algumVisivel = true;
+        });
+        catEl.style.display = algumVisivel ? "" : "none";
+        _setCategoriaProdutoCentroAberta(catEl, termo.length > 0 && algumVisivel);
+      });
+    });
+  }
+
+  initModalProdutoCentro();
+}
+
+function _setCategoriaProdutoCentroAberta(catEl, aberta) {
+  const toggle = catEl.querySelector(".site-produtos-cat-toggle");
+  const itens = catEl.querySelector(".site-produtos-itens");
+  toggle.setAttribute("aria-expanded", String(aberta));
+  itens.hidden = !aberta;
+}
+
+function renderProdutosCentroPage() {
+  const lista = document.getElementById("produtosCentroLista");
+  if (!lista) return;
+
+  if (!_produtosCentroAtuais.length) {
+    lista.innerHTML = `<p class="conta-vazia">Nenhum produto cadastrado ainda. Clique em "+ Novo Produto" pra começar.</p>`;
+    return;
+  }
+
+  const categorias = [];
+  const porCategoria = {};
+  _produtosCentroAtuais
+    .slice()
+    .sort((a, b) => (a.categoria || "").localeCompare(b.categoria || "") || (a.nome || "").localeCompare(b.nome || ""))
+    .forEach(p => {
+      const cat = p.categoria || "Sem categoria";
+      if (!porCategoria[cat]) { porCategoria[cat] = []; categorias.push(cat); }
+      porCategoria[cat].push(p);
+    });
+
+  const abertasAntes = new Set(
+    Array.from(lista.querySelectorAll('.site-produtos-cat-toggle[aria-expanded="true"]'))
+      .map(b => b.dataset.cat)
+  );
+
+  lista.innerHTML = categorias.map(cat => `
+    <div class="site-produtos-categoria">
+      <button type="button" class="site-produtos-cat-toggle" data-cat="${esc(cat)}" aria-expanded="${abertasAntes.has(cat) ? "true" : "false"}">
+        <span class="site-produtos-cat-nome">${esc(cat)}</span>
+        <span class="site-produtos-categoria-count">${porCategoria[cat].length}</span>
+        <span class="site-produtos-cat-arrow">▾</span>
+      </button>
+      <div class="site-produtos-itens" ${abertasAntes.has(cat) ? "" : "hidden"}>
+        ${porCategoria[cat].map(p => `
+          <div class="site-produto-row" data-nome="${esc((p.nome || "").toLowerCase())}" data-id="${esc(p.id)}">
+            <div class="site-produto-info">
+              <span class="site-produto-nome">${esc(p.nome || "(sem nome)")}</span>
+              <span class="produto-preco-mini">${fmtMoeda(p.preco || 0)}</span>
+            </div>
+            <button type="button" class="site-produto-toggle${p.ativo === false ? " indisponivel" : ""}" data-id="${esc(p.id)}">
+              ${p.ativo === false ? "Indisponível" : "Disponível"}
+            </button>
+            <button type="button" class="btn-editar-produto" data-id="${esc(p.id)}">Editar</button>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+
+  lista.querySelectorAll(".site-produtos-cat-toggle").forEach(toggle => {
+    toggle.addEventListener("click", () => {
+      const catEl = toggle.closest(".site-produtos-categoria");
+      const aberta = toggle.getAttribute("aria-expanded") === "true";
+      _setCategoriaProdutoCentroAberta(catEl, !aberta);
+    });
+  });
+
+  lista.querySelectorAll(".site-produto-toggle").forEach(btn => {
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const produto = _produtosCentroAtuais.find(p => p.id === id);
+      if (!produto) return;
+      const novoStatus = produto.ativo === false;
+      btn.disabled = true;
+      try {
+        await updateDoc(doc(db, "produtos", id), { ativo: novoStatus });
+        toast(novoStatus ? "Produto marcado como disponível" : "Produto marcado como indisponível", "info");
+      } catch (err) {
+        console.error("Erro ao atualizar disponibilidade:", err);
+        toast("Não foi possível atualizar. Tente novamente.", "erro");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  });
+
+  lista.querySelectorAll(".btn-editar-produto").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const produto = _produtosCentroAtuais.find(p => p.id === btn.dataset.id);
+      if (produto) abrirModalProdutoCentro(produto);
+    });
+  });
+
+  const datalist = document.getElementById("categoriasCentroExistentes");
+  if (datalist) {
+    const unicas = [...new Set(_produtosCentroAtuais.map(p => p.categoria).filter(Boolean))];
+    datalist.innerHTML = unicas.map(c => `<option value="${esc(c)}"></option>`).join("");
+  }
+}
+
+function abrirModalProdutoCentro(produto) {
+  const modal = document.getElementById("modalProdutoCentro");
+  if (!modal) return;
+
+  _produtoCentroEditandoId = produto?.id || null;
+
+  document.getElementById("modalProdutoCentroTitulo").textContent = produto ? "Editar Produto" : "Novo Produto";
+  document.getElementById("produtoCentroNome").value = produto?.nome || "";
+  document.getElementById("produtoCentroPreco").value = produto?.preco ?? "";
+  document.getElementById("produtoCentroCategoria").value = produto?.categoria || "";
+  document.getElementById("produtoCentroDisponivel").checked = produto?.ativo !== false;
+
+  document.getElementById("btnExcluirProdutoCentro").style.display = produto ? "inline-flex" : "none";
+
+  modal.classList.add("open");
+  document.getElementById("produtoCentroNome").focus();
+}
+
+function fecharModalProdutoCentro() {
+  document.getElementById("modalProdutoCentro")?.classList.remove("open");
+  _produtoCentroEditandoId = null;
+}
+
+function initModalProdutoCentro() {
+  const modal = document.getElementById("modalProdutoCentro");
+  if (!modal) return;
+
+  document.getElementById("btnCancelarProdutoCentro").addEventListener("click", fecharModalProdutoCentro);
+  modal.addEventListener("click", e => { if (e.target === modal) fecharModalProdutoCentro(); });
+
+  document.getElementById("btnSalvarProdutoCentro").addEventListener("click", async () => {
+    const btnSalvar = document.getElementById("btnSalvarProdutoCentro");
+    const nome = document.getElementById("produtoCentroNome").value.trim();
+    const preco = parseFloat(document.getElementById("produtoCentroPreco").value);
+    const categoria = document.getElementById("produtoCentroCategoria").value.trim();
+    const ativo = document.getElementById("produtoCentroDisponivel").checked;
+
+    if (!nome) { toast("Dê um nome ao produto.", "info"); return; }
+    if (!categoria) { toast("Informe a categoria.", "info"); return; }
+    if (!preco || preco <= 0) { toast("Informe um preço válido.", "info"); return; }
+
+    btnSalvar.disabled = true;
+    try {
+      const dados = { nome, preco, categoria, ativo };
+      if (_produtoCentroEditandoId) {
+        await updateDoc(doc(db, "produtos", _produtoCentroEditandoId), dados);
+        toast("Produto atualizado.", "sucesso");
+      } else {
+        await addDoc(collection(db, "produtos"), dados);
+        toast("Produto criado.", "sucesso");
+      }
+      fecharModalProdutoCentro();
+    } catch (err) {
+      console.error("Erro ao salvar produto:", err);
+      toast("Não foi possível salvar. Tente novamente.", "erro");
+    } finally {
+      btnSalvar.disabled = false;
+    }
+  });
+
+  document.getElementById("btnExcluirProdutoCentro").addEventListener("click", async () => {
+    if (!_produtoCentroEditandoId) return;
+    const confirmado = await _confirmarAcao("Excluir este produto? Ele some do cardápio de pedidos imediatamente e isso não pode ser desfeito.");
+    if (!confirmado) return;
+    try {
+      await deleteDoc(doc(db, "produtos", _produtoCentroEditandoId));
+      toast("Produto excluído.", "sucesso");
+      fecharModalProdutoCentro();
+    } catch (err) {
+      console.error("Erro ao excluir produto:", err);
+      toast("Não foi possível excluir. Tente novamente.", "erro");
+    }
+  });
+}
+
+function initProdutosCentro() {
+  iniciarRelogio();
+  initFilialSwitcher();
+  initProdutosCentroPage();
+}
+
 function _confirmarAcao(mensagem) {
   return new Promise(resolve => {
     let overlay = document.getElementById("_modalConfirm");
@@ -2655,5 +2880,6 @@ const pagina = document.body.className;
 if (pagina.includes("page-mesas")) initIndex();
 else if (pagina.includes("page-mesa")) initMesa();
 else if (pagina.includes("page-cozinha")) initCozinha();
+else if (pagina.includes("page-produtos")) initProdutosCentro();
 else if (pagina.includes("page-site")) initSite();
 else if (pagina.includes("page-relatorio")) initRelatorio();  // FIX: estava faltando
