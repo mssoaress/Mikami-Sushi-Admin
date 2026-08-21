@@ -2,17 +2,22 @@ rules_version = '2';
 
 // ============================================================
 // firestore.rules — Mikami Sushi
-// IMPORTANTE: Este sistema usa autenticação anônima pelo front-end.
-// Ajuste as regras conforme adicionar Firebase Auth de usuários.
+// Nenhuma parte do sistema usa Firebase Auth (nem anônimo, nem
+// login de verdade) — a "segurança" aqui é feita liberando só as
+// coleções que o app realmente usa, e bloqueando qualquer outra
+// no match /{document=**} do final. Se adicionar uma coleção nova,
+// lembre de declarar ela aqui também, senão fica bloqueada.
 // ============================================================
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Produtos — leitura livre (cardápio), escrita apenas autenticado
+    // Produtos — leitura livre (cardápio), escrita aberta. Mesmo padrão
+    // do resto do projeto: o sistema não usa Firebase Auth em lugar
+    // nenhum, então "allow write: if request.auth != null" bloquearia
+    // toda escrita (inclusive a aba Produtos e o seed inicial).
     match /produtos/{id} {
-      allow read: if true;
-      allow write: if request.auth != null;
+      allow read, write: if true;
     }
 
     // Mesas — leitura e escrita abertas para a rede local do restaurante
