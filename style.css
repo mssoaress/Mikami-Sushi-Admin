@@ -2211,6 +2211,18 @@ body.page-relatorio-toritama { padding-top: var(--header-h); }
   margin: 0.8rem 0 0.35rem;
 }
 
+.produto-estoque-ajuda {
+  font-size: 0.7rem;
+  color: var(--cinza-texto);
+  line-height: 1.4;
+  margin: 0.4rem 0 0;
+}
+
+.produto-estoque-badge {
+  font-size: 0.68rem;
+  color: var(--ouro-claro);
+}
+
 .produto-form-row {
   display: flex;
   gap: 0.7rem;
@@ -2232,6 +2244,11 @@ body.page-relatorio-toritama { padding-top: var(--header-h); }
   cursor: pointer;
 }
 .produto-checkbox-label input { width: 16px; height: 16px; accent-color: var(--ouro); }
+.produto-checkbox-label input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: auto;
+  flex-shrink: 0;
+}
 
 .site-produto-toggle {
   flex-shrink: 0;

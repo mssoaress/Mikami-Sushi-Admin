@@ -135,12 +135,26 @@
         </div>
       </div>
 
+      <div class="produto-form-checkboxes" style="margin-top:0.8rem">
+        <label class="produto-checkbox-label">
+          <input type="checkbox" id="produtoControlaEstoque" /> Controlar estoque deste produto
+        </label>
+      </div>
+      <div id="produtoEstoqueWrap" style="display:none">
+        <label class="produto-form-label">Quantidade em estoque</label>
+        <input type="number" id="produtoEstoque" class="site-produtos-busca" step="1" min="0" placeholder="Ex.: 10" />
+        <p class="produto-estoque-ajuda">Mostra "Restam X" pro cliente, desconta a cada pedido e fica indisponível sozinho ao chegar em 0.</p>
+      </div>
+
       <div class="produto-form-checkboxes">
         <label class="produto-checkbox-label">
           <input type="checkbox" id="produtoDisponivel" checked /> Disponível no site
         </label>
         <label class="produto-checkbox-label">
           <input type="checkbox" id="produtoDestaque" /> Mostrar em "Destaques"
+        </label>
+        <label class="produto-checkbox-label">
+          <input type="checkbox" id="produtoDestaqueDia" /> Destaque do dia (seção antes do cardápio)
         </label>
       </div>
 

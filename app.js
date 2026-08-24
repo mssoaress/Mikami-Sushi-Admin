@@ -1076,18 +1076,13 @@ async function initMesa() {
   document.getElementById("mesaNumeroBadge").textContent = `Mesa ${estadoMesa.numero}`;
   document.title = `Mesa ${estadoMesa.numero} — Mikami Sushi`;
 
-  // Cache do sessionStorage para cardápio
+  // Busca o cardápio sempre fresco do Firestore (sem cache) — assim, um
+  // produto novo cadastrado na aba Produtos aparece na próxima mesa
+  // aberta, sem precisar fechar a aba do navegador.
   try {
-    const cacheKey = `mikami_produtos_${SEED_VERSION}`;
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      estadoMesa.produtos = JSON.parse(cached);
-    } else {
-      const snapProd = await getDocs(collection(db, "produtos"));
-      snapProd.forEach(d => estadoMesa.produtos.push({ id: d.id, ...d.data() }));
-      estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
-      sessionStorage.setItem(cacheKey, JSON.stringify(estadoMesa.produtos));
-    }
+    const snapProd = await getDocs(collection(db, "produtos"));
+    snapProd.forEach(d => estadoMesa.produtos.push({ id: d.id, ...d.data() }));
+    estadoMesa.produtos.sort((a, b) => a.nome.localeCompare(b.nome));
   } catch (err) {
     toast("Erro ao carregar cardápio.", "erro");
     console.error(err);
