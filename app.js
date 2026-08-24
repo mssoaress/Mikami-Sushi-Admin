@@ -16,8 +16,7 @@ import {
   collection, doc,
   getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy,
-  serverTimestamp, Timestamp, increment, runTransaction,
-  arrayUnion, arrayRemove
+  serverTimestamp, Timestamp, increment, runTransaction
 } from "./firebase.js";
 
 // ============================================================
@@ -403,7 +402,10 @@ function renderProdutosSite() {
             <img class="produto-thumb" src="${esc(p.img || "")}" alt="" onerror="this.style.visibility='hidden'" />
             <div class="site-produto-info">
               <span class="site-produto-nome">${esc(p.nome || "(sem nome)")}</span>
-              <span class="produto-preco-mini">${fmtMoeda(p.preco || 0)}${p.destaque ? " · ⭐ Destaque" : ""}</span>
+              <span class="produto-preco-mini">
+                ${fmtMoeda(p.preco || 0)}${p.destaque ? " · ⭐ Destaque" : ""}${p.destaqueDia ? " · 🌟 Destaque do dia" : ""}
+                ${(p.estoque !== null && p.estoque !== undefined) ? `<span class="produto-estoque-badge"> · 📦 ${p.estoque}</span>` : ""}
+              </span>
             </div>
             <button type="button" class="site-produto-toggle${p.disponivel === false ? " indisponivel" : ""}" data-id="${esc(p.id)}">
               ${p.disponivel === false ? "Indisponível" : "Disponível"}
@@ -471,8 +473,13 @@ function abrirModalProduto(produto) {
   document.getElementById("produtoDescricao").value = produto?.descricao || "";
   document.getElementById("produtoPreco").value = produto?.preco ?? "";
   document.getElementById("produtoCategoria").value = produto?.categoria || "";
+  const temEstoque = produto?.estoque !== null && produto?.estoque !== undefined;
+  document.getElementById("produtoControlaEstoque").checked = temEstoque;
+  document.getElementById("produtoEstoque").value = temEstoque ? produto.estoque : "";
+  document.getElementById("produtoEstoqueWrap").style.display = temEstoque ? "block" : "none";
   document.getElementById("produtoDisponivel").checked = produto?.disponivel !== false;
   document.getElementById("produtoDestaque").checked = !!produto?.destaque;
+  document.getElementById("produtoDestaqueDia").checked = !!produto?.destaqueDia;
 
   const preview = document.getElementById("produtoImgPreview");
   const placeholder = document.getElementById("produtoImgPlaceholder");
@@ -510,6 +517,16 @@ function initModalProduto() {
   btnCancelar.addEventListener("click", fecharModalProduto);
   modal.addEventListener("click", e => { if (e.target === modal) fecharModalProduto(); });
 
+  document.getElementById("produtoControlaEstoque").addEventListener("change", e => {
+    const wrap = document.getElementById("produtoEstoqueWrap");
+    wrap.style.display = e.target.checked ? "block" : "none";
+    if (e.target.checked) {
+      document.getElementById("produtoEstoque").focus();
+    } else {
+      document.getElementById("produtoEstoque").value = "";
+    }
+  });
+
   imgInput.addEventListener("change", async () => {
     const file = imgInput.files?.[0];
     if (!file) return;
@@ -542,17 +559,29 @@ function initModalProduto() {
     const descricao = document.getElementById("produtoDescricao").value.trim();
     const preco = parseFloat(document.getElementById("produtoPreco").value);
     const categoria = document.getElementById("produtoCategoria").value.trim();
+    const controlaEstoque = document.getElementById("produtoControlaEstoque").checked;
+    const estoqueRaw = document.getElementById("produtoEstoque").value.trim();
     const disponivel = document.getElementById("produtoDisponivel").checked;
     const destaque = document.getElementById("produtoDestaque").checked;
+    const destaqueDia = document.getElementById("produtoDestaqueDia").checked;
 
     if (!nome) { toast("Dê um nome ao produto.", "info"); return; }
     if (!categoria) { toast("Informe a categoria.", "info"); return; }
     if (!preco || preco <= 0) { toast("Informe um preço válido.", "info"); return; }
     if (!_produtoImgUrlAtual) { toast("Envie uma foto do produto.", "info"); return; }
+    if (controlaEstoque && (estoqueRaw === "" || isNaN(Number(estoqueRaw)) || Number(estoqueRaw) < 0)) {
+      toast("Informe a quantidade em estoque (0 ou mais).", "info");
+      return;
+    }
+    // Quem decide se o produto controla estoque é o checkbox, não o campo
+    // de número — assim "0 de verdade" (esgotou) nunca se confunde com
+    // "não controla estoque" (null). Precisa gravar null explicitamente
+    // ao desmarcar, senão editar e desmarcar não apagaria o valor antigo.
+    const estoque = controlaEstoque ? Math.floor(Number(estoqueRaw)) : null;
 
     btnSalvar.disabled = true;
     try {
-      const dados = { nome, descricao, preco, categoria, disponivel, destaque, img: _produtoImgUrlAtual };
+      const dados = { nome, descricao, preco, categoria, estoque, disponivel, destaque, destaqueDia, img: _produtoImgUrlAtual };
       if (_produtoEditandoId) {
         await updateDoc(doc(db, "produtos_site", _produtoEditandoId), dados);
         toast("Produto atualizado.", "sucesso");
